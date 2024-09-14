@@ -1,7 +1,20 @@
 package es.josevaldes.filmatch
 
+import android.content.Context
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.util.Log
+import android.view.WindowMetrics
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationEndReason
+import androidx.compose.animation.core.AnimationResult
+import androidx.compose.animation.core.Spring.StiffnessHigh
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -19,15 +33,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import es.josevaldes.filmatch.model.User
@@ -35,6 +58,11 @@ import es.josevaldes.filmatch.ui.theme.BackButtonBackground
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
+import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
+import kotlin.random.Random
+
 
 val user = User(
     1,
@@ -45,8 +73,10 @@ val user = User(
 val moviePosters = listOf(
     "https://pics.filmaffinity.com/alien_romulus-177464034-large.jpg",
     "https://pics.filmaffinity.com/borderlands-479068097-large.jpg",
-    "https://pics.filmaffinity.com/un_silence-754363757-large.jpg"
+    "https://pics.filmaffinity.com/un_silence-754363757-large.jpg",
+    "https://pics.filmaffinity.com/speak_no_evil-102462605-large.jpg"
 )
+
 
 @Composable
 fun SlideMovieScreen() {
@@ -66,41 +96,94 @@ fun SlideMovieScreen() {
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                AsyncImage(
-                    modifier = Modifier
-                        .padding(20.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .height(525.dp)
-                        .background(BackButtonBackground),
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(moviePosters.first())
-                        .build(),
-                    contentScale = ContentScale.FillHeight,
-                    alignment = Alignment.Center,
-                    placeholder = painterResource(R.drawable.ic_launcher_background),
-                    contentDescription = moviePosters.first()
-                )
+                GetImages(moviePosters)
             }
         }
     }
 }
 
-private fun getImages() = @Composable {
-    moviePosters.forEachIndexed { index, it ->
-        AsyncImage(
+@Composable
+private fun GetImages(posters: List<String>) {
+
+    if (posters.isEmpty()) return
+    val vibrator = LocalContext.current.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    val coroutineScope = rememberCoroutineScope()
+    val screenWidth = LocalContext.current.resources.displayMetrics.widthPixels
+    val swipedMaxOffset = screenWidth / 2
+
+    val postersToShow = remember { mutableStateListOf(*posters.take(3).reversed().toTypedArray()) }
+    postersToShow.forEachIndexed { index, it ->
+        val rotation = Random.nextDouble(0.0, 8.0) * if (index % 2 == 0) 1 else -1
+        val translation = Random.nextDouble(0.0, 8.0)
+        val offsetX = remember { Animatable(0f) }
+        Box(
             modifier = Modifier
-                .padding(20.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .height(525.dp)
-                .background(BackButtonBackground),
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(it)
-                .build(),
-            contentScale = ContentScale.FillHeight,
-            alignment = Alignment.Center,
-            placeholder = painterResource(R.drawable.ic_launcher_background),
-            contentDescription = it
-        )
+                .graphicsLayer {
+                    rotationZ = rotation.toFloat()
+                    translationY = translation.dp.toPx()
+                }
+                .zIndex(index.toFloat())
+                .offset {
+                    IntOffset(offsetX.value.roundToInt(), 0)
+                }
+                .draggable(
+                    enabled = index == 2,
+                    orientation = Orientation.Horizontal,
+                    state = rememberDraggableState { delta ->
+                        val previousOffset = offsetX.value
+                        val newOffset = offsetX.value + delta
+                        coroutineScope.launch {
+                            offsetX.snapTo(newOffset)
+                        }
+                        if (previousOffset.absoluteValue < swipedMaxOffset && newOffset.absoluteValue >= swipedMaxOffset) {
+                            Log.d("SlideMovieScreen", "Swiped")
+                            vibrator.vibrate(
+                                VibrationEffect.createOneShot(
+                                    20,
+                                    VibrationEffect.DEFAULT_AMPLITUDE
+                                )
+                            )
+                        }
+                        Log.d("SlideMovieScreen", "offsetX: ${offsetX.value}")
+                    },
+                    onDragStopped = {
+                        if (offsetX.value.absoluteValue > swipedMaxOffset) {
+                            Log.d("SlideMovieScreen", "Swiped")
+                            val result = offsetX.animateTo(
+                                screenWidth * if (offsetX.value > 0) 1f else -1f,
+                                animationSpec = spring(stiffness = StiffnessHigh)
+                            )
+                            if (result.endReason == AnimationEndReason.Finished) {
+                                postersToShow.removeLast()
+                            }
+                        } else {
+                            offsetX.animateTo(
+                                0f,
+                                animationSpec = spring(stiffness = 500f)
+                            )
+                        }
+                    }
+                )
+        ) {
+            AsyncImage(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .height(525.dp)
+                    .blur(
+                        radius = if (index == 2) 0.dp else if (index == 1) 5.dp else 20.dp,
+                        edgeTreatment = BlurredEdgeTreatment.Companion.Unbounded
+                    )
+                    .background(BackButtonBackground),
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(it)
+                    .build(),
+                contentScale = ContentScale.FillHeight,
+                alignment = Alignment.Center,
+                placeholder = painterResource(R.drawable.ic_launcher_background),
+                contentDescription = it
+            )
+        }
     }
 }
 
@@ -145,25 +228,23 @@ private fun BottomLikeDislike() {
         IconButton(
             onClick = { },
             modifier = Modifier
-                .clip(CircleShape)
                 .size(100.dp)
-                .background(DislikeButtonBackground)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_thumbs_down),
+                painter = painterResource(id = R.drawable.btn_thumbs_down),
                 contentDescription = stringResource(R.string.back_button_content_description),
+                tint = DislikeButtonBackground
             )
         }
         IconButton(
             onClick = { },
             modifier = Modifier
-                .clip(CircleShape)
                 .size(100.dp)
-                .background(LikeButtonBackground)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_thumbs_up),
+                painter = painterResource(id = R.drawable.btn_thumbs_up),
                 contentDescription = stringResource(R.string.back_button_content_description),
+                tint = LikeButtonBackground
             )
         }
     }
