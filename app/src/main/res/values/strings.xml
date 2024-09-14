@@ -3,4 +3,7 @@
     <string name="header_title">Total per person</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="content_description_user_image">User image</string>
+    <string name="back_button_content_description">Back button</string>
+    <string name="back">Back</string>
 </resources>
