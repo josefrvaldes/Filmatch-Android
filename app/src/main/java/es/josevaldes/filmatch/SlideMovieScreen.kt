@@ -33,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import coil.Coil
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
@@ -59,12 +61,10 @@ import es.josevaldes.filmatch.model.Movie
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.model.User
 import es.josevaldes.filmatch.ui.theme.BackButtonBackground
-import es.josevaldes.filmatch.ui.theme.BackgroundDark
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
 import kotlinx.coroutines.launch
-import okhttp3.internal.cacheGet
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -167,6 +167,19 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
     }
 
     val moviesToShow = observableMovies.take(3).reversed()
+    val moviesToPreload = observableMovies.take(5).reversed()
+    val context = LocalContext.current
+    LaunchedEffect(moviesToShow) {
+        moviesToPreload.forEach { movie ->
+            Coil.imageLoader(context).enqueue(
+                ImageRequest.Builder(context)
+                    .data(movie.movie.photoUrl)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .build()
+            )
+        }
+    }
 
     moviesToShow.forEachIndexed { index, movie ->
         if (movie.rotation == null) {
@@ -202,8 +215,8 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
                             Log.d("SlideMovieScreen", "Swiped reached")
                             vibrator.vibrate(
                                 VibrationEffect.createOneShot(
-                                    20,
-                                    VibrationEffect.DEFAULT_AMPLITUDE
+                                    1,
+                                    75
                                 )
                             )
                         }
@@ -245,6 +258,7 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
                     .diskCachePolicy(CachePolicy.ENABLED)
                     .memoryCachePolicy(CachePolicy.ENABLED)
                     .diskCacheKey(movie.movie.photoUrl)
+                    .networkCachePolicy(CachePolicy.READ_ONLY)
                     .build(),
                 contentScale = ContentScale.FillHeight,
                 alignment = Alignment.Center,
