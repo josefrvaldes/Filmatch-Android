@@ -33,11 +33,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -54,15 +53,18 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import es.josevaldes.filmatch.model.Movie
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.model.User
 import es.josevaldes.filmatch.ui.theme.BackButtonBackground
+import es.josevaldes.filmatch.ui.theme.BackgroundDark
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
 import kotlinx.coroutines.launch
+import okhttp3.internal.cacheGet
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -102,7 +104,21 @@ val swipeableMovies = mutableListOf(
             "Speak No Evil",
             "https://pics.filmaffinity.com/speak_no_evil-102462605-large.jpg"
         ),
-    )
+    ),
+    SwipeableMovie(
+        movie = Movie(
+            5,
+            "The Last Duel",
+            "https://pics.filmaffinity.com/the_last_duel-563139924-large.jpg"
+        ),
+    ),
+    SwipeableMovie(
+        movie = Movie(
+            6,
+            "Bitelchús Bitelchús",
+            "https://pics.filmaffinity.com/beetlejuice_beetlejuice-890586814-large.jpg"
+        ),
+    ),
 )
 
 
@@ -111,7 +127,10 @@ fun SlideMovieScreen() {
     Scaffold(
         topBar = { UserTopBar(user) },
         bottomBar = {
-            BottomLikeDislike()
+            BottomLikeDislike(
+                onLikeClicked = { Log.d("SlideMovieScreen", "Like clicked") },
+                onDislikeClicked = { Log.d("SlideMovieScreen", "Dislike clicked") }
+            )
         }
     ) { padding ->
         Column(
@@ -143,12 +162,15 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
     val swipedMaxOffset = screenWidth / 2
 
 
-    val moviesToShow = remember {
-        mutableStateListOf(*allMovies.take(3).reversed().toTypedArray())
+    val observableMovies = remember {
+        allMovies.toMutableStateList()
     }
+
+    val moviesToShow = observableMovies.take(3).reversed()
+
     moviesToShow.forEachIndexed { index, movie ->
         if (movie.rotation == null) {
-            val rotation = Random.nextDouble(0.0, 4.0) * if (index % 2 == 0) 1 else -1
+            val rotation = Random.nextDouble(0.0, 4.0) * if (observableMovies.size % 2 == 0) 1 else -1
             movie.rotation = rotation.toFloat()
             val translation = Random.nextDouble(0.0, 8.0)
             movie.traslationY = translation.toFloat()
@@ -196,12 +218,8 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
                             )
                             if (result.endReason == AnimationEndReason.Finished) {
                                 val lastMovie = moviesToShow.last()
-                                moviesToShow.remove(lastMovie)
-//                                allMovies.remove(lastMovie)
-//                                if (allMovies.size >= 3) {
-//                                    val newMovie = allMovies[2]
-//                                    moviesToShow.add(0, newMovie)
-//                                }
+                                observableMovies.remove(lastMovie)
+                                offsetX.snapTo(0f)
                             }
                         } else {
                             offsetX.animateTo(
@@ -224,11 +242,13 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
                     .background(BackButtonBackground),
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(movie.movie.photoUrl)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .diskCacheKey(movie.movie.photoUrl)
                     .build(),
                 contentScale = ContentScale.FillHeight,
                 alignment = Alignment.Center,
-                placeholder = painterResource(R.drawable.ic_launcher_background),
-                contentDescription = movie.movie.title
+                contentDescription = movie.movie.title,
             )
         }
     }
@@ -277,7 +297,7 @@ private fun BackButtonRow() {
 }
 
 @Composable
-private fun BottomLikeDislike() {
+private fun BottomLikeDislike(onLikeClicked: () -> Unit, onDislikeClicked: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -286,7 +306,7 @@ private fun BottomLikeDislike() {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(
-            onClick = { },
+            onClick = { onDislikeClicked() },
             modifier = Modifier
                 .size(100.dp)
         ) {
@@ -297,7 +317,7 @@ private fun BottomLikeDislike() {
             )
         }
         IconButton(
-            onClick = { },
+            onClick = { onLikeClicked() },
             modifier = Modifier
                 .size(100.dp)
         ) {
