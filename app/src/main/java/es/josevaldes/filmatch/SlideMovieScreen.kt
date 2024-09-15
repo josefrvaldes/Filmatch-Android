@@ -4,12 +4,12 @@ import android.content.Context
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
-import android.view.WindowMetrics
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationEndReason
-import androidx.compose.animation.core.AnimationResult
 import androidx.compose.animation.core.Spring.StiffnessHigh
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -33,6 +33,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,16 +45,18 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import es.josevaldes.filmatch.model.Movie
+import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.model.User
 import es.josevaldes.filmatch.ui.theme.BackButtonBackground
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
@@ -70,11 +74,35 @@ val user = User(
     "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/6018d2fb-507f-4b50-af6a-b593b6c6eeb9/db1so0b-cd9d0be3-3691-4728-891b-f1505b7e1dc8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzYwMThkMmZiLTUwN2YtNGI1MC1hZjZhLWI1OTNiNmM2ZWViOVwvZGIxc28wYi1jZDlkMGJlMy0zNjkxLTQ3MjgtODkxYi1mMTUwNWI3ZTFkYzgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.9awWi0q7WpdwQDXG9quXvnDVo0NUDqF_S9ygzRxCbEM"
 )
 
-val moviePosters = listOf(
-    "https://pics.filmaffinity.com/alien_romulus-177464034-large.jpg",
-    "https://pics.filmaffinity.com/borderlands-479068097-large.jpg",
-    "https://pics.filmaffinity.com/un_silence-754363757-large.jpg",
-    "https://pics.filmaffinity.com/speak_no_evil-102462605-large.jpg"
+val swipeableMovies = mutableListOf(
+    SwipeableMovie(
+        movie = Movie(
+            1,
+            "Alien Romulus",
+            "https://pics.filmaffinity.com/alien_romulus-177464034-large.jpg"
+        ),
+    ),
+    SwipeableMovie(
+        movie = Movie(
+            2,
+            "Borderlands",
+            "https://pics.filmaffinity.com/borderlands-479068097-large.jpg"
+        ),
+    ),
+    SwipeableMovie(
+        movie = Movie(
+            3,
+            "Un Silence",
+            "https://pics.filmaffinity.com/un_silence-754363757-large.jpg"
+        ),
+    ),
+    SwipeableMovie(
+        movie = Movie(
+            4,
+            "Speak No Evil",
+            "https://pics.filmaffinity.com/speak_no_evil-102462605-large.jpg"
+        ),
+    )
 )
 
 
@@ -93,41 +121,54 @@ fun SlideMovieScreen() {
         ) {
             BackButtonRow()
             Box(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
-                GetImages(moviePosters)
+                GetImages(swipeableMovies)
             }
         }
     }
 }
 
 @Composable
-private fun GetImages(posters: List<String>) {
+private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
 
-    if (posters.isEmpty()) return
+    if (allMovies.isEmpty()) return
+
     val vibrator = LocalContext.current.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     val coroutineScope = rememberCoroutineScope()
     val screenWidth = LocalContext.current.resources.displayMetrics.widthPixels
     val swipedMaxOffset = screenWidth / 2
 
-    val postersToShow = remember { mutableStateListOf(*posters.take(3).reversed().toTypedArray()) }
-    postersToShow.forEachIndexed { index, it ->
-        val rotation = Random.nextDouble(0.0, 8.0) * if (index % 2 == 0) 1 else -1
-        val translation = Random.nextDouble(0.0, 8.0)
+
+    val moviesToShow = remember {
+        mutableStateListOf(*allMovies.take(3).reversed().toTypedArray())
+    }
+    moviesToShow.forEachIndexed { index, movie ->
+        if (movie.rotation == null) {
+            val rotation = Random.nextDouble(0.0, 4.0) * if (index % 2 == 0) 1 else -1
+            movie.rotation = rotation.toFloat()
+            val translation = Random.nextDouble(0.0, 8.0)
+            movie.traslationY = translation.toFloat()
+        }
         val offsetX = remember { Animatable(0f) }
+
+        val blurRadius = getProperBlurRadius(index = index, listSize = moviesToShow.size)
+
         Box(
             modifier = Modifier
                 .graphicsLayer {
-                    rotationZ = rotation.toFloat()
-                    translationY = translation.dp.toPx()
+                    rotationZ = movie.rotation ?: 0f
+                    translationY = movie.traslationY ?: 0f
                 }
                 .zIndex(index.toFloat())
                 .offset {
                     IntOffset(offsetX.value.roundToInt(), 0)
                 }
                 .draggable(
-                    enabled = index == 2,
+                    enabled = index == moviesToShow.size - 1,
                     orientation = Orientation.Horizontal,
                     state = rememberDraggableState { delta ->
                         val previousOffset = offsetX.value
@@ -136,7 +177,7 @@ private fun GetImages(posters: List<String>) {
                             offsetX.snapTo(newOffset)
                         }
                         if (previousOffset.absoluteValue < swipedMaxOffset && newOffset.absoluteValue >= swipedMaxOffset) {
-                            Log.d("SlideMovieScreen", "Swiped")
+                            Log.d("SlideMovieScreen", "Swiped reached")
                             vibrator.vibrate(
                                 VibrationEffect.createOneShot(
                                     20,
@@ -148,13 +189,19 @@ private fun GetImages(posters: List<String>) {
                     },
                     onDragStopped = {
                         if (offsetX.value.absoluteValue > swipedMaxOffset) {
-                            Log.d("SlideMovieScreen", "Swiped")
+                            Log.d("SlideMovieScreen", "Swiped confirmed")
                             val result = offsetX.animateTo(
                                 screenWidth * if (offsetX.value > 0) 1f else -1f,
                                 animationSpec = spring(stiffness = StiffnessHigh)
                             )
                             if (result.endReason == AnimationEndReason.Finished) {
-                                postersToShow.removeLast()
+                                val lastMovie = moviesToShow.last()
+                                moviesToShow.remove(lastMovie)
+//                                allMovies.remove(lastMovie)
+//                                if (allMovies.size >= 3) {
+//                                    val newMovie = allMovies[2]
+//                                    moviesToShow.add(0, newMovie)
+//                                }
                             }
                         } else {
                             offsetX.animateTo(
@@ -171,20 +218,33 @@ private fun GetImages(posters: List<String>) {
                     .clip(RoundedCornerShape(16.dp))
                     .height(525.dp)
                     .blur(
-                        radius = if (index == 2) 0.dp else if (index == 1) 5.dp else 20.dp,
+                        radius = blurRadius.value,
                         edgeTreatment = BlurredEdgeTreatment.Companion.Unbounded
                     )
                     .background(BackButtonBackground),
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(it)
+                    .data(movie.movie.photoUrl)
                     .build(),
                 contentScale = ContentScale.FillHeight,
                 alignment = Alignment.Center,
                 placeholder = painterResource(R.drawable.ic_launcher_background),
-                contentDescription = it
+                contentDescription = movie.movie.title
             )
         }
     }
+}
+
+@Composable
+private fun getProperBlurRadius(index: Int, listSize: Int): State<Dp> {
+    return animateDpAsState(
+        targetValue = when (index) {
+            listSize - 1 -> 0.dp
+            listSize - 2 -> 5.dp
+            else -> 20.dp
+        },
+        animationSpec = tween(durationMillis = 200),
+        label = "Dp Blur Radius"
+    )
 }
 
 @Composable
