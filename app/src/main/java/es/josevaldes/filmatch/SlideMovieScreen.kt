@@ -4,10 +4,11 @@ import android.content.Context
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationEndReason
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring.StiffnessHigh
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -35,14 +36,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -58,12 +65,14 @@ import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import es.josevaldes.filmatch.model.Movie
+import es.josevaldes.filmatch.model.MovieSwipedStatus
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.model.User
 import es.josevaldes.filmatch.ui.theme.BackButtonBackground
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
@@ -151,10 +160,24 @@ fun SlideMovieScreen() {
     }
 }
 
+
 @Composable
 private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
 
     if (allMovies.isEmpty()) return
+    allMovies.forEachIndexed { index, swipeableMovie ->
+        if (swipeableMovie.rotation == null) {
+            swipeableMovie.rotation = if (index == 0) {
+                0f
+            } else if (index % 2 == 0) {
+                Random.nextDouble(0.0, 4.0).toFloat()
+            } else {
+                Random.nextDouble(-4.0, 0.0).toFloat()
+            }
+            val translation = Random.nextDouble(0.0, 8.0)
+            swipeableMovie.traslationY = translation.toFloat()
+        }
+    }
 
     val vibrator = LocalContext.current.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     val coroutineScope = rememberCoroutineScope()
@@ -163,14 +186,25 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
 
 
     val observableMovies = remember {
+        Log.d(
+            "SlideMovieScreen",
+            "Now observableMovies is ${allMovies.size} and contains ${allMovies.map { it.movie.title }}"
+        )
         allMovies.toMutableStateList()
     }
 
     val moviesToShow = observableMovies.take(3).reversed()
+    Log.d(
+        "SlideMovieScreen",
+        "Now moviesToShow is ${moviesToShow.size} and contains ${moviesToShow.map { it.movie.title }}"
+    )
+
     val moviesToPreload = observableMovies.take(5).reversed()
+
     val context = LocalContext.current
     LaunchedEffect(moviesToShow) {
         moviesToPreload.forEach { movie ->
+//            Log.d("SlideMovieScreen", "Preloading image: ${movie.movie.photoUrl}")
             Coil.imageLoader(context).enqueue(
                 ImageRequest.Builder(context)
                     .data(movie.movie.photoUrl)
@@ -182,103 +216,199 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
     }
 
     moviesToShow.forEachIndexed { index, movie ->
-        if (movie.rotation == null) {
-            val rotation = Random.nextDouble(0.0, 4.0) * if (observableMovies.size % 2 == 0) 1 else -1
-            movie.rotation = rotation.toFloat()
-            val translation = Random.nextDouble(0.0, 8.0)
-            movie.traslationY = translation.toFloat()
-        }
-        val offsetX = remember { Animatable(0f) }
-
-        val blurRadius = getProperBlurRadius(index = index, listSize = moviesToShow.size)
-
-        Box(
-            modifier = Modifier
-                .graphicsLayer {
-                    rotationZ = movie.rotation ?: 0f
-                    translationY = movie.traslationY ?: 0f
-                }
-                .zIndex(index.toFloat())
-                .offset {
-                    IntOffset(offsetX.value.roundToInt(), 0)
-                }
-                .draggable(
-                    enabled = index == moviesToShow.size - 1,
-                    orientation = Orientation.Horizontal,
-                    state = rememberDraggableState { delta ->
-                        val previousOffset = offsetX.value
-                        val newOffset = offsetX.value + delta
-                        coroutineScope.launch {
-                            offsetX.snapTo(newOffset)
-                        }
-                        if (previousOffset.absoluteValue < swipedMaxOffset && newOffset.absoluteValue >= swipedMaxOffset) {
-                            Log.d("SlideMovieScreen", "Swiped reached")
-                            vibrator.vibrate(
-                                VibrationEffect.createOneShot(
-                                    1,
-                                    75
-                                )
-                            )
-                        }
-                        Log.d("SlideMovieScreen", "offsetX: ${offsetX.value}")
-                    },
-                    onDragStopped = {
-                        if (offsetX.value.absoluteValue > swipedMaxOffset) {
-                            Log.d("SlideMovieScreen", "Swiped confirmed")
-                            val result = offsetX.animateTo(
-                                screenWidth * if (offsetX.value > 0) 1f else -1f,
-                                animationSpec = spring(stiffness = StiffnessHigh)
-                            )
-                            if (result.endReason == AnimationEndReason.Finished) {
-                                val lastMovie = moviesToShow.last()
-                                observableMovies.remove(lastMovie)
-                                offsetX.snapTo(0f)
-                            }
-                        } else {
-                            offsetX.animateTo(
-                                0f,
-                                animationSpec = spring(stiffness = 500f)
-                            )
-                        }
-                    }
-                )
-        ) {
-            AsyncImage(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .height(525.dp)
-                    .blur(
-                        radius = blurRadius.value,
-                        edgeTreatment = BlurredEdgeTreatment.Companion.Unbounded
-                    )
-                    .background(BackButtonBackground),
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(movie.movie.photoUrl)
-                    .diskCachePolicy(CachePolicy.ENABLED)
-                    .memoryCachePolicy(CachePolicy.ENABLED)
-                    .diskCacheKey(movie.movie.photoUrl)
-                    .networkCachePolicy(CachePolicy.READ_ONLY)
-                    .build(),
-                contentScale = ContentScale.FillHeight,
-                alignment = Alignment.Center,
-                contentDescription = movie.movie.title,
+        key(movie.movie.id) {
+            SwipeableMovieView(
+                movie,
+                index,
+                moviesToShow,
+                coroutineScope,
+                swipedMaxOffset,
+                vibrator,
+                screenWidth,
+                observableMovies,
             )
         }
     }
 }
 
 @Composable
-private fun getProperBlurRadius(index: Int, listSize: Int): State<Dp> {
-    return animateDpAsState(
-        targetValue = when (index) {
-            listSize - 1 -> 0.dp
-            listSize - 2 -> 5.dp
-            else -> 20.dp
+private fun SwipeableMovieView(
+    movie: SwipeableMovie,
+    index: Int,
+    moviesToShow: List<SwipeableMovie>,
+    coroutineScope: CoroutineScope,
+    swipedMaxOffset: Int,
+    vibrator: Vibrator,
+    screenWidth: Int,
+    observableMovies: SnapshotStateList<SwipeableMovie>,
+) {
+    val offsetX = remember { Animatable(0f) }
+
+    val blurRadius = getProperBlurRadius(
+        index = index,
+        listSize = moviesToShow.size,
+        allMoviesListSize = observableMovies.size
+    )
+
+    val currentSwipedStatus = remember {
+        mutableStateOf(movie.swipedStatus)
+    }
+
+    val tint = animateColorAsState(
+        targetValue = when (currentSwipedStatus.value) {
+            MovieSwipedStatus.LIKED -> LikeButtonBackground.copy(0.5f)
+            MovieSwipedStatus.DISLIKED -> DislikeButtonBackground.copy(0.5f)
+            else -> Color.Transparent
         },
         animationSpec = tween(durationMillis = 200),
-        label = "Dp Blur Radius"
+        label = "swipeColor"
     )
+
+
+    Box(
+        modifier = Modifier
+            .graphicsLayer {
+                rotationZ = movie.rotation ?: 0f
+                translationY = movie.traslationY ?: 0f
+            }
+            .zIndex(index.toFloat())
+            .offset {
+                IntOffset(offsetX.value.roundToInt(), 0)
+            }
+            .draggable(
+                enabled = index == moviesToShow.size - 1,
+                orientation = Orientation.Horizontal,
+                state = rememberDraggableState { delta ->
+                    val previousOffset = offsetX.value
+                    val newOffset = offsetX.value + delta
+                    coroutineScope.launch {
+                        offsetX.snapTo(newOffset)
+                    }
+                    if (previousOffset.absoluteValue < swipedMaxOffset && newOffset.absoluteValue >= swipedMaxOffset) {
+                        Log.d("SlideMovieScreen", "Swiped reached")
+                        vibrator.vibrate(
+                            VibrationEffect.createOneShot(
+                                1,
+                                75
+                            )
+                        )
+
+                        // box
+                        movie.swipedStatus = if (newOffset > 0) {
+                            Log.d("SlideMovieScreen", "Tinting green")
+                            MovieSwipedStatus.LIKED
+                        } else {
+                            Log.d("SlideMovieScreen", "Tinting red")
+                            MovieSwipedStatus.DISLIKED
+                        }
+                        currentSwipedStatus.value = movie.swipedStatus
+
+
+                    } else if (previousOffset.absoluteValue >= swipedMaxOffset && newOffset.absoluteValue < swipedMaxOffset) {
+                        Log.d("SlideMovieScreen", "Removing tint")
+                        movie.swipedStatus = MovieSwipedStatus.NONE
+                        currentSwipedStatus.value = movie.swipedStatus
+                    }
+//                    Log.d("SlideMovieScreen", "offsetX: ${offsetX.value}, newOffset: $newOffset")
+                },
+                onDragStopped = {
+                    if (offsetX.value.absoluteValue > swipedMaxOffset) {
+                        Log.d("SlideMovieScreen", "Swiped confirmed")
+
+                        Log.d("SlideMovieScreen", "Removing tint")
+                        movie.swipedStatus = MovieSwipedStatus.NONE
+                        currentSwipedStatus.value = movie.swipedStatus
+
+                        // animating outside the screen
+                        val result = offsetX.animateTo(
+                            screenWidth * if (offsetX.value > 0) 1f else -1f,
+                            animationSpec = spring(stiffness = StiffnessHigh)
+                        )
+
+                        if (result.endReason == AnimationEndReason.Finished) {
+                            // let's remove the last movie
+                            Log.d("SlideMovieScreen", "Removing movie: ${movie.movie.title}")
+                            val firstMovie = observableMovies.first()
+                            observableMovies.remove(firstMovie)
+                            Log.d(
+                                "SlideMovieScreen",
+                                "Now observablesMovies is ${observableMovies.size} and contains ${observableMovies.map { it.movie.title }}"
+                            )
+                            Log.d(
+                                "SlideMovieScreen",
+                                "Now moviesToShow is ${moviesToShow.size} and contains ${moviesToShow.map { it.movie.title }}"
+                            )
+                            offsetX.snapTo(0f)
+                        }
+                    } else {
+                        offsetX.animateTo(
+                            0f,
+                            animationSpec = spring(stiffness = 500f)
+                        )
+                    }
+                }
+            )
+    ) {
+        AsyncImage(
+            filterQuality = FilterQuality.Medium,
+            modifier = Modifier
+                .padding(20.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .height(525.dp)
+                .blur(
+                    radius = blurRadius.value,
+                    edgeTreatment = BlurredEdgeTreatment.Unbounded
+                )
+                .background(BackButtonBackground),
+
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(movie.movie.photoUrl)
+                .diskCachePolicy(CachePolicy.ENABLED)
+                .memoryCachePolicy(CachePolicy.ENABLED)
+                .diskCacheKey(movie.movie.photoUrl)
+                .networkCachePolicy(CachePolicy.READ_ONLY)
+                .build(),
+            contentScale = ContentScale.FillHeight,
+            alignment = Alignment.Center,
+            contentDescription = movie.movie.title,
+        )
+
+
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(20.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .height(525.dp)
+                .background(tint.value)
+        )
+    }
+}
+
+@Composable
+private fun getProperBlurRadius(index: Int, listSize: Int, allMoviesListSize: Int): State<Dp> {
+    val newValue = when (index) {
+        listSize - 1 -> 0.dp
+        listSize - 2 -> 5.dp
+        else -> 20.dp
+    }
+
+    val blurRadius =
+        remember { Animatable(newValue.value) } // Usamos Animatable en lugar de animateDpAsState
+
+
+    // Usamos LaunchedEffect para animar cada vez que cambie el index o listSize
+    LaunchedEffect(key1 = index, key2 = allMoviesListSize) {
+        val currentRadius = blurRadius.value
+        Log.d("SlideMovieScreen", "Animating blurRadius from $currentRadius to ${newValue.value}")
+        blurRadius.animateTo(
+            targetValue = newValue.value,
+            animationSpec = tween(durationMillis = 500, easing = LinearOutSlowInEasing)
+        )
+    }
+
+    // Retornamos el estado del blur como Dp
+    return blurRadius.asState().let { derivedStateOf { it.value.dp } }
 }
 
 @Composable
