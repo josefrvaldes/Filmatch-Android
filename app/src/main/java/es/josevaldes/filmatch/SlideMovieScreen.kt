@@ -244,21 +244,20 @@ private fun SwipeableMovieView(
     screenWidth: Int,
     observableMovies: SnapshotStateList<SwipeableMovie>,
 ) {
-    val offsetX = remember { Animatable(0f) }
+    val translationOffset = remember { Animatable(0f) }
     val blurRadius = getProperBlurRadius(index = index, listSize = moviesToShow.size)
     val currentSwipedStatus = remember { mutableStateOf(movie.swipedStatus) }
-
     val tint = getProperTint(currentSwipedStatus)
-
+    val rotation = getProperRotation(movie, index, moviesToShow)
 
     Box(
         modifier = Modifier
-            .setupMovieGraphics(movie)
+            .setupMovieGraphics(movie, rotation)
             .zIndex(index.toFloat())
-            .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+            .offset { IntOffset(translationOffset.value.roundToInt(), 0) }
             .swipeHandler(
                 enabled = index == moviesToShow.size - 1,
-                offsetX = offsetX,
+                translationOffset = translationOffset,
                 coroutineScope = coroutineScope,
                 swipedMaxOffset = swipedMaxOffset,
                 vibrator = vibrator,
@@ -268,21 +267,37 @@ private fun SwipeableMovieView(
                 observableMovies = observableMovies
             )
     ) {
-        PosterImageView(movie = movie, blurRadius = blurRadius)
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .padding(20.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .height(525.dp)
-                .background(tint.value)
+        PosterImageView(
+            movie = movie,
+            blurRadius = blurRadius,
+            tint = tint,
+            modifier = Modifier.matchParentSize()
         )
     }
 }
 
 @Composable
-private fun PosterImageView(movie: SwipeableMovie, blurRadius: State<Dp>) {
-    // Implementation of MovieImageView
+private fun getProperRotation(
+    movie: SwipeableMovie,
+    index: Int,
+    moviesToShow: List<SwipeableMovie>
+): Animatable<Float, AnimationVector1D> {
+    val rotation = remember { Animatable(movie.rotation ?: 0f) }
+    if (index == moviesToShow.size - 1) {
+        LaunchedEffect(Unit) {
+            rotation.animateTo(0f)
+        }
+    }
+    return rotation
+}
+
+@Composable
+private fun PosterImageView(
+    movie: SwipeableMovie,
+    blurRadius: State<Dp>,
+    tint: State<Color>,
+    modifier: Modifier
+) {
     AsyncImage(
         filterQuality = FilterQuality.Medium,
         modifier = Modifier
@@ -307,6 +322,13 @@ private fun PosterImageView(movie: SwipeableMovie, blurRadius: State<Dp>) {
         contentDescription = movie.movie.title,
     )
 
+    Box(
+        modifier = modifier
+            .padding(20.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .height(525.dp)
+            .background(tint.value)
+    )
 
 }
 
@@ -391,7 +413,7 @@ private fun handleSwipeMovement(
 @Composable
 private fun Modifier.swipeHandler(
     enabled: Boolean,
-    offsetX: Animatable<Float, AnimationVector1D>,
+    translationOffset: Animatable<Float, AnimationVector1D>,
     coroutineScope: CoroutineScope,
     swipedMaxOffset: Int,
     vibrator: Vibrator,
@@ -405,7 +427,7 @@ private fun Modifier.swipeHandler(
         orientation = Orientation.Horizontal,
         state = rememberDraggableState { delta ->
             handleSwipeMovement(
-                offsetX,
+                translationOffset,
                 delta,
                 coroutineScope,
                 swipedMaxOffset,
@@ -416,7 +438,7 @@ private fun Modifier.swipeHandler(
         },
         onDragStopped = {
             handleSwipeRelease(
-                offsetX,
+                translationOffset,
                 swipedMaxOffset,
                 movie,
                 currentSwipedStatus,
@@ -427,9 +449,12 @@ private fun Modifier.swipeHandler(
     )
 }
 
-private fun Modifier.setupMovieGraphics(movie: SwipeableMovie): Modifier {
+private fun Modifier.setupMovieGraphics(
+    movie: SwipeableMovie,
+    rotation: Animatable<Float, AnimationVector1D>
+): Modifier {
     return graphicsLayer {
-        rotationZ = movie.rotation ?: 0f
+        rotationZ = rotation.value
         translationY = movie.traslationY ?: 0f
     }
 }
