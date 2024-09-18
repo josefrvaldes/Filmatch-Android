@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -39,8 +40,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.key
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -68,7 +69,6 @@ import coil.Coil
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import es.josevaldes.filmatch.model.Movie
 import es.josevaldes.filmatch.model.MovieSwipedStatus
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.model.User
@@ -91,52 +91,6 @@ val user = User(
     "Joselete Valdés",
     "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/6018d2fb-507f-4b50-af6a-b593b6c6eeb9/db1so0b-cd9d0be3-3691-4728-891b-f1505b7e1dc8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzYwMThkMmZiLTUwN2YtNGI1MC1hZjZhLWI1OTNiNmM2ZWViOVwvZGIxc28wYi1jZDlkMGJlMy0zNjkxLTQ3MjgtODkxYi1mMTUwNWI3ZTFkYzgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.9awWi0q7WpdwQDXG9quXvnDVo0NUDqF_S9ygzRxCbEM"
 )
-
-//val swipeableMovies = mutableListOf(
-//    SwipeableMovie(
-//        movie = Movie(
-//            id = 1,
-//            title = "Alien Romulus",
-//            posterPath = "https://pics.filmaffinity.com/alien_romulus-177464034-large.jpg"
-//        ),
-//    ),
-//    SwipeableMovie(
-//        movie = Movie(
-//            id = 2,
-//            title = "Borderlands",
-//            posterPath = "https://pics.filmaffinity.com/borderlands-479068097-large.jpg"
-//        ),
-//    ),
-//    SwipeableMovie(
-//        movie = Movie(
-//            id = 3,
-//            title = "Un Silence",
-//            posterPath = "https://pics.filmaffinity.com/un_silence-754363757-large.jpg"
-//        ),
-//    ),
-//    SwipeableMovie(
-//        movie = Movie(
-//            id = 4,
-//            title = "Speak No Evil",
-//            posterPath = "https://pics.filmaffinity.com/speak_no_evil-102462605-large.jpg"
-//        ),
-//    ),
-//    SwipeableMovie(
-//        movie = Movie(
-//            id = 5,
-//            title = "The Last Duel",
-//            posterPath = "https://pics.filmaffinity.com/the_last_duel-563139924-large.jpg"
-//        ),
-//    ),
-//    SwipeableMovie(
-//        movie = Movie(
-//            id = 6,
-//            title = "Bitelchús Bitelchús",
-//            posterPath = "https://pics.filmaffinity.com/beetlejuice_beetlejuice-890586814-large.jpg"
-//        ),
-//    ),
-//)
-
 
 @Composable
 fun SlideMovieScreen() {
@@ -172,12 +126,17 @@ fun SlideMovieScreen() {
 private fun GetImages() {
 
     val viewModel: SlideMovieViewModel = hiltViewModel()
-    val allMovies = viewModel.movies.observeAsState(emptyList())
+    val allMovies = viewModel.movies.collectAsState()
     LaunchedEffect(Unit) {
         viewModel.fetchMovies()
     }
 
-    if (allMovies.value.isEmpty()) return
+    val loading = viewModel.loading.collectAsState()
+    if (loading.value) {
+        CircularProgressIndicator()
+        return
+    }
+
     InitializeMovies(allMovies.value)
 
     val vibrator = LocalContext.current.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator

@@ -6,7 +6,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 
 class HttpClient {
-    fun getOkHttpClient(): okhttp3.OkHttpClient {
+    fun getOkHttpClient(): OkHttpClient {
         return OkHttpClient
             .Builder()
             .addNetworkInterceptor(HttpLoggingInterceptor().apply {
