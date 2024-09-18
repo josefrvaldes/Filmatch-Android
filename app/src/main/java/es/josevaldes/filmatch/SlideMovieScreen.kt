@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -39,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,11 +64,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.Coil
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import es.josevaldes.filmatch.model.Movie
 import es.josevaldes.filmatch.model.MovieSwipedStatus
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.model.User
@@ -74,6 +76,7 @@ import es.josevaldes.filmatch.ui.theme.BackButtonBackground
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
+import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -88,52 +91,6 @@ val user = User(
     "Joselete Valdés",
     "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/6018d2fb-507f-4b50-af6a-b593b6c6eeb9/db1so0b-cd9d0be3-3691-4728-891b-f1505b7e1dc8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzYwMThkMmZiLTUwN2YtNGI1MC1hZjZhLWI1OTNiNmM2ZWViOVwvZGIxc28wYi1jZDlkMGJlMy0zNjkxLTQ3MjgtODkxYi1mMTUwNWI3ZTFkYzgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.9awWi0q7WpdwQDXG9quXvnDVo0NUDqF_S9ygzRxCbEM"
 )
-
-val swipeableMovies = mutableListOf(
-    SwipeableMovie(
-        movie = Movie(
-            1,
-            "Alien Romulus",
-            "https://pics.filmaffinity.com/alien_romulus-177464034-large.jpg"
-        ),
-    ),
-    SwipeableMovie(
-        movie = Movie(
-            2,
-            "Borderlands",
-            "https://pics.filmaffinity.com/borderlands-479068097-large.jpg"
-        ),
-    ),
-    SwipeableMovie(
-        movie = Movie(
-            3,
-            "Un Silence",
-            "https://pics.filmaffinity.com/un_silence-754363757-large.jpg"
-        ),
-    ),
-    SwipeableMovie(
-        movie = Movie(
-            4,
-            "Speak No Evil",
-            "https://pics.filmaffinity.com/speak_no_evil-102462605-large.jpg"
-        ),
-    ),
-    SwipeableMovie(
-        movie = Movie(
-            5,
-            "The Last Duel",
-            "https://pics.filmaffinity.com/the_last_duel-563139924-large.jpg"
-        ),
-    ),
-    SwipeableMovie(
-        movie = Movie(
-            6,
-            "Bitelchús Bitelchús",
-            "https://pics.filmaffinity.com/beetlejuice_beetlejuice-890586814-large.jpg"
-        ),
-    ),
-)
-
 
 @Composable
 fun SlideMovieScreen() {
@@ -158,7 +115,7 @@ fun SlideMovieScreen() {
                     .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
-                GetImages(swipeableMovies)
+                GetImages()
             }
         }
     }
@@ -166,10 +123,21 @@ fun SlideMovieScreen() {
 
 
 @Composable
-private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
+private fun GetImages() {
 
-    if (allMovies.isEmpty()) return
-    InitializeMovies(allMovies)
+    val viewModel: SlideMovieViewModel = hiltViewModel()
+    val allMovies = viewModel.movies.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.fetchMovies()
+    }
+
+    val loading = viewModel.loading.collectAsState()
+    if (loading.value) {
+        CircularProgressIndicator()
+        return
+    }
+
+    InitializeMovies(allMovies.value)
 
     val vibrator = LocalContext.current.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     val coroutineScope = rememberCoroutineScope()
@@ -177,7 +145,7 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
     val swipedMaxOffset = screenWidth / 3
 
 
-    val observableMovies = remember { allMovies.toMutableStateList() }
+    val observableMovies = remember { allMovies.value.toMutableStateList() }
     val moviesToShow = observableMovies.take(3).reversed()
 
     PreloadMoviePosters(observableMovies, moviesToShow)
@@ -199,7 +167,7 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
 }
 
 @Composable
-private fun InitializeMovies(allMovies: MutableList<SwipeableMovie>) {
+private fun InitializeMovies(allMovies: List<SwipeableMovie>) {
     allMovies.forEachIndexed { index, swipeableMovie ->
         if (swipeableMovie.rotation == null) {
             swipeableMovie.rotation = if (index == 0) {
@@ -226,7 +194,7 @@ private fun PreloadMoviePosters(
         moviesToPreload.forEach { movie ->
             Coil.imageLoader(context).enqueue(
                 ImageRequest.Builder(context)
-                    .data(movie.movie.photoUrl)
+                    .data(movie.movie.posterUrl)
                     .diskCachePolicy(CachePolicy.ENABLED)
                     .memoryCachePolicy(CachePolicy.ENABLED)
                     .build()
@@ -314,10 +282,10 @@ private fun PosterImageView(
             .background(BackButtonBackground),
 
         model = ImageRequest.Builder(LocalContext.current)
-            .data(movie.movie.photoUrl)
+            .data(movie.movie.posterUrl)
             .diskCachePolicy(CachePolicy.ENABLED)
             .memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCacheKey(movie.movie.photoUrl)
+            .diskCacheKey(movie.movie.posterUrl)
             .networkCachePolicy(CachePolicy.READ_ONLY)
             .build(),
         contentScale = ContentScale.FillHeight,
