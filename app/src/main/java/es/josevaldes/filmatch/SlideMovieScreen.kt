@@ -75,6 +75,8 @@ import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
@@ -172,7 +174,7 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
     val vibrator = LocalContext.current.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     val coroutineScope = rememberCoroutineScope()
     val screenWidth = LocalContext.current.resources.displayMetrics.widthPixels
-    val swipedMaxOffset = screenWidth / 2
+    val swipedMaxOffset = screenWidth / 3
 
 
     val observableMovies = remember { allMovies.toMutableStateList() }
@@ -190,7 +192,7 @@ private fun GetImages(allMovies: MutableList<SwipeableMovie>) {
                 swipedMaxOffset,
                 vibrator,
                 screenWidth,
-                observableMovies,
+                observableMovies
             )
         }
     }
@@ -242,22 +244,23 @@ private fun SwipeableMovieView(
     swipedMaxOffset: Int,
     vibrator: Vibrator,
     screenWidth: Int,
-    observableMovies: SnapshotStateList<SwipeableMovie>,
+    observableMovies: SnapshotStateList<SwipeableMovie>
 ) {
     val translationOffset = remember { Animatable(0f) }
+    val rotationOffset = getProperRotation(movie, index, moviesToShow)
     val blurRadius = getProperBlurRadius(index = index, listSize = moviesToShow.size)
     val currentSwipedStatus = remember { mutableStateOf(movie.swipedStatus) }
     val tint = getProperTint(currentSwipedStatus)
-    val rotation = getProperRotation(movie, index, moviesToShow)
 
     Box(
         modifier = Modifier
-            .setupMovieGraphics(movie, rotation)
+            .setupMovieGraphics(movie, rotationOffset)
             .zIndex(index.toFloat())
             .offset { IntOffset(translationOffset.value.roundToInt(), 0) }
             .swipeHandler(
                 enabled = index == moviesToShow.size - 1,
                 translationOffset = translationOffset,
+                rotationOffset = rotationOffset,
                 coroutineScope = coroutineScope,
                 swipedMaxOffset = swipedMaxOffset,
                 vibrator = vibrator,
@@ -334,14 +337,15 @@ private fun PosterImageView(
 
 
 private suspend fun handleSwipeRelease(
-    offsetX: Animatable<Float, AnimationVector1D>,
+    traslationOffset: Animatable<Float, AnimationVector1D>,
+    rotationOffset: Animatable<Float, AnimationVector1D>,
     swipedMaxOffset: Int,
     movie: SwipeableMovie,
     currentSwipedStatus: MutableState<MovieSwipedStatus>,
     screenWidth: Int,
     observableMovies: SnapshotStateList<SwipeableMovie>
 ) {
-    if (offsetX.value.absoluteValue > swipedMaxOffset) {
+    if (traslationOffset.value.absoluteValue > swipedMaxOffset) {
         Log.d("SlideMovieScreen", "Swiped confirmed")
 
         Log.d("SlideMovieScreen", "Removing tint")
@@ -349,8 +353,8 @@ private suspend fun handleSwipeRelease(
         currentSwipedStatus.value = movie.swipedStatus
 
         // animating outside the screen
-        val result = offsetX.animateTo(
-            screenWidth * if (offsetX.value > 0) 1f else -1f,
+        val result = traslationOffset.animateTo(
+            screenWidth * if (traslationOffset.value > 0) 1f else -1f,
             animationSpec = spring(stiffness = StiffnessHigh)
         )
 
@@ -359,18 +363,25 @@ private suspend fun handleSwipeRelease(
             Log.d("SlideMovieScreen", "Removing movie: ${movie.movie.title}")
             val firstMovie = observableMovies.first()
             observableMovies.remove(firstMovie)
-            offsetX.snapTo(0f)
+            traslationOffset.snapTo(0f)
         }
     } else {
-        offsetX.animateTo(
-            0f,
-            animationSpec = spring(stiffness = 500f)
-        )
+        coroutineScope {
+            val rotationJob = async {
+                rotationOffset.animateTo(0f, animationSpec = spring(stiffness = 500f))
+            }
+            val traslationJob = async {
+                traslationOffset.animateTo(0f, animationSpec = spring(stiffness = 500f))
+            }
+            rotationJob.await()
+            traslationJob.await()
+        }
     }
 }
 
 private fun handleSwipeMovement(
-    offsetX: Animatable<Float, AnimationVector1D>,
+    traslationOffset: Animatable<Float, AnimationVector1D>,
+    rotationOffset: Animatable<Float, AnimationVector1D>,
     delta: Float,
     coroutineScope: CoroutineScope,
     swipedMaxOffset: Int,
@@ -378,12 +389,18 @@ private fun handleSwipeMovement(
     movie: SwipeableMovie,
     currentSwipedStatus: MutableState<MovieSwipedStatus>
 ) {
-    val previousOffset = offsetX.value
-    val newOffset = offsetX.value + delta
+
+
+    val previousTraslationOffset = traslationOffset.value
+    val newTraslationOffset = traslationOffset.value + delta
+
+    val newRotationOffset = rotationOffset.value + delta / 50
+
     coroutineScope.launch {
-        offsetX.snapTo(newOffset)
+        traslationOffset.snapTo(newTraslationOffset)
+        rotationOffset.snapTo(newRotationOffset)
     }
-    if (previousOffset.absoluteValue < swipedMaxOffset && newOffset.absoluteValue >= swipedMaxOffset) {
+    if (previousTraslationOffset.absoluteValue < swipedMaxOffset && newTraslationOffset.absoluteValue >= swipedMaxOffset) {
         Log.d("SlideMovieScreen", "Swiped reached")
         vibrator.vibrate(
             VibrationEffect.createOneShot(
@@ -393,7 +410,7 @@ private fun handleSwipeMovement(
         )
 
         // box
-        movie.swipedStatus = if (newOffset > 0) {
+        movie.swipedStatus = if (newTraslationOffset > 0) {
             Log.d("SlideMovieScreen", "Tinting green")
             MovieSwipedStatus.LIKED
         } else {
@@ -403,7 +420,7 @@ private fun handleSwipeMovement(
         currentSwipedStatus.value = movie.swipedStatus
 
 
-    } else if (previousOffset.absoluteValue >= swipedMaxOffset && newOffset.absoluteValue < swipedMaxOffset) {
+    } else if (previousTraslationOffset.absoluteValue >= swipedMaxOffset && newTraslationOffset.absoluteValue < swipedMaxOffset) {
         Log.d("SlideMovieScreen", "Removing tint")
         movie.swipedStatus = MovieSwipedStatus.NONE
         currentSwipedStatus.value = movie.swipedStatus
@@ -414,6 +431,7 @@ private fun handleSwipeMovement(
 private fun Modifier.swipeHandler(
     enabled: Boolean,
     translationOffset: Animatable<Float, AnimationVector1D>,
+    rotationOffset: Animatable<Float, AnimationVector1D>,
     coroutineScope: CoroutineScope,
     swipedMaxOffset: Int,
     vibrator: Vibrator,
@@ -428,17 +446,19 @@ private fun Modifier.swipeHandler(
         state = rememberDraggableState { delta ->
             handleSwipeMovement(
                 translationOffset,
+                rotationOffset,
                 delta,
                 coroutineScope,
                 swipedMaxOffset,
                 vibrator,
                 movie,
-                currentSwipedStatus,
+                currentSwipedStatus
             )
         },
         onDragStopped = {
             handleSwipeRelease(
                 translationOffset,
+                rotationOffset,
                 swipedMaxOffset,
                 movie,
                 currentSwipedStatus,
@@ -468,7 +488,7 @@ private fun getProperTint(currentSwipedStatus: MutableState<MovieSwipedStatus>) 
             MovieSwipedStatus.DISLIKED -> DislikeButtonBackground.copy(0.5f)
             else -> Color.Transparent
         },
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = tween(durationMillis = 500),
         label = "swipeColor"
     )
 
