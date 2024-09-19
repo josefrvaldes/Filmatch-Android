@@ -40,7 +40,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,6 +64,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil.Coil
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
@@ -76,6 +77,7 @@ import es.josevaldes.filmatch.ui.theme.BackButtonBackground
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
+import es.josevaldes.filmatch.utils.getDeviceLocale
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -115,37 +117,56 @@ fun SlideMovieScreen() {
                     .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
-                GetImages()
+                SwipeableMoviesComponent()
             }
         }
     }
 }
 
+var counter = 0
+
 
 @Composable
-private fun GetImages() {
+private fun SwipeableMoviesComponent() {
 
     val viewModel: SlideMovieViewModel = hiltViewModel()
-    val allMovies = viewModel.movies.collectAsState()
-    LaunchedEffect(Unit) {
-        viewModel.fetchMovies()
+    val moviesLazyPaging = viewModel.moviesFlow.collectAsLazyPagingItems()
+    val deviceLanguage = getDeviceLocale()
+
+    when (moviesLazyPaging.loadState.refresh) {
+        is LoadState.Loading -> {
+            CircularProgressIndicator()
+            return
+        }
+
+        is LoadState.Error -> {
+            Text("Error loading movies")
+            return
+        }
+
+        is LoadState.NotLoading -> {
+            Log.d("SlideMovieScreen", "Movies loaded")
+        }
     }
 
-    val loading = viewModel.loading.collectAsState()
-    if (loading.value) {
-        CircularProgressIndicator()
-        return
+
+    val observableMovies = remember {
+        val list = mutableListOf<SwipeableMovie>()
+        if (moviesLazyPaging.itemSnapshotList.size > 0) {
+            moviesLazyPaging.itemSnapshotList.items.take(3)
+                .forEach { counter++; list.add(SwipeableMovie(it)) }
+        }
+        list.toMutableStateList()
     }
 
-    InitializeMovies(allMovies.value)
+
+    InitializeMovies(observableMovies)
 
     val vibrator = LocalContext.current.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     val coroutineScope = rememberCoroutineScope()
     val screenWidth = LocalContext.current.resources.displayMetrics.widthPixels
     val swipedMaxOffset = screenWidth / 3
 
-
-    val observableMovies = remember { allMovies.value.toMutableStateList() }
     val moviesToShow = observableMovies.take(3).reversed()
 
     PreloadMoviePosters(observableMovies, moviesToShow)
@@ -162,6 +183,22 @@ private fun GetImages() {
                 screenWidth,
                 observableMovies
             )
+        }
+    }
+
+    val context = LocalContext.current
+    LaunchedEffect(observableMovies.size) {
+        if (observableMovies.size < 3) {
+            val currentMovie = moviesLazyPaging[counter]
+            currentMovie?.let {
+                observableMovies.add(SwipeableMovie(it))
+                preloadPoster(context, observableMovies.last())
+                val nextMovie = moviesLazyPaging[counter + 1]
+                nextMovie?.let {
+                    preloadPoster(context, SwipeableMovie(it))
+                }
+                counter++
+            }
         }
     }
 }
@@ -192,15 +229,23 @@ private fun PreloadMoviePosters(
     val context = LocalContext.current
     LaunchedEffect(moviesToShow) {
         moviesToPreload.forEach { movie ->
-            Coil.imageLoader(context).enqueue(
-                ImageRequest.Builder(context)
-                    .data(movie.movie.posterUrl)
-                    .diskCachePolicy(CachePolicy.ENABLED)
-                    .memoryCachePolicy(CachePolicy.ENABLED)
-                    .build()
-            )
+            preloadPoster(context, movie)
         }
     }
+}
+
+
+private fun preloadPoster(
+    context: Context,
+    movie: SwipeableMovie
+) {
+    Coil.imageLoader(context).enqueue(
+        ImageRequest.Builder(context)
+            .data(movie.movie.posterUrl)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .build()
+    )
 }
 
 @Composable
