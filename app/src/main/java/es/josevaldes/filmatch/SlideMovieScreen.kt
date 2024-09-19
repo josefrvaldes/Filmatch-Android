@@ -132,6 +132,7 @@ private fun SwipeableMoviesComponent() {
     val viewModel: SlideMovieViewModel = hiltViewModel()
     val moviesLazyPaging = viewModel.moviesFlow.collectAsLazyPagingItems()
     val deviceLanguage = getDeviceLocale()
+    viewModel.setLanguage(deviceLanguage)
 
     when (moviesLazyPaging.loadState.refresh) {
         is LoadState.Loading -> {

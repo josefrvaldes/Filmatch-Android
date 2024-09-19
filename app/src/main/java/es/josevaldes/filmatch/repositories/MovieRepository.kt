@@ -7,7 +7,7 @@ import javax.inject.Inject
 class MovieRepository @Inject constructor(private val moviesService: MoviesService) {
     suspend fun getDiscoverMovies(
         page: Int,
-        language: String = "en-US"
+        language: String?
     ): Result<DiscoverMoviesResponse> {
         return try {
             val response = moviesService.getDiscoverMovies(page, language)

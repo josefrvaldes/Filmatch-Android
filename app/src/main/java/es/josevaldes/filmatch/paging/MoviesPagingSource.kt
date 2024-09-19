@@ -6,7 +6,10 @@ import es.josevaldes.filmatch.model.Movie
 import es.josevaldes.filmatch.repositories.MovieRepository
 import javax.inject.Inject
 
-class MoviesPagingSource @Inject constructor(private val movieRepository: MovieRepository) :
+class MoviesPagingSource @Inject constructor(
+    private val movieRepository: MovieRepository,
+    private val language: String? = null
+) :
     PagingSource<Int, Movie>() {
 
     override fun getRefreshKey(state: PagingState<Int, Movie>): Int? {
@@ -15,7 +18,7 @@ class MoviesPagingSource @Inject constructor(private val movieRepository: MovieR
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Movie> {
         val page = params.key ?: 1
-        val result = movieRepository.getDiscoverMovies(page)
+        val result = movieRepository.getDiscoverMovies(page, language)
         return result.fold(
             onSuccess = { response ->
                 val movies = response.results
