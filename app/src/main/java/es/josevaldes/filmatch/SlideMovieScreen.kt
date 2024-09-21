@@ -40,10 +40,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -123,12 +126,10 @@ fun SlideMovieScreen() {
     }
 }
 
-var counter = 0
-
-
 @Composable
 private fun SwipeableMoviesComponent() {
 
+    var counter by remember { mutableIntStateOf(0) }
     val viewModel: SlideMovieViewModel = hiltViewModel()
     val moviesLazyPaging = viewModel.moviesFlow.collectAsLazyPagingItems()
     val deviceLanguage = getDeviceLocale()
@@ -161,28 +162,25 @@ private fun SwipeableMoviesComponent() {
     }
 
 
-    InitializeMovies(observableMovies)
+    InitializeMovies(counter, observableMovies)
 
     val vibrator = LocalContext.current.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     val coroutineScope = rememberCoroutineScope()
     val screenWidth = LocalContext.current.resources.displayMetrics.widthPixels
     val swipedMaxOffset = screenWidth / 3
 
-    val moviesToShow = observableMovies.take(3).reversed()
+    PreloadMoviePosters(observableMovies)
 
-    PreloadMoviePosters(observableMovies, moviesToShow)
-
-    moviesToShow.forEachIndexed { index, movie ->
+    observableMovies.reversed().forEachIndexed { index, movie ->
         key(movie.movie.id) {
             SwipeableMovieView(
+                observableMovies,
                 movie,
                 index,
-                moviesToShow,
                 coroutineScope,
                 swipedMaxOffset,
                 vibrator,
-                screenWidth,
-                observableMovies
+                screenWidth
             )
         }
     }
@@ -190,13 +188,13 @@ private fun SwipeableMoviesComponent() {
     val context = LocalContext.current
     LaunchedEffect(observableMovies.size) {
         if (observableMovies.size < 3) {
-            val currentMovie = moviesLazyPaging[counter]
-            currentMovie?.let {
-                observableMovies.add(SwipeableMovie(it))
+            val nullableCurrentMovie = moviesLazyPaging[counter]
+            nullableCurrentMovie?.let { currentMovie ->
+                observableMovies.add(SwipeableMovie(currentMovie))
                 preloadPoster(context, observableMovies.last())
-                val nextMovie = moviesLazyPaging[counter + 1]
-                nextMovie?.let {
-                    preloadPoster(context, SwipeableMovie(it))
+                val nullableNextMovie = moviesLazyPaging[counter + 1]
+                nullableNextMovie?.let { nextMovie ->
+                    preloadPoster(context, SwipeableMovie(nextMovie))
                 }
                 counter++
             }
@@ -205,12 +203,12 @@ private fun SwipeableMoviesComponent() {
 }
 
 @Composable
-private fun InitializeMovies(allMovies: List<SwipeableMovie>) {
-    allMovies.forEachIndexed { index, swipeableMovie ->
+private fun InitializeMovies(counter: Int, allMovies: List<SwipeableMovie>) {
+    allMovies.forEach { swipeableMovie ->
         if (swipeableMovie.rotation == null) {
-            swipeableMovie.rotation = if (index == 0) {
+            swipeableMovie.rotation = if (counter == 0) {
                 0f
-            } else if (index % 2 == 0) {
+            } else if (counter % 2 == 0) {
                 Random.nextDouble(0.0, 4.0).toFloat()
             } else {
                 Random.nextDouble(-4.0, 0.0).toFloat()
@@ -224,12 +222,10 @@ private fun InitializeMovies(allMovies: List<SwipeableMovie>) {
 @Composable
 private fun PreloadMoviePosters(
     observableMovies: SnapshotStateList<SwipeableMovie>,
-    moviesToShow: List<SwipeableMovie>
 ) {
-    val moviesToPreload = observableMovies.take(4).reversed()
     val context = LocalContext.current
-    LaunchedEffect(moviesToShow) {
-        moviesToPreload.forEach { movie ->
+    LaunchedEffect(observableMovies) {
+        observableMovies.forEach { movie ->
             preloadPoster(context, movie)
         }
     }
@@ -251,18 +247,17 @@ private fun preloadPoster(
 
 @Composable
 private fun SwipeableMovieView(
+    observableMovies: SnapshotStateList<SwipeableMovie>,
     movie: SwipeableMovie,
     index: Int,
-    moviesToShow: List<SwipeableMovie>,
     coroutineScope: CoroutineScope,
     swipedMaxOffset: Int,
     vibrator: Vibrator,
-    screenWidth: Int,
-    observableMovies: SnapshotStateList<SwipeableMovie>
+    screenWidth: Int
 ) {
     val translationOffset = remember { Animatable(0f) }
-    val rotationOffset = getProperRotation(movie, index, moviesToShow)
-    val blurRadius = getProperBlurRadius(index = index, listSize = moviesToShow.size)
+    val rotationOffset = getProperRotation(movie, index, observableMovies)
+    val blurRadius = getProperBlurRadius(index = index, listSize = observableMovies.size)
     val currentSwipedStatus = remember { mutableStateOf(movie.swipedStatus) }
     val tint = getProperTint(currentSwipedStatus)
 
@@ -272,7 +267,7 @@ private fun SwipeableMovieView(
             .zIndex(index.toFloat())
             .offset { IntOffset(translationOffset.value.roundToInt(), 0) }
             .swipeHandler(
-                enabled = index == moviesToShow.size - 1,
+                enabled = index == observableMovies.size - 1,
                 translationOffset = translationOffset,
                 rotationOffset = rotationOffset,
                 coroutineScope = coroutineScope,
@@ -351,13 +346,13 @@ private fun PosterImageView(
 
 
 private suspend fun handleSwipeRelease(
+    observableMovies: SnapshotStateList<SwipeableMovie>,
     traslationOffset: Animatable<Float, AnimationVector1D>,
     rotationOffset: Animatable<Float, AnimationVector1D>,
     swipedMaxOffset: Int,
     movie: SwipeableMovie,
     currentSwipedStatus: MutableState<MovieSwipedStatus>,
     screenWidth: Int,
-    observableMovies: SnapshotStateList<SwipeableMovie>
 ) {
     if (traslationOffset.value.absoluteValue > swipedMaxOffset) {
         Log.d("SlideMovieScreen", "Swiped confirmed")
@@ -443,6 +438,7 @@ private fun handleSwipeMovement(
 
 @Composable
 private fun Modifier.swipeHandler(
+    observableMovies: SnapshotStateList<SwipeableMovie>,
     enabled: Boolean,
     translationOffset: Animatable<Float, AnimationVector1D>,
     rotationOffset: Animatable<Float, AnimationVector1D>,
@@ -452,7 +448,6 @@ private fun Modifier.swipeHandler(
     movie: SwipeableMovie,
     currentSwipedStatus: MutableState<MovieSwipedStatus>,
     screenWidth: Int,
-    observableMovies: SnapshotStateList<SwipeableMovie>
 ): Modifier {
     return draggable(
         enabled = enabled,
@@ -471,13 +466,13 @@ private fun Modifier.swipeHandler(
         },
         onDragStopped = {
             handleSwipeRelease(
+                observableMovies,
                 translationOffset,
                 rotationOffset,
                 swipedMaxOffset,
                 movie,
                 currentSwipedStatus,
                 screenWidth,
-                observableMovies
             )
         }
     )
