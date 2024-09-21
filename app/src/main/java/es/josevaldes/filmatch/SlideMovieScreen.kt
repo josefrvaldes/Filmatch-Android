@@ -81,6 +81,7 @@ import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
 import es.josevaldes.filmatch.utils.getDeviceLocale
+import es.josevaldes.filmatch.utils.getVibrator
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -129,6 +130,7 @@ fun SlideMovieScreen() {
 @Composable
 private fun SwipeableMoviesComponent() {
 
+    val context = LocalContext.current
     var counter by remember { mutableIntStateOf(0) }
     val viewModel: SlideMovieViewModel = hiltViewModel()
     val moviesLazyPaging = viewModel.moviesFlow.collectAsLazyPagingItems()
@@ -164,28 +166,13 @@ private fun SwipeableMoviesComponent() {
 
     InitializeMovies(counter, observableMovies)
 
-    val vibrator = LocalContext.current.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    val vibrator = remember { getVibrator(context) }
     val coroutineScope = rememberCoroutineScope()
     val screenWidth = LocalContext.current.resources.displayMetrics.widthPixels
     val swipedMaxOffset = screenWidth / 3
 
     PreloadMoviePosters(observableMovies)
 
-    observableMovies.reversed().forEachIndexed { index, movie ->
-        key(movie.movie.id) {
-            SwipeableMovieView(
-                observableMovies,
-                movie,
-                index,
-                coroutineScope,
-                swipedMaxOffset,
-                vibrator,
-                screenWidth
-            )
-        }
-    }
-
-    val context = LocalContext.current
     LaunchedEffect(observableMovies.size) {
         if (observableMovies.size < 3) {
             val nullableCurrentMovie = moviesLazyPaging[counter]
@@ -198,6 +185,21 @@ private fun SwipeableMoviesComponent() {
                 }
                 counter++
             }
+        }
+    }
+
+
+    observableMovies.reversed().forEachIndexed { index, movie ->
+        key(movie.movie.id) {
+            SwipeableMovieView(
+                observableMovies,
+                movie,
+                index,
+                coroutineScope,
+                swipedMaxOffset,
+                vibrator,
+                screenWidth
+            )
         }
     }
 }
@@ -347,14 +349,14 @@ private fun PosterImageView(
 
 private suspend fun handleSwipeRelease(
     observableMovies: SnapshotStateList<SwipeableMovie>,
-    traslationOffset: Animatable<Float, AnimationVector1D>,
+    translationOffset: Animatable<Float, AnimationVector1D>,
     rotationOffset: Animatable<Float, AnimationVector1D>,
     swipedMaxOffset: Int,
     movie: SwipeableMovie,
     currentSwipedStatus: MutableState<MovieSwipedStatus>,
     screenWidth: Int,
 ) {
-    if (traslationOffset.value.absoluteValue > swipedMaxOffset) {
+    if (translationOffset.value.absoluteValue > swipedMaxOffset) {
         Log.d("SlideMovieScreen", "Swiped confirmed")
 
         Log.d("SlideMovieScreen", "Removing tint")
@@ -362,8 +364,8 @@ private suspend fun handleSwipeRelease(
         currentSwipedStatus.value = movie.swipedStatus
 
         // animating outside the screen
-        val result = traslationOffset.animateTo(
-            screenWidth * if (traslationOffset.value > 0) 1f else -1f,
+        val result = translationOffset.animateTo(
+            screenWidth * if (translationOffset.value > 0) 1f else -1f,
             animationSpec = spring(stiffness = StiffnessHigh)
         )
 
@@ -372,24 +374,24 @@ private suspend fun handleSwipeRelease(
             Log.d("SlideMovieScreen", "Removing movie: ${movie.movie.title}")
             val firstMovie = observableMovies.first()
             observableMovies.remove(firstMovie)
-            traslationOffset.snapTo(0f)
+            translationOffset.snapTo(0f)
         }
     } else {
         coroutineScope {
             val rotationJob = async {
                 rotationOffset.animateTo(0f, animationSpec = spring(stiffness = 500f))
             }
-            val traslationJob = async {
-                traslationOffset.animateTo(0f, animationSpec = spring(stiffness = 500f))
+            val translationJob = async {
+                translationOffset.animateTo(0f, animationSpec = spring(stiffness = 500f))
             }
             rotationJob.await()
-            traslationJob.await()
+            translationJob.await()
         }
     }
 }
 
 private fun handleSwipeMovement(
-    traslationOffset: Animatable<Float, AnimationVector1D>,
+    translationOffset: Animatable<Float, AnimationVector1D>,
     rotationOffset: Animatable<Float, AnimationVector1D>,
     delta: Float,
     coroutineScope: CoroutineScope,
@@ -400,16 +402,16 @@ private fun handleSwipeMovement(
 ) {
 
 
-    val previousTraslationOffset = traslationOffset.value
-    val newTraslationOffset = traslationOffset.value + delta
+    val previousTranslationOffset = translationOffset.value
+    val newTranslationOffset = translationOffset.value + delta
 
     val newRotationOffset = rotationOffset.value + delta / 50
 
     coroutineScope.launch {
-        traslationOffset.snapTo(newTraslationOffset)
+        translationOffset.snapTo(newTranslationOffset)
         rotationOffset.snapTo(newRotationOffset)
     }
-    if (previousTraslationOffset.absoluteValue < swipedMaxOffset && newTraslationOffset.absoluteValue >= swipedMaxOffset) {
+    if (previousTranslationOffset.absoluteValue < swipedMaxOffset && newTranslationOffset.absoluteValue >= swipedMaxOffset) {
         Log.d("SlideMovieScreen", "Swiped reached")
         vibrator.vibrate(
             VibrationEffect.createOneShot(
@@ -419,7 +421,7 @@ private fun handleSwipeMovement(
         )
 
         // box
-        movie.swipedStatus = if (newTraslationOffset > 0) {
+        movie.swipedStatus = if (newTranslationOffset > 0) {
             Log.d("SlideMovieScreen", "Tinting green")
             MovieSwipedStatus.LIKED
         } else {
@@ -429,7 +431,7 @@ private fun handleSwipeMovement(
         currentSwipedStatus.value = movie.swipedStatus
 
 
-    } else if (previousTraslationOffset.absoluteValue >= swipedMaxOffset && newTraslationOffset.absoluteValue < swipedMaxOffset) {
+    } else if (previousTranslationOffset.absoluteValue >= swipedMaxOffset && newTranslationOffset.absoluteValue < swipedMaxOffset) {
         Log.d("SlideMovieScreen", "Removing tint")
         movie.swipedStatus = MovieSwipedStatus.NONE
         currentSwipedStatus.value = movie.swipedStatus
