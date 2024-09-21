@@ -2,31 +2,35 @@ package es.josevaldes.filmatch.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
-import es.josevaldes.filmatch.model.SwipeableMovie
-import es.josevaldes.filmatch.services.MoviesService
+import es.josevaldes.filmatch.model.Movie
+import es.josevaldes.filmatch.paging.MovieDBPagingConfig
+import es.josevaldes.filmatch.paging.MoviesPagingSource
+import es.josevaldes.filmatch.repositories.MovieRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flatMapLatest
 import javax.inject.Inject
 
 @HiltViewModel
 class SlideMovieViewModel @Inject constructor(
-    private val moviesService: MoviesService
+    private val movieRepository: MovieRepository
 ) : ViewModel() {
 
-    private val _movies = MutableStateFlow<List<SwipeableMovie>>(emptyList())
-    val movies: StateFlow<List<SwipeableMovie>> = _movies
+    private val _language = MutableStateFlow("en-US")
 
-    private val _loading = MutableStateFlow(true)
-    val loading: StateFlow<Boolean> = _loading
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val moviesFlow: Flow<PagingData<Movie>> = _language.flatMapLatest {
+        Pager(MovieDBPagingConfig.pagingConfig) {
+            MoviesPagingSource(movieRepository, it)
+        }.flow.cachedIn(viewModelScope)
+    }
 
-    fun fetchMovies() {
-        viewModelScope.launch {
-            _loading.value = true
-            val movieList = moviesService.getDiscoverMovies().results.map { SwipeableMovie(it) }
-            _movies.value = movieList.toMutableList()
-            _loading.value = false
-        }
+    fun setLanguage(language: String) {
+        _language.value = language
     }
 }

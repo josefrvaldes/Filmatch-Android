@@ -10,12 +10,12 @@ plugins {
 
 android {
     namespace = "es.josevaldes.filmatch"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "es.josevaldes.filmatch"
         minSdk = 29
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -92,6 +92,10 @@ dependencies {
     implementation(platform(libs.okhttpbom))
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
+
+    // paging
+    implementation(libs.paging)
+    implementation(libs.paging.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
