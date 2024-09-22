@@ -88,6 +88,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
@@ -110,6 +111,7 @@ fun SlideMovieScreen() {
         topBar = { UserTopBar(user) },
         bottomBar = {
             BottomLikeDislike(
+                viewModel.swipeAction,
                 onLikeClicked = { viewModel.onLikeButtonClicked() },
                 onDislikeClicked = { viewModel.onDislikeButtonClicked() }
             )
@@ -580,7 +582,12 @@ private fun BackButtonRow() {
 }
 
 @Composable
-private fun BottomLikeDislike(onLikeClicked: () -> Unit, onDislikeClicked: () -> Unit) {
+private fun BottomLikeDislike(
+    swipeAction: StateFlow<SlideMovieViewModel.SwipeAction?>,
+    onLikeClicked: () -> Unit,
+    onDislikeClicked: () -> Unit
+) {
+    val swipeActionValue by swipeAction.collectAsState()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -589,6 +596,7 @@ private fun BottomLikeDislike(onLikeClicked: () -> Unit, onDislikeClicked: () ->
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(
+            enabled = swipeActionValue == null,
             onClick = { onDislikeClicked() },
             modifier = Modifier
                 .size(100.dp)
@@ -600,6 +608,7 @@ private fun BottomLikeDislike(onLikeClicked: () -> Unit, onDislikeClicked: () ->
             )
         }
         IconButton(
+            enabled = swipeActionValue == null,
             onClick = { onLikeClicked() },
             modifier = Modifier
                 .size(100.dp)
