@@ -40,10 +40,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -78,10 +82,13 @@ import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
 import es.josevaldes.filmatch.utils.getDeviceLocale
+import es.josevaldes.filmatch.utils.getVibrator
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
@@ -96,12 +103,17 @@ val user = User(
 
 @Composable
 fun SlideMovieScreen() {
+    val viewModel: SlideMovieViewModel = hiltViewModel()
+    val deviceLanguage = getDeviceLocale()
+    viewModel.setLanguage(deviceLanguage)
+
     Scaffold(
         topBar = { UserTopBar(user) },
         bottomBar = {
             BottomLikeDislike(
-                onLikeClicked = { Log.d("SlideMovieScreen", "Like clicked") },
-                onDislikeClicked = { Log.d("SlideMovieScreen", "Dislike clicked") }
+                viewModel.swipeAction,
+                onLikeClicked = { viewModel.onLikeButtonClicked() },
+                onDislikeClicked = { viewModel.onDislikeButtonClicked() }
             )
         }
     ) { padding ->
@@ -117,22 +129,16 @@ fun SlideMovieScreen() {
                     .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
-                SwipeableMoviesComponent()
+                SwipeableMoviesComponent(viewModel)
             }
         }
     }
 }
 
-var counter = 0
-
-
 @Composable
-private fun SwipeableMoviesComponent() {
-
-    val viewModel: SlideMovieViewModel = hiltViewModel()
+private fun SwipeableMoviesComponent(viewModel: SlideMovieViewModel) {
+    var counter by remember { mutableIntStateOf(0) }
     val moviesLazyPaging = viewModel.moviesFlow.collectAsLazyPagingItems()
-    val deviceLanguage = getDeviceLocale()
-    viewModel.setLanguage(deviceLanguage)
 
     when (moviesLazyPaging.loadState.refresh) {
         is LoadState.Loading -> {
@@ -159,58 +165,50 @@ private fun SwipeableMoviesComponent() {
         }
         list.toMutableStateList()
     }
+    InitializeMovies(counter, observableMovies)
+    PreloadMoviePosters(observableMovies)
 
-
-    InitializeMovies(observableMovies)
-
-    val vibrator = LocalContext.current.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    val coroutineScope = rememberCoroutineScope()
-    val screenWidth = LocalContext.current.resources.displayMetrics.widthPixels
-    val swipedMaxOffset = screenWidth / 3
-
-    val moviesToShow = observableMovies.take(3).reversed()
-
-    PreloadMoviePosters(observableMovies, moviesToShow)
-
-    moviesToShow.forEachIndexed { index, movie ->
-        key(movie.movie.id) {
-            SwipeableMovieView(
-                movie,
-                index,
-                moviesToShow,
-                coroutineScope,
-                swipedMaxOffset,
-                vibrator,
-                screenWidth,
-                observableMovies
-            )
-        }
-    }
-
+    // Let's add a new movie to the list after one movie has been swiped, also we will preload its poster.
+    // This code will be executed everytime the observableMovies list size changes.
     val context = LocalContext.current
     LaunchedEffect(observableMovies.size) {
         if (observableMovies.size < 3) {
-            val currentMovie = moviesLazyPaging[counter]
-            currentMovie?.let {
-                observableMovies.add(SwipeableMovie(it))
+            val nullableCurrentMovie = moviesLazyPaging[counter]
+            nullableCurrentMovie?.let { currentMovie ->
+                observableMovies.add(SwipeableMovie(currentMovie))
                 preloadPoster(context, observableMovies.last())
-                val nextMovie = moviesLazyPaging[counter + 1]
-                nextMovie?.let {
-                    preloadPoster(context, SwipeableMovie(it))
+                val nullableNextMovie = moviesLazyPaging[counter + 1]
+                nullableNextMovie?.let { nextMovie ->
+                    preloadPoster(context, SwipeableMovie(nextMovie))
                 }
                 counter++
             }
         }
     }
+
+
+    val swipeAction = viewModel.swipeAction.collectAsState()
+
+
+    observableMovies.reversed().forEachIndexed { index, movie ->
+        key(movie.movie.id) {
+            SwipeableMovieView(
+                swipeAction,
+                observableMovies,
+                movie,
+                index
+            ) { viewModel.clearSwipeAction() }
+        }
+    }
 }
 
 @Composable
-private fun InitializeMovies(allMovies: List<SwipeableMovie>) {
-    allMovies.forEachIndexed { index, swipeableMovie ->
+private fun InitializeMovies(counter: Int, allMovies: List<SwipeableMovie>) {
+    allMovies.forEach { swipeableMovie ->
         if (swipeableMovie.rotation == null) {
-            swipeableMovie.rotation = if (index == 0) {
+            swipeableMovie.rotation = if (counter == 0) {
                 0f
-            } else if (index % 2 == 0) {
+            } else if (counter % 2 == 0) {
                 Random.nextDouble(0.0, 4.0).toFloat()
             } else {
                 Random.nextDouble(-4.0, 0.0).toFloat()
@@ -224,12 +222,10 @@ private fun InitializeMovies(allMovies: List<SwipeableMovie>) {
 @Composable
 private fun PreloadMoviePosters(
     observableMovies: SnapshotStateList<SwipeableMovie>,
-    moviesToShow: List<SwipeableMovie>
 ) {
-    val moviesToPreload = observableMovies.take(4).reversed()
     val context = LocalContext.current
-    LaunchedEffect(moviesToShow) {
-        moviesToPreload.forEach { movie ->
+    LaunchedEffect(observableMovies) {
+        observableMovies.forEach { movie ->
             preloadPoster(context, movie)
         }
     }
@@ -251,20 +247,58 @@ private fun preloadPoster(
 
 @Composable
 private fun SwipeableMovieView(
+    swipeAction: State<SlideMovieViewModel.SwipeAction?>,
+    observableMovies: SnapshotStateList<SwipeableMovie>,
     movie: SwipeableMovie,
     index: Int,
-    moviesToShow: List<SwipeableMovie>,
-    coroutineScope: CoroutineScope,
-    swipedMaxOffset: Int,
-    vibrator: Vibrator,
-    screenWidth: Int,
-    observableMovies: SnapshotStateList<SwipeableMovie>
+    onSwipeCompleted: () -> Unit,
 ) {
     val translationOffset = remember { Animatable(0f) }
-    val rotationOffset = getProperRotation(movie, index, moviesToShow)
-    val blurRadius = getProperBlurRadius(index = index, listSize = moviesToShow.size)
+    val rotationOffset = getProperRotation(movie, index, observableMovies)
     val currentSwipedStatus = remember { mutableStateOf(movie.swipedStatus) }
+
+    val blurRadius = getProperBlurRadius(index = index, listSize = observableMovies.size)
     val tint = getProperTint(currentSwipedStatus)
+
+    val context = LocalContext.current
+    LaunchedEffect(swipeAction.value) {
+        if (index == observableMovies.size - 1 && swipeAction.value != null) {
+            val targetTranslationOffset = when (swipeAction.value) {
+                SlideMovieViewModel.SwipeAction.LIKE -> context.resources.displayMetrics.widthPixels.toFloat() + 300
+                SlideMovieViewModel.SwipeAction.DISLIKE -> -context.resources.displayMetrics.widthPixels.toFloat() - 300
+                null -> 0f
+            }
+            val targetRotationOffset = when (swipeAction.value) {
+                SlideMovieViewModel.SwipeAction.LIKE -> 25f
+                SlideMovieViewModel.SwipeAction.DISLIKE -> -25f
+                null -> 0f
+            }
+
+
+            coroutineScope {
+                val rotationJob = async {
+                    rotationOffset.animateTo(
+                        targetRotationOffset,
+                        animationSpec = tween(200)
+                    )
+                }
+                val translationJob = async {
+                    translationOffset.animateTo(
+                        targetTranslationOffset,
+                        animationSpec = tween(200)
+                    )
+                }
+                awaitAll(rotationJob, translationJob)
+            }
+
+
+            observableMovies.remove(movie)
+            translationOffset.snapTo(0f)
+            onSwipeCompleted()
+        }
+    }
+
+
 
     Box(
         modifier = Modifier
@@ -272,15 +306,11 @@ private fun SwipeableMovieView(
             .zIndex(index.toFloat())
             .offset { IntOffset(translationOffset.value.roundToInt(), 0) }
             .swipeHandler(
-                enabled = index == moviesToShow.size - 1,
+                enabled = index == observableMovies.size - 1,
                 translationOffset = translationOffset,
                 rotationOffset = rotationOffset,
-                coroutineScope = coroutineScope,
-                swipedMaxOffset = swipedMaxOffset,
-                vibrator = vibrator,
                 movie = movie,
                 currentSwipedStatus = currentSwipedStatus,
-                screenWidth = screenWidth,
                 observableMovies = observableMovies
             )
     ) {
@@ -351,15 +381,15 @@ private fun PosterImageView(
 
 
 private suspend fun handleSwipeRelease(
-    traslationOffset: Animatable<Float, AnimationVector1D>,
+    observableMovies: SnapshotStateList<SwipeableMovie>,
+    translationOffset: Animatable<Float, AnimationVector1D>,
     rotationOffset: Animatable<Float, AnimationVector1D>,
     swipedMaxOffset: Int,
     movie: SwipeableMovie,
     currentSwipedStatus: MutableState<MovieSwipedStatus>,
     screenWidth: Int,
-    observableMovies: SnapshotStateList<SwipeableMovie>
 ) {
-    if (traslationOffset.value.absoluteValue > swipedMaxOffset) {
+    if (translationOffset.value.absoluteValue > swipedMaxOffset) {
         Log.d("SlideMovieScreen", "Swiped confirmed")
 
         Log.d("SlideMovieScreen", "Removing tint")
@@ -367,8 +397,8 @@ private suspend fun handleSwipeRelease(
         currentSwipedStatus.value = movie.swipedStatus
 
         // animating outside the screen
-        val result = traslationOffset.animateTo(
-            screenWidth * if (traslationOffset.value > 0) 1f else -1f,
+        val result = translationOffset.animateTo(
+            screenWidth * if (translationOffset.value > 0) 1f else -1f,
             animationSpec = spring(stiffness = StiffnessHigh)
         )
 
@@ -377,24 +407,24 @@ private suspend fun handleSwipeRelease(
             Log.d("SlideMovieScreen", "Removing movie: ${movie.movie.title}")
             val firstMovie = observableMovies.first()
             observableMovies.remove(firstMovie)
-            traslationOffset.snapTo(0f)
+            translationOffset.snapTo(0f)
         }
     } else {
         coroutineScope {
             val rotationJob = async {
                 rotationOffset.animateTo(0f, animationSpec = spring(stiffness = 500f))
             }
-            val traslationJob = async {
-                traslationOffset.animateTo(0f, animationSpec = spring(stiffness = 500f))
+            val translationJob = async {
+                translationOffset.animateTo(0f, animationSpec = spring(stiffness = 500f))
             }
             rotationJob.await()
-            traslationJob.await()
+            translationJob.await()
         }
     }
 }
 
 private fun handleSwipeMovement(
-    traslationOffset: Animatable<Float, AnimationVector1D>,
+    translationOffset: Animatable<Float, AnimationVector1D>,
     rotationOffset: Animatable<Float, AnimationVector1D>,
     delta: Float,
     coroutineScope: CoroutineScope,
@@ -403,18 +433,17 @@ private fun handleSwipeMovement(
     movie: SwipeableMovie,
     currentSwipedStatus: MutableState<MovieSwipedStatus>
 ) {
-
-
-    val previousTraslationOffset = traslationOffset.value
-    val newTraslationOffset = traslationOffset.value + delta
+    val previousTranslationOffset = translationOffset.value
+    val newTranslationOffset = translationOffset.value + delta
 
     val newRotationOffset = rotationOffset.value + delta / 50
+    Log.d("SlideMovieScreen", "Rotation offset: $newRotationOffset")
 
     coroutineScope.launch {
-        traslationOffset.snapTo(newTraslationOffset)
+        translationOffset.snapTo(newTranslationOffset)
         rotationOffset.snapTo(newRotationOffset)
     }
-    if (previousTraslationOffset.absoluteValue < swipedMaxOffset && newTraslationOffset.absoluteValue >= swipedMaxOffset) {
+    if (previousTranslationOffset.absoluteValue < swipedMaxOffset && newTranslationOffset.absoluteValue >= swipedMaxOffset) {
         Log.d("SlideMovieScreen", "Swiped reached")
         vibrator.vibrate(
             VibrationEffect.createOneShot(
@@ -424,7 +453,7 @@ private fun handleSwipeMovement(
         )
 
         // box
-        movie.swipedStatus = if (newTraslationOffset > 0) {
+        movie.swipedStatus = if (newTranslationOffset > 0) {
             Log.d("SlideMovieScreen", "Tinting green")
             MovieSwipedStatus.LIKED
         } else {
@@ -434,7 +463,7 @@ private fun handleSwipeMovement(
         currentSwipedStatus.value = movie.swipedStatus
 
 
-    } else if (previousTraslationOffset.absoluteValue >= swipedMaxOffset && newTraslationOffset.absoluteValue < swipedMaxOffset) {
+    } else if (previousTranslationOffset.absoluteValue >= swipedMaxOffset && newTranslationOffset.absoluteValue < swipedMaxOffset) {
         Log.d("SlideMovieScreen", "Removing tint")
         movie.swipedStatus = MovieSwipedStatus.NONE
         currentSwipedStatus.value = movie.swipedStatus
@@ -443,17 +472,19 @@ private fun handleSwipeMovement(
 
 @Composable
 private fun Modifier.swipeHandler(
+    observableMovies: SnapshotStateList<SwipeableMovie>,
     enabled: Boolean,
     translationOffset: Animatable<Float, AnimationVector1D>,
     rotationOffset: Animatable<Float, AnimationVector1D>,
-    coroutineScope: CoroutineScope,
-    swipedMaxOffset: Int,
-    vibrator: Vibrator,
     movie: SwipeableMovie,
     currentSwipedStatus: MutableState<MovieSwipedStatus>,
-    screenWidth: Int,
-    observableMovies: SnapshotStateList<SwipeableMovie>
 ): Modifier {
+    val context = LocalContext.current
+    val vibrator = remember { getVibrator(context) }
+    val coroutineScope = rememberCoroutineScope()
+    val screenWidth = context.resources.displayMetrics.widthPixels
+    val swipedMaxOffset = screenWidth / 3
+
     return draggable(
         enabled = enabled,
         orientation = Orientation.Horizontal,
@@ -471,13 +502,13 @@ private fun Modifier.swipeHandler(
         },
         onDragStopped = {
             handleSwipeRelease(
+                observableMovies,
                 translationOffset,
                 rotationOffset,
                 swipedMaxOffset,
                 movie,
                 currentSwipedStatus,
                 screenWidth,
-                observableMovies
             )
         }
     )
@@ -551,7 +582,12 @@ private fun BackButtonRow() {
 }
 
 @Composable
-private fun BottomLikeDislike(onLikeClicked: () -> Unit, onDislikeClicked: () -> Unit) {
+private fun BottomLikeDislike(
+    swipeAction: StateFlow<SlideMovieViewModel.SwipeAction?>,
+    onLikeClicked: () -> Unit,
+    onDislikeClicked: () -> Unit
+) {
+    val swipeActionValue by swipeAction.collectAsState()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -560,6 +596,7 @@ private fun BottomLikeDislike(onLikeClicked: () -> Unit, onDislikeClicked: () ->
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(
+            enabled = swipeActionValue == null,
             onClick = { onDislikeClicked() },
             modifier = Modifier
                 .size(100.dp)
@@ -571,6 +608,7 @@ private fun BottomLikeDislike(onLikeClicked: () -> Unit, onDislikeClicked: () ->
             )
         }
         IconButton(
+            enabled = swipeActionValue == null,
             onClick = { onLikeClicked() },
             modifier = Modifier
                 .size(100.dp)
