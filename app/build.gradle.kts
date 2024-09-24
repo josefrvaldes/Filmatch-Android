@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.kapt)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.crashlytics)
 }
 
 android {
@@ -96,6 +98,11 @@ dependencies {
     // paging
     implementation(libs.paging)
     implementation(libs.paging.compose)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

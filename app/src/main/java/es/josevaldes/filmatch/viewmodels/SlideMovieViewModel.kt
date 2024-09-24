@@ -13,6 +13,7 @@ import es.josevaldes.filmatch.repositories.MovieRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import javax.inject.Inject
 
@@ -32,5 +33,25 @@ class SlideMovieViewModel @Inject constructor(
 
     fun setLanguage(language: String) {
         _language.value = language
+    }
+
+
+    enum class SwipeAction {
+        LIKE, DISLIKE
+    }
+
+    private val _swipeAction = MutableStateFlow<SwipeAction?>(null)
+    val swipeAction = _swipeAction.asStateFlow()
+
+    fun onLikeButtonClicked() {
+        _swipeAction.value = SwipeAction.LIKE
+    }
+
+    fun onDislikeButtonClicked() {
+        _swipeAction.value = SwipeAction.DISLIKE
+    }
+
+    fun clearSwipeAction() {
+        _swipeAction.value = null
     }
 }
