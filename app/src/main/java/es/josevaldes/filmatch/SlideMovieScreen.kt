@@ -1,8 +1,6 @@
 package es.josevaldes.filmatch
 
 import android.content.Context
-import android.os.VibrationEffect
-import android.os.Vibrator
 import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -81,8 +79,8 @@ import es.josevaldes.filmatch.ui.theme.BackButtonBackground
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
+import es.josevaldes.filmatch.utils.VibrationUtils
 import es.josevaldes.filmatch.utils.getDeviceLocale
-import es.josevaldes.filmatch.utils.getVibrator
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -106,14 +104,16 @@ fun SlideMovieScreen() {
     val viewModel: SlideMovieViewModel = hiltViewModel()
     val deviceLanguage = getDeviceLocale()
     viewModel.setLanguage(deviceLanguage)
+    val context = LocalContext.current
+    val vibrationManager = remember { VibrationUtils(context) }
 
     Scaffold(
         topBar = { UserTopBar(user) },
         bottomBar = {
             BottomLikeDislike(
                 viewModel.swipeAction,
-                onLikeClicked = { viewModel.onLikeButtonClicked() },
-                onDislikeClicked = { viewModel.onDislikeButtonClicked() }
+                onLikeClicked = { vibrationManager.vibrateOneShot(); viewModel.onLikeButtonClicked() },
+                onDislikeClicked = { vibrationManager.vibrateOneShot(); viewModel.onDislikeButtonClicked() }
             )
         }
     ) { padding ->
@@ -429,7 +429,7 @@ private fun handleSwipeMovement(
     delta: Float,
     coroutineScope: CoroutineScope,
     swipedMaxOffset: Int,
-    vibrator: Vibrator,
+    vibrationUtils: VibrationUtils,
     movie: SwipeableMovie,
     currentSwipedStatus: MutableState<MovieSwipedStatus>
 ) {
@@ -445,12 +445,7 @@ private fun handleSwipeMovement(
     }
     if (previousTranslationOffset.absoluteValue < swipedMaxOffset && newTranslationOffset.absoluteValue >= swipedMaxOffset) {
         Log.d("SlideMovieScreen", "Swiped reached")
-        vibrator.vibrate(
-            VibrationEffect.createOneShot(
-                1,
-                75
-            )
-        )
+        vibrationUtils.vibrateOneShot()
 
         // box
         movie.swipedStatus = if (newTranslationOffset > 0) {
@@ -480,11 +475,10 @@ private fun Modifier.swipeHandler(
     currentSwipedStatus: MutableState<MovieSwipedStatus>,
 ): Modifier {
     val context = LocalContext.current
-    val vibrator = remember { getVibrator(context) }
     val coroutineScope = rememberCoroutineScope()
     val screenWidth = context.resources.displayMetrics.widthPixels
     val swipedMaxOffset = screenWidth / 3
-
+    val vibrationUtils = remember { VibrationUtils(context) }
     return draggable(
         enabled = enabled,
         orientation = Orientation.Horizontal,
@@ -495,7 +489,7 @@ private fun Modifier.swipeHandler(
                 delta,
                 coroutineScope,
                 swipedMaxOffset,
-                vibrator,
+                vibrationUtils,
                 movie,
                 currentSwipedStatus
             )
