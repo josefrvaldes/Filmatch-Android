@@ -72,6 +72,7 @@ import coil.Coil
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import es.josevaldes.filmatch.model.Movie
 import es.josevaldes.filmatch.model.MovieSwipedStatus
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.model.User
@@ -152,7 +153,7 @@ private fun SwipeableMoviesComponent(viewModel: SlideMovieViewModel) {
         }
 
         is LoadState.NotLoading -> {
-            Log.d("SlideMovieScreen", "Movies loaded")
+            Log.d("SlideMovieScreen", "Not loading")
         }
     }
 
@@ -176,10 +177,10 @@ private fun SwipeableMoviesComponent(viewModel: SlideMovieViewModel) {
             val nullableCurrentMovie = moviesLazyPaging[counter]
             nullableCurrentMovie?.let { currentMovie ->
                 observableMovies.add(SwipeableMovie(currentMovie))
-                preloadPoster(context, observableMovies.last())
+                preloadPoster(context, currentMovie)
                 val nullableNextMovie = moviesLazyPaging[counter + 1]
                 nullableNextMovie?.let { nextMovie ->
-                    preloadPoster(context, SwipeableMovie(nextMovie))
+                    preloadPoster(context, nextMovie)
                 }
                 counter++
             }
@@ -226,7 +227,7 @@ private fun PreloadMoviePosters(
     val context = LocalContext.current
     LaunchedEffect(observableMovies) {
         observableMovies.forEach { movie ->
-            preloadPoster(context, movie)
+            preloadPoster(context, movie.movie)
         }
     }
 }
@@ -234,11 +235,11 @@ private fun PreloadMoviePosters(
 
 private fun preloadPoster(
     context: Context,
-    movie: SwipeableMovie
+    movie: Movie
 ) {
     Coil.imageLoader(context).enqueue(
         ImageRequest.Builder(context)
-            .data(movie.movie.posterUrl)
+            .data(movie.posterUrl)
             .diskCachePolicy(CachePolicy.ENABLED)
             .memoryCachePolicy(CachePolicy.ENABLED)
             .build()
@@ -260,6 +261,50 @@ private fun SwipeableMovieView(
     val blurRadius = getProperBlurRadius(index = index, listSize = observableMovies.size)
     val tint = getProperTint(currentSwipedStatus)
 
+    PerformAnimationAccordingToSwipeAction(
+        swipeAction,
+        index,
+        observableMovies,
+        rotationOffset,
+        translationOffset,
+        movie,
+        onSwipeCompleted
+    )
+
+
+    Box(
+        modifier = Modifier
+            .setupMovieGraphics(movie, rotationOffset)
+            .zIndex(index.toFloat())
+            .offset { IntOffset(translationOffset.value.roundToInt(), 0) }
+            .swipeHandler(
+                enabled = index == observableMovies.size - 1,
+                translationOffset = translationOffset,
+                rotationOffset = rotationOffset,
+                movie = movie,
+                currentSwipedStatus = currentSwipedStatus,
+                observableMovies = observableMovies
+            )
+    ) {
+        PosterImageView(
+            movie = movie,
+            blurRadius = blurRadius,
+            tint = tint,
+            modifier = Modifier.matchParentSize()
+        )
+    }
+}
+
+@Composable
+private fun PerformAnimationAccordingToSwipeAction(
+    swipeAction: State<SlideMovieViewModel.SwipeAction?>,
+    index: Int,
+    observableMovies: SnapshotStateList<SwipeableMovie>,
+    rotationOffset: Animatable<Float, AnimationVector1D>,
+    translationOffset: Animatable<Float, AnimationVector1D>,
+    movie: SwipeableMovie,
+    onSwipeCompleted: () -> Unit
+) {
     val context = LocalContext.current
     LaunchedEffect(swipeAction.value) {
         if (index == observableMovies.size - 1 && swipeAction.value != null) {
@@ -291,35 +336,9 @@ private fun SwipeableMovieView(
                 awaitAll(rotationJob, translationJob)
             }
 
-
-            observableMovies.remove(movie)
-            translationOffset.snapTo(0f)
             onSwipeCompleted()
+            observableMovies.remove(movie)
         }
-    }
-
-
-
-    Box(
-        modifier = Modifier
-            .setupMovieGraphics(movie, rotationOffset)
-            .zIndex(index.toFloat())
-            .offset { IntOffset(translationOffset.value.roundToInt(), 0) }
-            .swipeHandler(
-                enabled = index == observableMovies.size - 1,
-                translationOffset = translationOffset,
-                rotationOffset = rotationOffset,
-                movie = movie,
-                currentSwipedStatus = currentSwipedStatus,
-                observableMovies = observableMovies
-            )
-    ) {
-        PosterImageView(
-            movie = movie,
-            blurRadius = blurRadius,
-            tint = tint,
-            modifier = Modifier.matchParentSize()
-        )
     }
 }
 
@@ -437,7 +456,7 @@ private fun handleSwipeMovement(
     val newTranslationOffset = translationOffset.value + delta
 
     val newRotationOffset = rotationOffset.value + delta / 50
-    Log.d("SlideMovieScreen", "Rotation offset: $newRotationOffset")
+//    Log.d("SlideMovieScreen", "Rotation offset: $newRotationOffset")
 
     coroutineScope.launch {
         translationOffset.snapTo(newTranslationOffset)
