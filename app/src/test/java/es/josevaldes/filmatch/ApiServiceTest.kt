@@ -42,7 +42,7 @@ class MovieRepositoryTest {
     }
 
     @Test
-    fun `getDiscoverMovies should return ApiError on 404`() = runBlocking {
+    fun `getDiscoverMovies should return ApiError on any api error`() = runBlocking {
         val errorJson = """
             {
                 "success": false,
@@ -68,6 +68,62 @@ class MovieRepositoryTest {
             },
             {
                 throw AssertionError("Expected error but got success")
+            }
+        )
+    }
+
+    @Test
+    fun `getDiscoverMovies should return WhateverResponse on any valid response`() = runBlocking {
+        val responseJson = """
+            {
+    "page": 1,
+    "results": [
+        {
+            "adult": false,
+            "backdrop_path": "/Asg2UUwipAdE87MxtJy7SQo08XI.jpg",
+            "genre_ids": [
+                28,
+                14,
+                27
+            ],
+            "id": 957452,
+            "original_language": "en",
+            "original_title": "The Crow",
+            "overview": "Un año después de que él y su prometida fueran asesinados, un cuervo místico devuelve a Eric a la vida para que pueda clamar su venganza.",
+            "popularity": 2505.846,
+            "poster_path": "/X9iFHeIYgfqoZImvdidx8b9v4R.jpg",
+            "release_date": "2024-08-21",
+            "title": "El Cuervo",
+            "video": false,
+            "vote_average": 5.444,
+            "vote_count": 339
+        }
+    ],
+    "total_pages": 1,
+    "total_results": 1
+}
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(responseJson)
+        )
+
+        val result = movieRepository.getDiscoverMovies(0, "en")
+
+        assertTrue(result.isRight()) // Let's make sure that we have a success
+
+        result.fold(
+            { _ ->
+                throw AssertionError("Expected success but got error")
+            },
+            { discoverResult ->
+                assertTrue(discoverResult.totalPages == 1)
+                assertTrue(discoverResult.totalResults == 1)
+                assertTrue(discoverResult.page == 1)
+                assertTrue(discoverResult.results.size == 1)
+                assertTrue(discoverResult.results.first().originalTitle == "The Crow")
             }
         )
     }
