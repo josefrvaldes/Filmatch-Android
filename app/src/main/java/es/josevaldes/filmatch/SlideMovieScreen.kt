@@ -74,9 +74,9 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import es.josevaldes.core.utils.getDeviceLocale
 import es.josevaldes.data.model.Movie
-import es.josevaldes.data.model.MovieSwipedStatus
-import es.josevaldes.data.model.SwipeableMovie
 import es.josevaldes.data.model.User
+import es.josevaldes.filmatch.model.MovieSwipedStatus
+import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.ui.theme.BackButtonBackground
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
@@ -215,7 +215,7 @@ private fun InitializeMovies(counter: Int, allMovies: List<SwipeableMovie>) {
                 Random.nextDouble(-4.0, 0.0).toFloat()
             }
             val translation = Random.nextDouble(0.0, 8.0)
-            swipeableMovie.traslationY = translation.toFloat()
+            swipeableMovie.translationY = translation.toFloat()
         }
     }
 }
@@ -533,7 +533,7 @@ private fun Modifier.setupMovieGraphics(
 ): Modifier {
     return graphicsLayer {
         rotationZ = rotation.value
-        translationY = movie.traslationY ?: 0f
+        translationY = movie.translationY ?: 0f
     }
 }
 

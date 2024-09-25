@@ -23,17 +23,3 @@ data class Movie(
         get() = "https://image.tmdb.org/t/p/w500${posterPath}"
 }
 
-enum class MovieSwipedStatus {
-    LIKED,
-    DISLIKED,
-    NONE
-}
-
-data class SwipeableMovie(
-    val movie: Movie,
-    var isLiked: Boolean? = null,
-    var rotation: Float? = null,
-    var traslationX: Float? = null,
-    var traslationY: Float? = null,
-    var swipedStatus: MovieSwipedStatus = MovieSwipedStatus.NONE
-)
