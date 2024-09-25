@@ -1,25 +1,22 @@
 package es.josevaldes.filmatch.repositories
 
+import es.josevaldes.filmatch.network.ApiResponseHandler
+import es.josevaldes.filmatch.responses.ApiErrorResponse
 import es.josevaldes.filmatch.responses.DiscoverMoviesResponse
-import es.josevaldes.filmatch.services.MoviesService
+import es.josevaldes.filmatch.services.MovieService
+import es.josevaldes.filmatch.utils.Either
 import javax.inject.Inject
 
-class MovieRepository @Inject constructor(private val moviesService: MoviesService) {
+class MovieRepository @Inject constructor(private val moviesService: MovieService) {
     suspend fun getDiscoverMovies(
         page: Int,
         language: String?
-    ): Result<DiscoverMoviesResponse> {
+    ): Either<ApiErrorResponse, DiscoverMoviesResponse> {
         return try {
             val response = moviesService.getDiscoverMovies(page, language)
-            if (response.isSuccessful) {
-                response.body()?.let {
-                    Result.success(it)
-                } ?: Result.failure(Exception("Response body is null"))
-            } else {
-                Result.failure(Exception("Error: ${response.code()} - ${response.message()}"))
-            }
+            ApiResponseHandler.handleApiResponse(response)
         } catch (e: Exception) {
-            Result.failure(e)
+            Either.Left(ApiErrorResponse(false, 500, e.message ?: "Unknown error"))
         }
     }
 }

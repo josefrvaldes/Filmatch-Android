@@ -5,7 +5,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import es.josevaldes.filmatch.network.HttpClient
-import es.josevaldes.filmatch.services.MoviesService
+import es.josevaldes.filmatch.services.MovieService
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -38,7 +38,7 @@ class NetworkModule {
 
     @Provides
     @Singleton
-    fun provideMoviesService(retrofit: Retrofit): MoviesService {
-        return retrofit.create(MoviesService::class.java)
+    fun provideMoviesService(retrofit: Retrofit): MovieService {
+        return retrofit.create(MovieService::class.java)
     }
 }
