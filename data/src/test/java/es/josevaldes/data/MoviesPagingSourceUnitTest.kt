@@ -17,7 +17,7 @@ import retrofit2.HttpException
 import retrofit2.Response
 
 
-class SwipeScreenUnitTest {
+class MoviesPagingSourceUnitTest {
 
     private val movieService: MovieService = mockk()
 

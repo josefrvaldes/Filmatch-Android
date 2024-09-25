@@ -5,6 +5,10 @@ import androidx.paging.PagingState
 import es.josevaldes.core.utils.fold
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.repositories.MovieRepository
+import es.josevaldes.data.responses.DiscoverMoviesResponse
+import okhttp3.ResponseBody.Companion.toResponseBody
+import retrofit2.HttpException
+import retrofit2.Response
 import javax.inject.Inject
 
 class MoviesPagingSource @Inject constructor(
@@ -24,7 +28,11 @@ class MoviesPagingSource @Inject constructor(
         val result = movieRepository.getDiscoverMovies(page, language)
         return result.fold(
             { error ->
-                LoadResult.Error(Throwable(error.code.toString()))
+                val responseError = Response.error<DiscoverMoviesResponse>(
+                    error.code,
+                    error.message.toResponseBody()
+                )
+                LoadResult.Error(HttpException(responseError))
             },
             { response ->
                 totalPages = response.totalPages

@@ -11,12 +11,18 @@ object ApiResponseHandler {
         return if (response.isSuccessful) {
             response.body()?.let {
                 Either.Right(it)
-            } ?: Either.Left(ApiErrorResponse(false, 501, "Response body is null"))
+            } ?: Either.Left(ApiErrorResponse(false, 506, "Response body is null"))
         } else {
             val errorBody = response.errorBody()?.string()
             val apiError = errorBody?.let {
-                Gson().fromJson(it, ApiErrorResponse::class.java)
-            } ?: ApiErrorResponse(false, 501, "Unknown error")
+                try {
+                    Gson().fromJson(it, ApiErrorResponse::class.java)
+                } catch (e: Exception) {
+                    ApiErrorResponse(false, response.code(), errorBody)
+                }
+            } ?: run {
+                ApiErrorResponse(false, response.code(), "Unknown error")
+            }
             Either.Left(apiError)
         }
     }
