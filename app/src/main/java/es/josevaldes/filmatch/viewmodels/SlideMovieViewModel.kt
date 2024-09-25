@@ -6,10 +6,10 @@ import androidx.paging.Pager
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
-import es.josevaldes.filmatch.model.Movie
-import es.josevaldes.filmatch.paging.MovieDBPagingConfig
-import es.josevaldes.filmatch.paging.MoviesPagingSource
-import es.josevaldes.filmatch.repositories.MovieRepository
+import es.josevaldes.data.repositories.MovieRepository
+import es.josevaldes.data.model.Movie
+import es.josevaldes.data.paging.MovieDBPagingConfig
+import es.josevaldes.data.paging.MoviesPagingSource
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
