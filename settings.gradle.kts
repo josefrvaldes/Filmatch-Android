@@ -21,3 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Filmatch"
 include(":app")
+include(":core")
+include(":data")

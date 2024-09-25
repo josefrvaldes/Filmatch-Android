@@ -19,6 +19,9 @@ pagingVersion = "3.3.2"
 firebaseBomVersion = "33.3.0"
 googleServicesVersion = "4.4.2"
 crashlyticsPluginVersion = "3.0.2"
+mockkVersion = "1.12.0"
+appcompat = "1.7.0"
+material = "1.12.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +47,7 @@ hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-com
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofitVersion" }
 retrofit-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofitVersion" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okHttpVersion" }
 okhttpbom = { group = "com.squareup.okhttp3", name = "okhttp-bom", version.ref = "okHttpVersion" }
 okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okHttpVersion" }
 paging = { group = "androidx.paging", name = "paging-runtime-ktx", version.ref = "pagingVersion" }
@@ -51,6 +55,9 @@ paging-compose = { group = "androidx.paging", name = "paging-compose", version.r
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBomVersion" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics-ktx" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockkVersion" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -60,4 +67,5 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hiltVersion" }
 kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kaptVersion" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServicesVersion" }
 crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "crashlyticsPluginVersion" }
+android-library = { id = "com.android.library", version.ref = "agp" }
 

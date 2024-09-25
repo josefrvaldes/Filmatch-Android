@@ -28,9 +28,6 @@ android {
 
 
 
-        val properties = Properties()
-        properties.load(file("config/api.config").inputStream())
-        buildConfigField("String", "API_TOKEN", "\"${properties.getProperty("apiToken")}\"")
     }
 
     buildTypes {
@@ -68,6 +65,9 @@ android {
 }
 
 dependencies {
+    implementation(project(":data"))
+    implementation(project(":core"))
+
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -86,17 +86,7 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     kapt(libs.hilt.compiler)
 
-    // Retrofit
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.gson)
-
-    // OkHttp
-    implementation(platform(libs.okhttpbom))
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging.interceptor)
-
     // paging
-    implementation(libs.paging)
     implementation(libs.paging.compose)
 
     // Firebase
@@ -111,6 +101,8 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    testImplementation(libs.mockk)
+    androidTestImplementation(libs.mockk)
 }
 
 kapt {
