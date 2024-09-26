@@ -25,9 +25,19 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+    }
 
+    signingConfigs {
+        val properties = Properties()
 
+        create("prod") {
+            properties.load(file("keystores/prod.config").inputStream())
+            storeFile = file("keystores/prod.jks")
 
+            storePassword = properties.getProperty("storePassword")
+            keyAlias = properties.getProperty("keyAlias")
+            keyPassword = properties.getProperty("keyPassword")
+        }
     }
 
     buildTypes {
@@ -37,7 +47,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("prod")
         }
     }
     compileOptions {
