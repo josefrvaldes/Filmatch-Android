@@ -6,4 +6,6 @@
     <string name="content_description_user_image">User image</string>
     <string name="back_button_content_description">Back button</string>
     <string name="back">Back</string>
+    <string name="error_when_authenticating_with_google">Error when authenticating with google</string>
+    <string name="error_getting_google_credentials">Error getting google credentials</string>
 </resources>

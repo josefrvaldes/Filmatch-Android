@@ -5,9 +5,9 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.android.compose)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.kapt)
     alias(libs.plugins.google.services)
     alias(libs.plugins.crashlytics)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -25,6 +25,11 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        val properties = Properties()
+        properties.load(file("keystores/prod.config").inputStream())
+        val googleAuthClientId = properties.getProperty("googleAuthClientId")
+        buildConfigField("String", "GOOGLE_AUTH_CLIENT_ID", "\"$googleAuthClientId\"")
     }
 
     signingConfigs {
@@ -94,7 +99,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt)
     implementation(libs.hilt.navigation.compose)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
 
     // paging
     implementation(libs.paging.compose)
@@ -103,6 +108,9 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.auth)
+    implementation(libs.play.services.auth)
+    implementation(libs.google.id)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -113,8 +121,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     testImplementation(libs.mockk)
     androidTestImplementation(libs.mockk)
-}
-
-kapt {
-    correctErrorTypes = true
 }
