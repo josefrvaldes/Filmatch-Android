@@ -16,3 +16,11 @@ fun generateNonce(): String {
     return Base64.encodeToString(randomBytes, Base64.NO_WRAP or Base64.URL_SAFE)
 }
 
+fun validatePassword(pass: String): Boolean {
+    val regex = Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}\$")
+    return regex.matches(pass)
+}
+
+fun validateEmail(email: String): Boolean {
+    return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+}

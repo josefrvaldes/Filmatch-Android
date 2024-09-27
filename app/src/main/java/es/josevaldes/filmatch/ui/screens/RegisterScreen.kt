@@ -27,8 +27,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import es.josevaldes.core.utils.validateEmail
+import es.josevaldes.core.utils.validatePassword
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.navigation.Screen
+import es.josevaldes.filmatch.ui.components.EmailTextField
+import es.josevaldes.filmatch.ui.components.PasswordTextField
 import es.josevaldes.filmatch.ui.dialogs.ErrorDialog
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.viewmodels.AuthViewModel
@@ -38,15 +42,15 @@ fun RegisterScreen(navController: NavController) {
 
     val authViewModel: AuthViewModel = hiltViewModel()
 
-    var email by remember { mutableStateOf("") }
-    var pass1 by remember { mutableStateOf("") }
+    val email = remember { mutableStateOf("") }
+    val pass1 = remember { mutableStateOf("") }
     var pass2 by remember { mutableStateOf("") }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
 
     fun isValidForm(): Boolean {
-        return !isEmailError(email) && validatePassword(pass1) && pass1 == pass2
+        return validateEmail(email.value) && validatePassword(pass1.value) && pass1.value == pass2
     }
 
     Scaffold { padding ->
@@ -60,37 +64,8 @@ fun RegisterScreen(navController: NavController) {
             verticalArrangement = Arrangement.Center
 
         ) {
-            OutlinedTextField(
-                value = email,
-                maxLines = 1,
-                onValueChange = { email = it },
-                label = { Text(stringResource(R.string.email)) },
-                modifier = Modifier.padding(20.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                isError = isEmailError(email),
-                supportingText = {
-                    if (email.isEmpty()) {
-                        Text(stringResource(R.string.enter_your_email))
-                    } else if (isEmailError(email)) {
-                        Text(stringResource(R.string.invalid_email))
-                    }
-                }
-            )
-            OutlinedTextField(
-                value = pass1,
-                maxLines = 1,
-                onValueChange = { pass1 = it },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                label = { Text(stringResource(R.string.password)) },
-                modifier = Modifier.padding(20.dp),
-                visualTransformation = PasswordVisualTransformation(),
-                isError = !validatePassword(pass1),
-                supportingText = {
-                    if (!validatePassword(pass1)) {
-                        Text(stringResource(R.string.wrong_password_created_error_message))
-                    }
-                }
-            )
+            EmailTextField(email)
+            PasswordTextField(pass1)
             OutlinedTextField(
                 maxLines = 1,
                 value = pass2,
@@ -99,9 +74,9 @@ fun RegisterScreen(navController: NavController) {
                 label = { Text(stringResource(R.string.repeat_password)) },
                 modifier = Modifier.padding(20.dp),
                 visualTransformation = PasswordVisualTransformation(),
-                isError = pass1 != pass2,
+                isError = pass1.value != pass2,
                 supportingText = {
-                    if (pass1 != pass2) {
+                    if (pass1.value != pass2) {
                         Text(stringResource(R.string.passwords_don_t_match_error_message))
                     }
                 }
@@ -110,7 +85,7 @@ fun RegisterScreen(navController: NavController) {
             Button(
                 onClick = {
                     if (isValidForm()) {
-                        authViewModel.register(email, pass1, { _ ->
+                        authViewModel.register(email.value, pass1.value, { _ ->
                             showSuccessDialog = true
                         }, { error ->
                             errorMessage = error
@@ -137,6 +112,7 @@ fun RegisterScreen(navController: NavController) {
     }
 }
 
+
 @Composable
 private fun SuccessDialog(onDismissRequest: () -> Unit) {
     AlertDialog(
@@ -157,15 +133,6 @@ private fun SuccessDialog(onDismissRequest: () -> Unit) {
             }
         }
     )
-}
-
-private fun isEmailError(email: String): Boolean {
-    return !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-}
-
-private fun validatePassword(pass: String): Boolean {
-    val regex = Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}\$")
-    return regex.matches(pass)
 }
 
 

@@ -119,4 +119,39 @@ class AuthViewModel @Inject constructor() : ViewModel() {
                 onError(it.message ?: "Error")
             }
     }
+
+    fun login(
+        email: String,
+        pass: String,
+        onSuccess: (user: FirebaseUser) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val auth = FirebaseAuth.getInstance()
+        auth.signInWithEmailAndPassword(email, pass)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val currentUser = auth.currentUser
+                    currentUser?.let {
+                        onSuccess(it)
+                        return@addOnCompleteListener
+                    } ?: run {
+                        onError("Error")
+                    }
+                }
+            }
+            .addOnFailureListener {
+                onError(it.message ?: "Error")
+            }
+    }
+
+    fun callForgotPassword(email: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val auth = FirebaseAuth.getInstance()
+        auth.sendPasswordResetEmail(email)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener {
+                onError(it.message ?: "Error")
+            }
+    }
 }

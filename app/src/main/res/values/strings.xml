@@ -24,4 +24,10 @@
     <string name="user_registered_successfully_dialog_body">A validation email has been sent to your inbox. Click on the link there to validate your account and access the app.</string>
     <string name="error">Error</string>
     <string name="ok">Ok</string>
+    <string name="login">Login</string>
+    <string name="forgot_your_password">Forgot your password?</string>
+    <string name="forgot_you_password_dialog_title">Forgot you password?</string>
+    <string name="forgot_your_password_dialog_text">Enter your email and we will send you a link to reset your password.</string>
+    <string name="success">Success</string>
+    <string name="success_sending_forgot_password_dialog_body">Check your email to reset your password</string>
 </resources>

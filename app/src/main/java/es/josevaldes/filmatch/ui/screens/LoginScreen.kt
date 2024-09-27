@@ -10,19 +10,45 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import es.josevaldes.core.utils.validateEmail
+import es.josevaldes.core.utils.validatePassword
+import es.josevaldes.filmatch.R
+import es.josevaldes.filmatch.navigation.Screen
+import es.josevaldes.filmatch.ui.components.EmailTextField
+import es.josevaldes.filmatch.ui.components.PasswordTextField
+import es.josevaldes.filmatch.ui.dialogs.ErrorDialog
+import es.josevaldes.filmatch.ui.dialogs.ForgotPasswordDialog
+import es.josevaldes.filmatch.ui.dialogs.SuccessSendingForgotPasswordDialog
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
+import es.josevaldes.filmatch.viewmodels.AuthViewModel
 
 
 @Composable
 fun LoginScreen(navController: NavController) {
+    val viewModel: AuthViewModel = hiltViewModel()
+    val email = remember { mutableStateOf("") }
+    val password = remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+    var shouldDisplayForgotPasswordDialog by remember { mutableStateOf(false) }
+    var shouldDisplaySuccessForgettingPasswordDialog by remember { mutableStateOf(false) }
+
+    fun isValidForm(): Boolean {
+        return validateEmail(email.value) && validatePassword(password.value)
+    }
+
     Scaffold { padding ->
         Column(
             modifier = Modifier
@@ -34,31 +60,44 @@ fun LoginScreen(navController: NavController) {
             verticalArrangement = Arrangement.Center
 
         ) {
-            TextField(
-                value = "",
-                onValueChange = {},
-                label = { Text("Username") },
-                modifier = Modifier.padding(20.dp)
-            )
-            TextField(
-                value = "",
-                onValueChange = {},
-                label = { Text("Password") },
-                modifier = Modifier.padding(20.dp)
-            )
+            EmailTextField(email)
+            PasswordTextField(password)
 
             Button(
-                onClick = {},
+                onClick = {
+                    if (isValidForm()) {
+                        viewModel.login(email.value, password.value, {
+                            navController.navigate(Screen.SlideMovieScreen.route)
+                        }, {
+                            // Show error dialog
+                            errorMessage = it
+                        })
+                    }
+                },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .padding(20.dp)
             ) {
-                Text("Login")
+                Text(stringResource(R.string.login))
             }
-            Text("Forgot your password?", Modifier.clickable {
-
+            Text(stringResource(R.string.forgot_your_password), Modifier.clickable {
+                shouldDisplayForgotPasswordDialog = true
             })
         }
+    }
+
+    if (errorMessage.isNotEmpty()) {
+        ErrorDialog(errorMessage) { errorMessage = "" }
+    } else if (shouldDisplayForgotPasswordDialog) {
+        ForgotPasswordDialog(
+            onSuccess = {
+                shouldDisplayForgotPasswordDialog = false
+                shouldDisplaySuccessForgettingPasswordDialog = true
+            },
+            onDismiss = { shouldDisplayForgotPasswordDialog = false }
+        )
+    } else if (shouldDisplaySuccessForgettingPasswordDialog) {
+        SuccessSendingForgotPasswordDialog { shouldDisplaySuccessForgettingPasswordDialog = false }
     }
 }
 
