@@ -16,7 +16,13 @@ import es.josevaldes.core.utils.validatePassword
 import es.josevaldes.filmatch.R
 
 @Composable
-fun PasswordTextField(pass: MutableState<String>, imeAction: ImeAction = ImeAction.Next) {
+fun PasswordTextField(
+    pass: MutableState<String>,
+    label: String = stringResource(R.string.password),
+    imeAction: ImeAction = ImeAction.Next,
+    isError: Boolean = !validatePassword(pass.value),
+    supportingText: String = stringResource(R.string.wrong_password_created_error_message)
+) {
     OutlinedTextField(
         value = pass.value,
         maxLines = 1,
@@ -25,13 +31,13 @@ fun PasswordTextField(pass: MutableState<String>, imeAction: ImeAction = ImeActi
             keyboardType = KeyboardType.Password,
             imeAction = imeAction
         ),
-        label = { Text(stringResource(R.string.password)) },
+        label = { Text(label) },
         modifier = Modifier.padding(20.dp),
         visualTransformation = PasswordVisualTransformation(),
-        isError = !validatePassword(pass.value),
+        isError = isError,
         supportingText = {
-            if (!validatePassword(pass.value)) {
-                Text(stringResource(R.string.wrong_password_created_error_message))
+            if (isError) {
+                Text(supportingText)
             }
         }
     )
