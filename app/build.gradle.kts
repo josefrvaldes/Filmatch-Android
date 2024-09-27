@@ -25,11 +25,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        val properties = Properties()
-        properties.load(file("keystores/prod.config").inputStream())
-        val googleAuthClientId = properties.getProperty("googleAuthClientId")
-        buildConfigField("String", "GOOGLE_AUTH_CLIENT_ID", "\"$googleAuthClientId\"")
     }
 
     signingConfigs {
@@ -108,9 +103,6 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
-    implementation(libs.firebase.auth)
-    implementation(libs.play.services.auth)
-    implementation(libs.google.id)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

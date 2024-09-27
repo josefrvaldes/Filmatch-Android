@@ -43,6 +43,8 @@ android {
         val properties = Properties()
         properties.load(file("config/api.config").inputStream())
         buildConfigField("String", "API_TOKEN", "\"${properties.getProperty("apiToken")}\"")
+        val googleAuthClientId = properties.getProperty("googleAuthClientId")
+        buildConfigField("String", "GOOGLE_AUTH_CLIENT_ID", "\"$googleAuthClientId\"")
     }
 }
 
@@ -65,6 +67,13 @@ dependencies {
 
     // paging
     implementation(libs.paging)
+
+    // Firebase auth
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.play.services.auth)
+    implementation(libs.google.id)
+
 
 
 

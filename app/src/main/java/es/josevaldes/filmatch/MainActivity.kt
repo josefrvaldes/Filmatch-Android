@@ -9,17 +9,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
+import es.josevaldes.data.services.AuthService
 import es.josevaldes.filmatch.navigation.Screen
 import es.josevaldes.filmatch.ui.screens.AuthScreen
 import es.josevaldes.filmatch.ui.screens.LoginScreen
 import es.josevaldes.filmatch.ui.screens.RegisterScreen
 import es.josevaldes.filmatch.ui.screens.SlideMovieScreen
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var authService: AuthService
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -31,8 +35,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun isLoggedIn(): Boolean {
-        val user = FirebaseAuth.getInstance().currentUser
-        return user != null
+        return authService.isLoggedIn()
     }
 }
 
