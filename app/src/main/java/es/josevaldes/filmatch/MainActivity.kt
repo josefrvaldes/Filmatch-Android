@@ -14,6 +14,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import es.josevaldes.filmatch.navigation.Screen
 import es.josevaldes.filmatch.ui.screens.AuthScreen
 import es.josevaldes.filmatch.ui.screens.LoginScreen
+import es.josevaldes.filmatch.ui.screens.RegisterScreen
 import es.josevaldes.filmatch.ui.screens.SlideMovieScreen
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 
@@ -49,6 +50,9 @@ fun FilmatchApp(startDestination: Screen) {
             }
             composable(Screen.SlideMovieScreen.route) {
                 SlideMovieScreen(navController)
+            }
+            composable(Screen.RegisterScreen.route) {
+                RegisterScreen(navController)
             }
         }
     }

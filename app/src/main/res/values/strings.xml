@@ -8,4 +8,20 @@
     <string name="back">Back</string>
     <string name="error_when_authenticating_with_google">Error when authenticating with google</string>
     <string name="error_getting_google_credentials">Error getting google credentials</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="repeat_password">Repeat password</string>
+    <string name="register">Register</string>
+    <string name="register_with_email_and_password">Register with email and password</string>
+    <string name="already_have_an_account_log_in">Already have an account? Log in</string>
+    <string name="sign_in_with_google">Sign in with google</string>
+    <string name="invalid_email">Invalid email</string>
+    <string name="enter_your_email">Enter your email</string>
+    <string name="wrong_password_created_error_message">Password must contain one lowercase letter, one uppercase letter, one digit, one special character and be at least 8 characters long</string>
+    <string name="passwords_don_t_match_error_message">Passwords don\'t match</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="user_registered_successfully_dialog_title">User registered successfully</string>
+    <string name="user_registered_successfully_dialog_body">A validation email has been sent to your inbox. Click on the link there to validate your account and access the app.</string>
+    <string name="error">Error</string>
+    <string name="ok">Ok</string>
 </resources>
