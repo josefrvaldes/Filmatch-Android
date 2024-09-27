@@ -109,6 +109,7 @@ class AuthViewModel @Inject constructor() : ViewModel() {
                     currentUser?.let {
                         it.sendEmailVerification()
                         onSuccess(it)
+                        auth.signOut()
                         return@addOnCompleteListener
                     } ?: run {
                         onError("Error")
@@ -132,7 +133,12 @@ class AuthViewModel @Inject constructor() : ViewModel() {
                 if (task.isSuccessful) {
                     val currentUser = auth.currentUser
                     currentUser?.let {
-                        onSuccess(it)
+                        if (it.isEmailVerified) {
+                            onSuccess(it)
+                        } else {
+                            onError("Email not verified")
+                            auth.signOut()
+                        }
                         return@addOnCompleteListener
                     } ?: run {
                         onError("Error")

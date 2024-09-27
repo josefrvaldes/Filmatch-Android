@@ -4,8 +4,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -19,7 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,6 +43,7 @@ import es.josevaldes.filmatch.viewmodels.AuthViewModel
 
 @Composable
 fun RegisterScreen(navController: NavController) {
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val authViewModel: AuthViewModel = hiltViewModel()
 
@@ -59,7 +64,8 @@ fun RegisterScreen(navController: NavController) {
                 .padding(padding)
                 .fillMaxWidth()
                 .fillMaxHeight()
-                .statusBarsPadding(),
+                .statusBarsPadding()
+                .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
 
@@ -70,7 +76,10 @@ fun RegisterScreen(navController: NavController) {
                 maxLines = 1,
                 value = pass2,
                 onValueChange = { pass2 = it },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
                 label = { Text(stringResource(R.string.repeat_password)) },
                 modifier = Modifier.padding(20.dp),
                 visualTransformation = PasswordVisualTransformation(),
@@ -79,7 +88,12 @@ fun RegisterScreen(navController: NavController) {
                     if (pass1.value != pass2) {
                         Text(stringResource(R.string.passwords_don_t_match_error_message))
                     }
-                }
+                },
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        keyboardController?.hide()
+                    }
+                )
             )
 
             Button(

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
@@ -18,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -55,13 +57,13 @@ fun LoginScreen(navController: NavController) {
                 .padding(padding)
                 .fillMaxWidth()
                 .fillMaxHeight()
-                .statusBarsPadding(),
+                .statusBarsPadding()
+                .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-
+            verticalArrangement = Arrangement.Center,
         ) {
             EmailTextField(email)
-            PasswordTextField(password)
+            PasswordTextField(password, imeAction = ImeAction.Done)
 
             Button(
                 onClick = {
