@@ -1,29 +1,32 @@
 package es.josevaldes.data.network
 
 import com.google.gson.Gson
-import es.josevaldes.core.utils.Either
 import es.josevaldes.data.responses.ApiErrorResponse
+import es.josevaldes.data.results.ApiError
+import es.josevaldes.data.results.ApiResult
+import es.josevaldes.data.results.mapErrorCodeToApiError
+import es.josevaldes.data.results.mapHttpCodeToApiError
 import retrofit2.Response
 
 object ApiResponseHandler {
 
-    fun <T> handleApiResponse(response: Response<T>): Either<ApiErrorResponse, T> {
+    fun <T> handleApiResponse(response: Response<T>): ApiResult<T> {
         return if (response.isSuccessful) {
             response.body()?.let {
-                Either.Right(it)
-            } ?: Either.Left(ApiErrorResponse(false, 506, "Response body is null"))
+                ApiResult.Success(it)
+            } ?: ApiResult.Error(ApiError.Unknown)
         } else {
             val errorBody = response.errorBody()?.string()
-            val apiError = errorBody?.let {
+            errorBody?.let {
                 try {
-                    Gson().fromJson(it, ApiErrorResponse::class.java)
+                    val apiErrorResponse = Gson().fromJson(it, ApiErrorResponse::class.java)
+                    ApiResult.Error( mapErrorCodeToApiError(apiErrorResponse.code))
                 } catch (e: Exception) {
-                    ApiErrorResponse(false, response.code(), errorBody)
+                    ApiResult.Error(mapHttpCodeToApiError(response.code()))
                 }
             } ?: run {
-                ApiErrorResponse(false, response.code(), "Unknown error")
+                ApiResult.Error(ApiError.Unknown)
             }
-            Either.Left(apiError)
         }
     }
 }
