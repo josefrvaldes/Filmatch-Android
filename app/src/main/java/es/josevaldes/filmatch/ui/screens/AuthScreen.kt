@@ -11,6 +11,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,7 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import es.josevaldes.data.results.AuthResult
 import es.josevaldes.filmatch.R
+import es.josevaldes.filmatch.errors.ErrorMessageWrapper
 import es.josevaldes.filmatch.navigation.Screen
 import es.josevaldes.filmatch.ui.dialogs.ErrorDialog
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
@@ -36,6 +39,7 @@ fun AuthScreen(navController: NavController) {
     val viewModel: AuthViewModel = hiltViewModel()
     val context = LocalContext.current
     var errorMessage by remember { mutableStateOf("") }
+    val signInResult = viewModel.authResult.collectAsState()
 
     Scaffold { padding ->
         Column(
@@ -50,11 +54,7 @@ fun AuthScreen(navController: NavController) {
         ) {
             Button(
                 onClick = {
-                    viewModel.signInWithGoogle(context, { user ->
-                        navController.navigate(Screen.SlideMovieScreen.route)
-                    }, { error ->
-                        errorMessage = error
-                    })
+                    viewModel.signInWithGoogle(context)
                 },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
@@ -77,6 +77,17 @@ fun AuthScreen(navController: NavController) {
                     navController.navigate(Screen.LoginScreen.route)
                 })
         }
+    }
+
+    when (val result = signInResult.value) {
+        is AuthResult.Success -> navController.navigate(Screen.SlideMovieScreen.route)
+        is AuthResult.Error -> {
+            errorMessage =
+                ErrorMessageWrapper(LocalContext.current).getErrorMessage(result.authError)
+            viewModel.clearError()
+        }
+
+        null -> {} /* do nothing */
     }
 
     if (errorMessage.isNotEmpty()) {

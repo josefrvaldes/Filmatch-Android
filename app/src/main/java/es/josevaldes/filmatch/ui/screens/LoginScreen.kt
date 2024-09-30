@@ -12,12 +12,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,7 +29,9 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import es.josevaldes.core.utils.validateEmail
 import es.josevaldes.core.utils.validatePassword
+import es.josevaldes.data.results.AuthResult
 import es.josevaldes.filmatch.R
+import es.josevaldes.filmatch.errors.ErrorMessageWrapper
 import es.josevaldes.filmatch.navigation.Screen
 import es.josevaldes.filmatch.ui.components.EmailTextField
 import es.josevaldes.filmatch.ui.components.PasswordTextField
@@ -44,6 +48,7 @@ fun LoginScreen(navController: NavController) {
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
+    val signInResult = viewModel.authResult.collectAsState()
     var shouldDisplayForgotPasswordDialog by remember { mutableStateOf(false) }
     var shouldDisplaySuccessForgettingPasswordDialog by remember { mutableStateOf(false) }
 
@@ -68,12 +73,7 @@ fun LoginScreen(navController: NavController) {
             Button(
                 onClick = {
                     if (isValidForm()) {
-                        viewModel.login(email.value, password.value, {
-                            navController.navigate(Screen.SlideMovieScreen.route)
-                        }, {
-                            // Show error dialog
-                            errorMessage = it
-                        })
+                        viewModel.login(email.value, password.value)
                     }
                 },
                 modifier = Modifier
@@ -88,7 +88,19 @@ fun LoginScreen(navController: NavController) {
         }
     }
 
+    when (val result = signInResult.value) {
+        is AuthResult.Success -> navController.navigate(Screen.SlideMovieScreen.route)
+        is AuthResult.Error -> {
+            errorMessage =
+                ErrorMessageWrapper(LocalContext.current).getErrorMessage(result.authError)
+            viewModel.clearError()
+        }
+
+        null -> {} // do nothing
+    }
+
     if (errorMessage.isNotEmpty()) {
+        viewModel.clearError()
         ErrorDialog(errorMessage) { errorMessage = "" }
     } else if (shouldDisplayForgotPasswordDialog) {
         ForgotPasswordDialog(

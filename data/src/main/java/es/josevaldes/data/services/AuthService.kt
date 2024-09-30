@@ -2,30 +2,25 @@ package es.josevaldes.data.services
 
 import android.content.Context
 import es.josevaldes.data.model.User
+import es.josevaldes.data.results.AuthResult
 
 interface AuthService {
 
     suspend fun signInWithGoogle(
-        context: Context,
-        onSuccess: (user: User) -> Unit,
-        onError: (String) -> Unit
-    )
+        context: Context
+    ): AuthResult<User>
 
-    fun register(
+    suspend fun register(
         email: String,
-        pass: String,
-        onSuccess: (user: User) -> Unit,
-        onError: (String) -> Unit
-    )
+        pass: String
+    ): AuthResult<User>
 
-    fun login(
+    suspend fun login(
         email: String,
-        pass: String,
-        onSuccess: (user: User) -> Unit,
-        onError: (String) -> Unit
-    )
+        pass: String
+    ): AuthResult<User>
 
-    fun callForgotPassword(email: String, onSuccess: () -> Unit, onError: (String) -> Unit)
+    suspend fun callForgotPassword(email: String): AuthResult<Unit>
 
     fun isLoggedIn(): Boolean
 }

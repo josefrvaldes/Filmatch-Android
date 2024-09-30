@@ -7,49 +7,54 @@ import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.GoogleAuthProvider
 import es.josevaldes.core.utils.generateNonce
 import es.josevaldes.data.BuildConfig
 import es.josevaldes.data.extensions.toUser
 import es.josevaldes.data.model.User
+import es.josevaldes.data.results.AuthError
+import es.josevaldes.data.results.AuthResult
+import kotlinx.coroutines.tasks.await
 
 class FirebaseAuthService : AuthService {
 
     override suspend fun signInWithGoogle(
-        context: Context,
-        onSuccess: (user: User) -> Unit,
-        onError: (String) -> Unit
-    ) {
-        val token = getGoogleToken(context)
-        if (token != null) {
-            firebaseAuthWithGoogle(token, onSuccess, onError)
-        } else {
-            onError("Error")
+        context: Context
+    ): AuthResult<User> {
+        return when (val result = getGoogleToken(context)) {
+            is AuthResult.Error -> result
+            is AuthResult.Success -> return firebaseAuthWithGoogle(result.data)
         }
     }
 
-    private fun firebaseAuthWithGoogle(
-        idToken: String,
-        onSuccess: (user: User) -> Unit,
-        onError: (String) -> Unit
-    ) {
+    private suspend fun firebaseAuthWithGoogle(
+        idToken: String
+    ): AuthResult<User> {
         val auth = FirebaseAuth.getInstance()
         val credential = GoogleAuthProvider.getCredential(idToken, null)
-
-        auth.signInWithCredential(credential)
-            .addOnSuccessListener { result ->
-                result.user?.let { user ->
-                    onSuccess(user.toUser())
-                } ?: run {
-                    onError("No user received")
-                }
+        return try {
+            val result = auth.signInWithCredential(credential).await()
+            result.user?.let {
+                AuthResult.Success(it.toUser())
+            } ?: run {
+                AuthResult.Error(AuthError.UserNotFound)
             }
-            .addOnFailureListener {
-                onError("Error ${it.message}")
-            }
+        } catch (e: FirebaseAuthInvalidUserException) {
+            AuthResult.Error(AuthError.UserNotFound)
+        } catch (e: FirebaseAuthInvalidCredentialsException) {
+            AuthResult.Error(AuthError.InvalidCredentials)
+        } catch (e: FirebaseAuthUserCollisionException) {
+            AuthResult.Error(AuthError.UserExists)
+        } catch (e: Exception) {
+            AuthResult.Error(AuthError.Unknown)
+        }
     }
 
-    private suspend fun getGoogleToken(context: Context): String? {
+    private suspend fun getGoogleToken(context: Context): AuthResult<String> {
         val credentialManager = CredentialManager.create(context)
 
         val signInRequest = GetGoogleIdOption.Builder()
@@ -68,77 +73,94 @@ class FirebaseAuthService : AuthService {
             if (result.credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                 val googleIdTokenCredential =
                     GoogleIdTokenCredential.createFrom(result.credential.data)
-                googleIdTokenCredential.idToken
+                AuthResult.Success(googleIdTokenCredential.idToken)
             } else {
-                null
+                AuthResult.Error(AuthError.CouldNotFetchToken)
             }
         } catch (e: GetCredentialException) {
-            null
+            return when (e.type) {
+                android.credentials.GetCredentialException.TYPE_USER_CANCELED -> AuthResult.Error(
+                    AuthError.CancelledByUser
+                )
+
+                android.credentials.GetCredentialException.TYPE_NO_CREDENTIAL -> AuthResult.Error(
+                    AuthError.CancelledByUser
+                )
+
+                android.credentials.GetCredentialException.TYPE_INTERRUPTED -> AuthResult.Error(
+                    AuthError.CancelledByUser
+                )
+
+                else -> AuthResult.Error(AuthError.Unknown)
+            }
+        } catch (e: Exception) {
+            AuthResult.Error(AuthError.Unknown)
         }
     }
 
-    override fun register(
+    override suspend fun register(
         email: String,
-        pass: String,
-        onSuccess: (user: User) -> Unit,
-        onError: (String) -> Unit
-    ) {
+        pass: String
+    ): AuthResult<User> {
         val auth = FirebaseAuth.getInstance()
-        auth.createUserWithEmailAndPassword(email, pass)
-            .addOnSuccessListener {
-                val currentUser = auth.currentUser
-                currentUser?.let {
-                    it.sendEmailVerification()
-                    onSuccess(it.toUser())
+        return try {
+            val result = auth.createUserWithEmailAndPassword(email, pass).await()
+            result.user?.let {
+                it.sendEmailVerification()
+                auth.signOut()
+                AuthResult.Success(it.toUser())
+            } ?: run {
+                AuthResult.Error(AuthError.UserNotFound)
+            }
+        } catch (e: FirebaseAuthWeakPasswordException) {
+            AuthResult.Error(AuthError.WeakPassword)
+        } catch (e: FirebaseAuthInvalidCredentialsException) {
+            AuthResult.Error(AuthError.InvalidCredentials)
+        } catch (e: FirebaseAuthUserCollisionException) {
+            AuthResult.Error(AuthError.UserExists)
+        } catch (e: Exception) {
+            AuthResult.Error(AuthError.Unknown)
+        }
+    }
+
+    override suspend fun login(
+        email: String,
+        pass: String
+    ): AuthResult<User> {
+        val auth = FirebaseAuth.getInstance()
+        return try {
+            val result = auth.signInWithEmailAndPassword(email, pass).await()
+            result.user?.let { currentUser ->
+                if (currentUser.isEmailVerified) {
+                    AuthResult.Success(currentUser.toUser())
+                } else {
                     auth.signOut()
-                } ?: run {
-                    onError("Error, no user received")
+                    AuthResult.Error(AuthError.EmailNotVerified)
                 }
+            } ?: run {
+                AuthResult.Error(AuthError.UserNotFound)
             }
-            .addOnFailureListener {
-                onError(it.message ?: "Error")
-            }
+        } catch (e: FirebaseAuthInvalidUserException) {
+            AuthResult.Error(AuthError.UserNotFound)
+        } catch (e: FirebaseAuthInvalidCredentialsException) {
+            AuthResult.Error(AuthError.InvalidCredentials)
+        } catch (e: Exception) {
+            AuthResult.Error(AuthError.Unknown)
+        }
     }
 
-    override fun login(
+    override suspend fun callForgotPassword(
         email: String,
-        pass: String,
-        onSuccess: (user: User) -> Unit,
-        onError: (String) -> Unit
-    ) {
+    ): AuthResult<Unit> {
         val auth = FirebaseAuth.getInstance()
-        auth.signInWithEmailAndPassword(email, pass)
-            .addOnSuccessListener {
-                val currentUser = auth.currentUser
-                currentUser?.let {
-                    if (it.isEmailVerified) {
-                        onSuccess(it.toUser())
-                    } else {
-                        auth.signOut()
-                        onError("Email not verified")
-                    }
-                } ?: run {
-                    onError("Error, user not received")
-                }
-            }
-            .addOnFailureListener {
-                onError(it.message ?: "Error")
-            }
-    }
-
-    override fun callForgotPassword(
-        email: String,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
-    ) {
-        val auth = FirebaseAuth.getInstance()
-        auth.sendPasswordResetEmail(email)
-            .addOnSuccessListener {
-                onSuccess()
-            }
-            .addOnFailureListener {
-                onError(it.message ?: "Error")
-            }
+        return try {
+            auth.sendPasswordResetEmail(email).await()
+            AuthResult.Success(Unit)
+        } catch (e: FirebaseAuthInvalidUserException) {
+            AuthResult.Error(AuthError.UserNotFound)
+        } catch (e: Exception) {
+            AuthResult.Error(AuthError.Unknown)
+        }
     }
 
     override fun isLoggedIn(): Boolean {
