@@ -158,7 +158,7 @@ private fun SwipeableMoviesComponent(viewModel: SlideMovieViewModel) {
         }
 
         is LoadState.NotLoading -> {
-            Log.d("SlideMovieScreen", "Not loading")
+//            Log.d("SlideMovieScreen", "Not loading")
         }
     }
 
