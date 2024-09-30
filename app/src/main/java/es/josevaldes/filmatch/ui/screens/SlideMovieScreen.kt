@@ -1,4 +1,4 @@
-package es.josevaldes.filmatch
+package es.josevaldes.filmatch.ui.screens
 
 import android.content.Context
 import android.util.Log
@@ -66,6 +66,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.Coil
@@ -75,10 +77,12 @@ import coil.request.ImageRequest
 import es.josevaldes.core.utils.getDeviceLocale
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.model.User
+import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.model.MovieSwipedStatus
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.ui.theme.BackButtonBackground
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
+import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
 import es.josevaldes.filmatch.utils.VibrationUtils
@@ -95,13 +99,14 @@ import kotlin.random.Random
 
 
 val user = User(
-    1,
-    "Joselete Valdés",
-    "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/6018d2fb-507f-4b50-af6a-b593b6c6eeb9/db1so0b-cd9d0be3-3691-4728-891b-f1505b7e1dc8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzYwMThkMmZiLTUwN2YtNGI1MC1hZjZhLWI1OTNiNmM2ZWViOVwvZGIxc28wYi1jZDlkMGJlMy0zNjkxLTQ3MjgtODkxYi1mMTUwNWI3ZTFkYzgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.9awWi0q7WpdwQDXG9quXvnDVo0NUDqF_S9ygzRxCbEM"
+    id = "1",
+    username = "Joselete Valdés",
+    photoUrl = "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/6018d2fb-507f-4b50-af6a-b593b6c6eeb9/db1so0b-cd9d0be3-3691-4728-891b-f1505b7e1dc8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzYwMThkMmZiLTUwN2YtNGI1MC1hZjZhLWI1OTNiNmM2ZWViOVwvZGIxc28wYi1jZDlkMGJlMy0zNjkxLTQ3MjgtODkxYi1mMTUwNWI3ZTFkYzgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.9awWi0q7WpdwQDXG9quXvnDVo0NUDqF_S9ygzRxCbEM",
+    email = ""
 )
 
 @Composable
-fun SlideMovieScreen() {
+fun SlideMovieScreen(navController: NavController) {
     val viewModel: SlideMovieViewModel = hiltViewModel()
     val deviceLanguage = getDeviceLocale()
     viewModel.setLanguage(deviceLanguage)
@@ -680,7 +685,7 @@ fun UserTopBar(user: User) {
 @Preview
 @Composable
 fun SlideMovieScreenPreview() {
-    FilmatchApp {
-        SlideMovieScreen()
+    FilmatchTheme(darkTheme = true) {
+        SlideMovieScreen(rememberNavController())
     }
 }

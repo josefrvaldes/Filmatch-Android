@@ -5,9 +5,9 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.android.compose)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.kapt)
     alias(libs.plugins.google.services)
     alias(libs.plugins.crashlytics)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -94,7 +94,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt)
     implementation(libs.hilt.navigation.compose)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
 
     // paging
     implementation(libs.paging.compose)
@@ -113,8 +113,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     testImplementation(libs.mockk)
     androidTestImplementation(libs.mockk)
-}
-
-kapt {
-    correctErrorTypes = true
 }
