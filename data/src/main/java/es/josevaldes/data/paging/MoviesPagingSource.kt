@@ -2,13 +2,10 @@ package es.josevaldes.data.paging
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import es.josevaldes.core.utils.fold
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.repositories.MovieRepository
-import es.josevaldes.data.responses.DiscoverMoviesResponse
-import okhttp3.ResponseBody.Companion.toResponseBody
-import retrofit2.HttpException
-import retrofit2.Response
+import es.josevaldes.data.results.ApiErrorException
+import es.josevaldes.data.results.ApiResult
 import javax.inject.Inject
 
 class MoviesPagingSource @Inject constructor(
@@ -25,16 +22,9 @@ class MoviesPagingSource @Inject constructor(
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Movie> {
         val page = params.key ?: 1
-        val result = movieRepository.getDiscoverMovies(page, language)
-        return result.fold(
-            { error ->
-                val responseError = Response.error<DiscoverMoviesResponse>(
-                    error.code,
-                    error.message.toResponseBody()
-                )
-                LoadResult.Error(HttpException(responseError))
-            },
-            { response ->
+        return when(val result = movieRepository.getDiscoverMovies(page, language)) {
+            is ApiResult.Success -> {
+                val response = result.data
                 totalPages = response.totalPages
                 LoadResult.Page(
                     data = response.results,
@@ -46,6 +36,9 @@ class MoviesPagingSource @Inject constructor(
                     }
                 )
             }
-        )
+            is ApiResult.Error ->  {
+                LoadResult.Error(ApiErrorException(result.apiError))
+            }
+        }
     }
 }

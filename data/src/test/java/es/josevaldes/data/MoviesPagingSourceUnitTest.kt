@@ -6,6 +6,8 @@ import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.paging.MoviesPagingSource
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.responses.DiscoverMoviesResponse
+import es.josevaldes.data.results.ApiError
+import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.services.MovieService
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -162,8 +164,8 @@ class MoviesPagingSourceUnitTest {
 
         assert(result is PagingSource.LoadResult.Error)
         val error = result as PagingSource.LoadResult.Error
-        assert(error.throwable is HttpException)
-        assertEquals(500, (error.throwable as HttpException).code())
+        assert(error.throwable is ApiErrorException)
+        assertEquals(ApiError.Unknown, (error.throwable as ApiErrorException).apiError)
     }
 
     @Test
@@ -186,10 +188,10 @@ class MoviesPagingSourceUnitTest {
 
         assert(result is PagingSource.LoadResult.Error)
         val error = result as PagingSource.LoadResult.Error
-        assert(error.throwable is HttpException)
+        assert(error.throwable is ApiErrorException)
 
-        val throwableError = error.throwable as HttpException
-        assertEquals(404, throwableError.code())
+        val throwableError = error.throwable as ApiErrorException
+        assertEquals(ApiError.ResourceNotFound, throwableError.apiError)
     }
 
     @Test

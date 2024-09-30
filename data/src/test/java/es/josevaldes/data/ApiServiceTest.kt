@@ -1,9 +1,9 @@
 package es.josevaldes.data
 
-import es.josevaldes.core.utils.fold
 import es.josevaldes.data.repositories.MovieRepository
+import es.josevaldes.data.results.ApiError
+import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MovieService
-
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -48,7 +48,7 @@ class MovieRepositoryTest {
             {
                 "success": false,
                 "status_code": 22,
-                "status_message": "Invalid page: Pages start at 1 and max at 500."
+                "status_message": "Invalid page: Pages start at 1 and max at 500. They are expected to be an integer."
             }
         """.trimIndent()
 
@@ -60,17 +60,11 @@ class MovieRepositoryTest {
 
         val result = movieRepository.getDiscoverMovies(0, "en")
 
-        assertTrue(result.isLeft()) // Let's make sure that we have an error
+        assertTrue(result is ApiResult.Error) // Let's make sure that we have an error
 
-        result.fold(
-            { apiError ->
-                assertTrue(apiError.code == 22)
-                assertTrue(apiError.message == "Invalid page: Pages start at 1 and max at 500.")
-            },
-            {
-                throw AssertionError("Expected error but got success")
-            }
-        )
+        val apiError = (result as ApiResult.Error).apiError
+        assertTrue(apiError is ApiError.InvalidPage)
+        assertTrue(apiError.message == "Invalid page: Pages start at 1 and max at 500. They are expected to be an integer.")
     }
 
     @Test
@@ -114,19 +108,13 @@ class MovieRepositoryTest {
 
             val result = movieRepository.getDiscoverMovies(0, "en")
 
-            assertTrue(result.isRight()) // Let's make sure that we have a success
+            assertTrue(result is ApiResult.Success) // Let's make sure that we have a success
 
-            result.fold(
-                { _ ->
-                    throw AssertionError("Expected success but got error")
-                },
-                { discoverResult ->
-                    assertTrue(discoverResult.totalPages == 1)
-                    assertTrue(discoverResult.totalResults == 1)
-                    assertTrue(discoverResult.page == 1)
-                    assertTrue(discoverResult.results.size == 1)
-                    assertTrue(discoverResult.results.first().originalTitle == "The Crow")
-                }
-            )
+            val discoverResult = (result as ApiResult.Success).data
+            assertTrue(discoverResult.totalPages == 1)
+            assertTrue(discoverResult.totalResults == 1)
+            assertTrue(discoverResult.page == 1)
+            assertTrue(discoverResult.results.size == 1)
+            assertTrue(discoverResult.results.first().originalTitle == "The Crow")
         }
 }
