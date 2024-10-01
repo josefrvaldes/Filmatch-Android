@@ -41,8 +41,6 @@ class FirebaseAuthServiceTest {
 
 
     private val mockCredential: AuthCredential = mockk()
-    private val mockAuthResult: FirebaseAuthResult = mockk()
-    private val mockFirebaseUser: FirebaseUser = mockk()
 
     private lateinit var authService: FirebaseAuthService
 
@@ -51,28 +49,37 @@ class FirebaseAuthServiceTest {
         authService = FirebaseAuthService(mockFirebaseAuth)
         mockkStatic(GoogleAuthProvider::class)
         every { GoogleAuthProvider.getCredential(any(), any()) } returns mockCredential
+
+        coEvery { mockFirebaseAuth.signOut() } just Runs
+    }
+
+    private fun mockFirebaseUser(isEmailVerified: Boolean): FirebaseUser {
+        return mockk {
+            every { email } returns "user@example.com"
+            every { this@mockk.isEmailVerified } returns isEmailVerified
+            every { uid } returns "123"
+            every { photoUrl } returns Uri.EMPTY
+        }
+    }
+
+    private fun mockSuccessfulAuthTask(user: FirebaseUser?): Task<FirebaseAuthResult> {
+        val mockedAuthResult = mockk<FirebaseAuthResult> {
+            every { this@mockk.user } returns user
+        }
+        return mockk {
+            every { isSuccessful } returns true
+            every { result } returns mockedAuthResult
+            every { isComplete } returns true
+            every { exception } returns null
+            every { isCanceled } returns false
+        }
     }
 
 
     @Test
     fun `login success should return AuthResult Success`() = runBlocking {
-        val mockedUser = mockk<FirebaseUser> {
-            every { email } returns "user@example.com"
-            every { isEmailVerified } returns true
-            every { uid } returns "123"
-            every { photoUrl } returns Uri.EMPTY
-        }
-        val mockedSuccessfulAuthResult = mockk<FirebaseAuthResult> {
-            every { user } returns mockedUser
-        }
-        val mockedSuccessfulTask =
-            mockk<Task<FirebaseAuthResult>> {
-                every { isSuccessful } returns true
-                every { result } returns mockedSuccessfulAuthResult
-                every { isComplete } returns true
-                every { exception } returns null
-                every { isCanceled } returns false
-            }
+        val mockedUser = mockFirebaseUser(true)
+        val mockedSuccessfulTask = mockSuccessfulAuthTask(mockedUser)
         coEvery {
             mockFirebaseAuth.signInWithEmailAndPassword(any(), any())
         } returns mockedSuccessfulTask
@@ -86,30 +93,12 @@ class FirebaseAuthServiceTest {
 
     @Test
     fun `user with no verified email should return EmailNotVerified error`() = runBlocking {
-        val mockedUser = mockk<FirebaseUser> {
-            every { email } returns "user@example.com"
-            every { isEmailVerified } returns false
-            every { uid } returns "123"
-            every { photoUrl } returns Uri.EMPTY
-        }
-        val mockedSuccessfulAuthResult = mockk<FirebaseAuthResult> {
-            every { user } returns mockedUser
-        }
-        val mockedSuccessfulTask =
-            mockk<Task<FirebaseAuthResult>> {
-                every { isSuccessful } returns true
-                every { result } returns mockedSuccessfulAuthResult
-                every { isComplete } returns true
-                every { exception } returns null
-                every { isCanceled } returns false
-            }
+        val mockedUser = mockFirebaseUser(false)
+        val mockedSuccessfulTask = mockSuccessfulAuthTask(mockedUser)
         coEvery {
             mockFirebaseAuth.signInWithEmailAndPassword(any(), any())
         } returns mockedSuccessfulTask
 
-        coEvery {
-            mockFirebaseAuth.signOut()
-        } returns Unit
 
         val result = authService.login("user@example.com", "password")
 
@@ -187,10 +176,10 @@ class FirebaseAuthServiceTest {
         runBlocking {
             val context = mockk<Context>()
 
-            // Espiamos authService para poder mockear métodos privados
+            // We are spying the service to be able to call private methods
             val spyAuthService = spyk(authService)
 
-            // Mockeamos el método privado getGoogleToken
+            // let's mock the private method getGoogleToken
             coEvery { spyAuthService invoke "getGoogleToken" withArguments listOf(context) } returns AuthResult.Error(
                 AuthError.InvalidCredentials
             )
@@ -208,15 +197,15 @@ class FirebaseAuthServiceTest {
             val idToken = "valid_token"
             val mockUser = User("123", "username", "email", "")
 
-            // Espiamos authService para poder mockear métodos privados
+            // We are spying the service to be able to call private methods
             val spyAuthService = spyk(authService)
 
-            // Mockeamos el método privado getGoogleToken
+            // let's mock the private method getGoogleToken
             coEvery { spyAuthService invoke "getGoogleToken" withArguments listOf(context) } returns AuthResult.Success(
                 idToken
             )
 
-            // Mockeamos el método firebaseAuthWithGoogle para que devuelva éxito
+            // let's mock firebaseAuthWithGoogle to return success
             coEvery { spyAuthService invoke "firebaseAuthWithGoogle" withArguments listOf(idToken) } returns AuthResult.Success(
                 mockUser
             )
@@ -233,15 +222,12 @@ class FirebaseAuthServiceTest {
             val context = mockk<Context>()
             val idToken = "valid_token"
 
-            // Espiamos authService para poder mockear métodos privados
+            // let's spy to mock private methods
             val spyAuthService = spyk(authService)
 
-            // Mockeamos el método privado getGoogleToken
             coEvery { spyAuthService invoke "getGoogleToken" withArguments listOf(context) } returns AuthResult.Success(
                 idToken
             )
-
-            // Mockeamos el método firebaseAuthWithGoogle para que devuelva un error
             coEvery { spyAuthService invoke "firebaseAuthWithGoogle" withArguments listOf(idToken) } returns AuthResult.Error(
                 AuthError.UserNotFound
             )
@@ -262,18 +248,7 @@ class FirebaseAuthServiceTest {
                 every { email } returns "user@example.com"
                 every { photoUrl } returns Uri.EMPTY
             }
-            val mockedAuthResult = mockk<FirebaseAuthResult> {
-                every { user } returns mockedUser
-            }
-            val mockedSuccessfulTask = mockk<Task<FirebaseAuthResult>> {
-                every { isSuccessful } returns true
-                every { result } returns mockedAuthResult
-                every { isComplete } returns true
-                every { exception } returns null
-                every { isCanceled } returns false
-            }
-
-            // Simulamos el task de sendEmailVerification()
+            val mockedSuccessfulTask = mockSuccessfulAuthTask(mockedUser)
             val mockedVerificationTask = mockk<Task<Void>> {
                 every { isSuccessful } returns true
                 every { isComplete } returns true
@@ -287,7 +262,6 @@ class FirebaseAuthServiceTest {
                     any()
                 )
             } returns mockedSuccessfulTask
-            coEvery { mockFirebaseAuth.signOut() } just Runs
 
             val expectedUser = User("123", "", "user@example.com", "")
 
@@ -299,16 +273,7 @@ class FirebaseAuthServiceTest {
 
     @Test
     fun `register when user is null should return AuthResult Error UserNotFound`() = runBlocking {
-        val mockedAuthResult = mockk<FirebaseAuthResult> {
-            every { user } returns null
-        }
-        val mockedSuccessfulTask = mockk<Task<FirebaseAuthResult>> {
-            every { isSuccessful } returns true
-            every { result } returns mockedAuthResult
-            every { isComplete } returns true
-            every { exception } returns null
-            every { isCanceled } returns false
-        }
+        val mockedSuccessfulTask = mockSuccessfulAuthTask(null)
 
         coEvery {
             mockFirebaseAuth.createUserWithEmailAndPassword(any(), any())
@@ -331,7 +296,7 @@ class FirebaseAuthServiceTest {
                 mockFirebaseAuth.createUserWithEmailAndPassword(any(), any())
             } throws mockedException
 
-            val result = authService.register("user@example.com", "weakpassword")
+            val result = authService.register("user@example.com", "weakPassword")
 
             assertTrue(result is AuthResult.Error)
             assertEquals(AuthError.WeakPassword, (result as AuthResult.Error).authError)
@@ -413,37 +378,39 @@ class FirebaseAuthServiceTest {
     }
 
     @Test
-    fun `callForgotPassword when FirebaseAuthInvalidUserException is thrown should return AuthResult Error UserNotFound`() = runBlocking {
-        val mockedException = mockk<FirebaseAuthInvalidUserException> {
-            every { errorCode } returns "ERROR_USER_NOT_FOUND"
-            every { message } returns "User not found"
+    fun `callForgotPassword when FirebaseAuthInvalidUserException is thrown should return AuthResult Error UserNotFound`() =
+        runBlocking {
+            val mockedException = mockk<FirebaseAuthInvalidUserException> {
+                every { errorCode } returns "ERROR_USER_NOT_FOUND"
+                every { message } returns "User not found"
+            }
+
+            coEvery {
+                mockFirebaseAuth.sendPasswordResetEmail(any())
+            } throws mockedException
+
+            val result = authService.callForgotPassword("user@example.com")
+
+            assertTrue(result is AuthResult.Error)
+            assertEquals(AuthError.UserNotFound, (result as AuthResult.Error).authError)
         }
-
-        coEvery {
-            mockFirebaseAuth.sendPasswordResetEmail(any())
-        } throws mockedException
-
-        val result = authService.callForgotPassword("user@example.com")
-
-        assertTrue(result is AuthResult.Error)
-        assertEquals(AuthError.UserNotFound, (result as AuthResult.Error).authError)
-    }
 
     @Test
-    fun `callForgotPassword when generic Exception is thrown should return AuthResult Error Unknown`() = runBlocking {
-        val mockedException = mockk<Exception> {
-            every { message } returns "Generic error"
+    fun `callForgotPassword when generic Exception is thrown should return AuthResult Error Unknown`() =
+        runBlocking {
+            val mockedException = mockk<Exception> {
+                every { message } returns "Generic error"
+            }
+
+            coEvery {
+                mockFirebaseAuth.sendPasswordResetEmail(any())
+            } throws mockedException
+
+            val result = authService.callForgotPassword("user@example.com")
+
+            assertTrue(result is AuthResult.Error)
+            assertEquals(AuthError.Unknown, (result as AuthResult.Error).authError)
         }
-
-        coEvery {
-            mockFirebaseAuth.sendPasswordResetEmail(any())
-        } throws mockedException
-
-        val result = authService.callForgotPassword("user@example.com")
-
-        assertTrue(result is AuthResult.Error)
-        assertEquals(AuthError.Unknown, (result as AuthResult.Error).authError)
-    }
 
 
     @Test
