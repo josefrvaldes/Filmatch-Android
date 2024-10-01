@@ -80,7 +80,11 @@ fun AuthScreen(navController: NavController) {
     }
 
     when (val result = signInResult.value) {
-        is AuthResult.Success -> navController.navigate(Screen.SlideMovieScreen.route)
+        is AuthResult.Success -> navController.navigate(Screen.SlideMovieScreen.route) {
+            // this will clean the stack up to SlideMovieScreen except for SlideMovieScreen itself
+            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+            launchSingleTop = true // avoid multiple instances of SlideMovieScreen
+        }
         is AuthResult.Error -> {
             errorMessage =
                 ErrorMessageWrapper(LocalContext.current).getErrorMessage(result.authError)

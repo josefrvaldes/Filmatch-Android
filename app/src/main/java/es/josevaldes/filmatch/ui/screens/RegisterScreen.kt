@@ -110,7 +110,7 @@ fun RegisterScreen(navController: NavController) {
         SuccessDialog {
             showSuccessDialog = false
             navController.navigate(Screen.LoginScreen.route) {
-                // this will clean the stuck up to AuthScreen except for AuthScreen itself
+                // this will clean the stack up to AuthScreen except for AuthScreen itself
                 popUpTo(Screen.AuthScreen.route) { inclusive = false }
                 launchSingleTop = true // avoid multiple instances of login screen
             }
