@@ -157,6 +157,8 @@ class FirebaseAuthService(private val auth: FirebaseAuth) : AuthService {
             AuthResult.Success(Unit)
         } catch (e: FirebaseAuthInvalidUserException) {
             AuthResult.Error(AuthError.UserNotFound)
+        } catch (e: FirebaseAuthInvalidCredentialsException) {
+            AuthResult.Error(AuthError.EmailIsNotValid)
         } catch (e: Exception) {
             Timber.tag("AuthService").d("callForgotPassword: ${e.message}")
             AuthResult.Error(AuthError.Unknown)

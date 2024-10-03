@@ -27,6 +27,7 @@ class ErrorMessageWrapper(val context: Context) {
             AuthError.CouldNotFetchToken -> "Couldn't fetch token"
             AuthError.CancelledByUser -> "Cancelled by user"
             AuthError.Unknown -> "Unknown error"
+            AuthError.EmailIsNotValid -> "Email is not valid"
         }
     }
 

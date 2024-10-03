@@ -48,7 +48,7 @@ fun LoginScreen(navController: NavController) {
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
-    val signInResult = viewModel.authResult.collectAsState()
+    val signInResult = viewModel.authResult.collectAsState(null)
     var shouldDisplayForgotPasswordDialog by remember { mutableStateOf(false) }
     var shouldDisplaySuccessForgettingPasswordDialog by remember { mutableStateOf(false) }
 

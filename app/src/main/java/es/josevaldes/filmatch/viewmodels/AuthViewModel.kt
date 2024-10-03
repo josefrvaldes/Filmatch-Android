@@ -8,8 +8,8 @@ import es.josevaldes.data.model.User
 import es.josevaldes.data.results.AuthResult
 import es.josevaldes.data.services.AuthService
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -19,11 +19,11 @@ class AuthViewModel @Inject constructor(
     private val authService: AuthService
 ) : ViewModel() {
 
-    private val _authResult = MutableStateFlow<AuthResult<User>?>(null)
-    val authResult = _authResult.asStateFlow()
+    private val _authResult = MutableSharedFlow<AuthResult<User>?>()
+    val authResult = _authResult.asSharedFlow()
 
-    private val _forgotPasswordResult = MutableStateFlow<AuthResult<Unit>?>(null)
-    val forgotPasswordResult = _forgotPasswordResult.asStateFlow()
+    private val _forgotPasswordResult = MutableSharedFlow<AuthResult<Unit>?>()
+    val forgotPasswordResult = _forgotPasswordResult.asSharedFlow()
 
     fun signInWithGoogle(
         context: Context
@@ -31,7 +31,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val result = authService.signInWithGoogle(context)
-                _authResult.value = result
+                _authResult.emit(result)
             }
         }
     }
@@ -43,7 +43,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val result = authService.register(email, pass)
-                _authResult.value = result
+                _authResult.emit(result)
             }
         }
     }
@@ -55,7 +55,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val result = authService.login(email, pass)
-                _authResult.value = result
+                _authResult.emit(result)
             }
         }
     }
@@ -64,13 +64,17 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val result = authService.callForgotPassword(email)
-                _forgotPasswordResult.value = result
+                _forgotPasswordResult.emit(result)
             }
         }
     }
 
     fun clearError() {
-        _authResult.value = null
-        _forgotPasswordResult.value = null
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                _authResult.emit(null)
+                _forgotPasswordResult.emit(null)
+            }
+        }
     }
 }

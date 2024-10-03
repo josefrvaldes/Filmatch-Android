@@ -39,7 +39,7 @@ fun AuthScreen(navController: NavController) {
     val viewModel: AuthViewModel = hiltViewModel()
     val context = LocalContext.current
     var errorMessage by remember { mutableStateOf("") }
-    val signInResult = viewModel.authResult.collectAsState()
+    val signInResult = viewModel.authResult.collectAsState(null)
 
     Scaffold { padding ->
         Column(

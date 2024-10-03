@@ -106,6 +106,8 @@ dependencies {
 
     implementation(libs.timber)
 
+
+    testImplementation(project(":data"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -114,5 +116,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     testImplementation(libs.mockk)
+    testImplementation(libs.core.testing)
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.test.monitor)
     androidTestImplementation(libs.mockk)
 }

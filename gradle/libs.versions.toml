@@ -26,6 +26,9 @@ kspVersion = "2.0.20-1.0.25"
 googleIdVersion = "1.1.1"
 timberVersion = "5.0.1"
 roboelectricVersion = "4.13"
+coreTestingVersion = "2.2.0"
+coroutinesTestVersion = "1.8.1"
+testMonitorVersion = "1.7.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -67,6 +70,9 @@ play-services-auth = { group = "com.google.android.gms", name = "play-services-a
 google-id = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleIdVersion" }
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timberVersion" }
 roboelectric = { group = "org.robolectric", name = "robolectric", version.ref = "roboelectricVersion" }
+core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "coreTestingVersion" }
+coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTestVersion" }
+test-monitor = { group = "androidx.test", name = "monitor", version.ref = "testMonitorVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
