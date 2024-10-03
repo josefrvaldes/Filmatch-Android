@@ -14,7 +14,7 @@ import org.junit.Test
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class MovieRepositoryTest {
+class ApiServiceTest {
 
     private lateinit var mockWebServer: MockWebServer
     private lateinit var movieService: MovieService
@@ -22,17 +22,19 @@ class MovieRepositoryTest {
 
     @Before
     fun setUp() {
-        // let's initialize a MockWebServer that will return whatever we want to the service
+        // let's mock the json responses that can be returned by the server
         mockWebServer = MockWebServer()
         mockWebServer.start()
 
-        // Crear un MovieService con pointing to our mockwebserver
+        // let's create the service
         movieService = Retrofit.Builder()
             .baseUrl(mockWebServer.url("/"))
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(MovieService::class.java)
 
+        // TODO: this tests are wrong, we should not be testing the repository, we should be testing the service
+        // TODO: we should change these tests in the future to only test the service
         // let's init the repo
         movieRepository = MovieRepository(movieService)
     }
@@ -43,7 +45,7 @@ class MovieRepositoryTest {
     }
 
     @Test
-    fun `getDiscoverMovies should return ApiError on any api error`(): Unit = runBlocking {
+    fun `any call should return ApiError on any api error`(): Unit = runBlocking {
         val errorJson = """
             {
                 "success": false,
@@ -68,7 +70,7 @@ class MovieRepositoryTest {
     }
 
     @Test
-    fun `getDiscoverMovies should return WhateverResponse on any valid response`(): Unit =
+    fun `any call should return WhateverResponse on any valid response`(): Unit =
         runBlocking {
             val responseJson = """
             {
@@ -116,5 +118,64 @@ class MovieRepositoryTest {
             assertTrue(discoverResult.page == 1)
             assertTrue(discoverResult.results.size == 1)
             assertTrue(discoverResult.results.first().originalTitle == "The Crow")
+        }
+
+
+    @Test
+    fun `any call should return HTTP error response, when response code error such as 404 and totally unexpected response such as HTML`(): Unit =
+        runBlocking {
+            val responseJson = """
+            <html>
+                <head>
+                    <title>404 Not Found</title>
+                </head>
+                <body>
+                    <h1>Not Found</h1>
+                    <p>The requested URL was not found on this server.</p>
+                </body>
+            </html>
+        """.trimIndent()
+
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(404)
+                    .setBody(responseJson)
+            )
+
+            val result = movieRepository.getDiscoverMovies(0, "en")
+
+            assertTrue(result is ApiResult.Error) // Let's make sure that we have an error
+
+            val apiError = (result as ApiResult.Error).apiError
+            assertTrue(apiError is ApiError.ResourceNotFound)
+        }
+
+    @Test
+    fun `any call should return error when HTTP code is 200 but the content is totally wrong`() =
+        runBlocking {
+            val responseJson = """
+            <html>
+                <head>
+                    <title>404 Not Found</title>
+                </head>
+                <body>
+                    <h1>Not Found</h1>
+                    <p>The requested URL was not found on this server.</p>
+                </body>
+            </html>
+        """.trimIndent()
+
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody(responseJson)
+            )
+
+            val result = movieRepository.getDiscoverMovies(0, "en")
+
+            assertTrue(result is ApiResult.Error) // Let's make sure that we have an error
+
+            val apiError = (result as ApiResult.Error).apiError
+            assertTrue(apiError is ApiError.Unknown)
         }
 }

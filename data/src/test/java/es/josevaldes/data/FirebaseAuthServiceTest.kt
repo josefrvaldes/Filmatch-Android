@@ -358,7 +358,7 @@ class FirebaseAuthServiceTest {
 
 
     @Test
-    fun `callForgotPassword when successful should return AuthResult Success`() = runBlocking {
+    fun `call ForgotPassword when successful should return AuthResult Success`() = runBlocking {
         val mockedSuccessfulTask = mockk<Task<Void>> {
             every { isSuccessful } returns true
             every { isComplete } returns true
@@ -378,7 +378,7 @@ class FirebaseAuthServiceTest {
     }
 
     @Test
-    fun `callForgotPassword when FirebaseAuthInvalidUserException is thrown should return AuthResult Error UserNotFound`() =
+    fun `call ForgotPassword when FirebaseAuthInvalidUserException is thrown should return AuthResult Error UserNotFound`() =
         runBlocking {
             val mockedException = mockk<FirebaseAuthInvalidUserException> {
                 every { errorCode } returns "ERROR_USER_NOT_FOUND"
@@ -396,7 +396,25 @@ class FirebaseAuthServiceTest {
         }
 
     @Test
-    fun `callForgotPassword when generic Exception is thrown should return AuthResult Error Unknown`() =
+    fun `call ForgotPassword when FirebaseAuthInvalidUserException is thrown should return AuthResult Error EmailIsNotValid`() =
+        runBlocking {
+            val mockedException = mockk<FirebaseAuthInvalidCredentialsException> {
+                every { errorCode } returns "ERROR_USER_NOT_FOUND"
+                every { message } returns "User not found"
+            }
+
+            coEvery {
+                mockFirebaseAuth.sendPasswordResetEmail(any())
+            } throws mockedException
+
+            val result = authService.callForgotPassword("user@example.com")
+
+            assertTrue(result is AuthResult.Error)
+            assertEquals(AuthError.EmailIsNotValid, (result as AuthResult.Error).authError)
+        }
+
+    @Test
+    fun `call ForgotPassword when generic Exception is thrown should return AuthResult Error Unknown`() =
         runBlocking {
             val mockedException = mockk<Exception> {
                 every { message } returns "Generic error"
