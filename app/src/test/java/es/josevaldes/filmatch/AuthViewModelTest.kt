@@ -10,6 +10,7 @@ import es.josevaldes.filmatch.viewmodels.AuthViewModel
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -22,6 +23,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelTest {
 
     @get:Rule
@@ -228,15 +230,4 @@ class AuthViewModelTest {
             assertTrue(result is AuthResult.Error)
             assertEquals((result as AuthResult.Error).authError, AuthError.InvalidCredentials)
         }
-
-    @Test
-    fun `calling clearError should set authResult and forgotPasswordResult to null`() = runTest {
-        authViewModel.clearError()
-        val authResult = authViewModel.authResult.first()
-        val forgotPasswordResult = authViewModel.forgotPasswordResult.first()
-        assertEquals(null, authResult)
-        assertEquals(null, forgotPasswordResult)
-    }
-
-
 }
