@@ -10,6 +10,7 @@ sealed class AuthError {
     data object InvalidCredentials : AuthError()
     data object WeakPassword : AuthError()
     data object EmailNotVerified : AuthError()
+    data object EmailIsNotValid : AuthError()
     data object UserExists : AuthError()
     data object CouldNotFetchToken : AuthError()
     data object CancelledByUser : AuthError()

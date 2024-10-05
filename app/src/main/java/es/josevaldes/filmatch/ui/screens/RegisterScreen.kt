@@ -25,7 +25,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import es.josevaldes.core.utils.validateEmail
@@ -49,7 +48,7 @@ fun RegisterScreen(navController: NavController) {
     val pass2 = remember { mutableStateOf("") }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
-    val registerResult = authViewModel.authResult.collectAsState()
+    val registerResult = authViewModel.authResult.collectAsState(null)
 
 
     fun isValidForm(): Boolean {
@@ -110,7 +109,7 @@ fun RegisterScreen(navController: NavController) {
         SuccessDialog {
             showSuccessDialog = false
             navController.navigate(Screen.LoginScreen.route) {
-                // this will clean the stuck up to AuthScreen except for AuthScreen itself
+                // this will clean the stack up to AuthScreen except for AuthScreen itself
                 popUpTo(Screen.AuthScreen.route) { inclusive = false }
                 launchSingleTop = true // avoid multiple instances of login screen
             }

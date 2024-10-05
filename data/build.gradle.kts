@@ -75,7 +75,8 @@ dependencies {
     implementation(libs.google.id)
 
 
-
+    // Timber
+    implementation(libs.timber)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -87,4 +88,5 @@ dependencies {
 
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.mockk)
+    testImplementation(libs.roboelectric)
 }

@@ -1,5 +1,6 @@
 package es.josevaldes.data.di
 
+import com.google.firebase.auth.FirebaseAuth
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,6 +16,6 @@ object AuthModule {
     @Provides
     @Singleton
     fun provideAuthService(): AuthService {
-        return FirebaseAuthService()
+        return FirebaseAuthService(FirebaseAuth.getInstance())
     }
 }

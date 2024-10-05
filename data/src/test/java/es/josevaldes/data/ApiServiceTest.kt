@@ -1,6 +1,6 @@
 package es.josevaldes.data
 
-import es.josevaldes.data.repositories.MovieRepository
+import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MovieService
@@ -8,33 +8,31 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class MovieRepositoryTest {
+class ApiServiceTest {
 
     private lateinit var mockWebServer: MockWebServer
     private lateinit var movieService: MovieService
-    private lateinit var movieRepository: MovieRepository
 
     @Before
     fun setUp() {
-        // let's initialize a MockWebServer that will return whatever we want to the service
+        // let's mock the json responses that can be returned by the server
         mockWebServer = MockWebServer()
         mockWebServer.start()
 
-        // Crear un MovieService con pointing to our mockwebserver
+        // let's create the service
         movieService = Retrofit.Builder()
             .baseUrl(mockWebServer.url("/"))
             .addConverterFactory(GsonConverterFactory.create())
+            .addCallAdapterFactory(ApiResultCallAdapterFactory())
             .build()
             .create(MovieService::class.java)
-
-        // let's init the repo
-        movieRepository = MovieRepository(movieService)
     }
 
     @After
@@ -43,7 +41,7 @@ class MovieRepositoryTest {
     }
 
     @Test
-    fun `getDiscoverMovies should return ApiError on any api error`(): Unit = runBlocking {
+    fun `any call should return ApiError on any api error`(): Unit = runBlocking {
         val errorJson = """
             {
                 "success": false,
@@ -58,17 +56,16 @@ class MovieRepositoryTest {
                 .setBody(errorJson)
         )
 
-        val result = movieRepository.getDiscoverMovies(0, "en")
+        val response = movieService.getDiscoverMovies(0, "en")
 
-        assertTrue(result is ApiResult.Error) // Let's make sure that we have an error
-
-        val apiError = (result as ApiResult.Error).apiError
+        assertTrue(response is ApiResult.Error) // Let's make sure that we have an error
+        val apiError = (response as ApiResult.Error).apiError
         assertTrue(apiError is ApiError.InvalidPage)
         assertTrue(apiError.message == "Invalid page: Pages start at 1 and max at 500. They are expected to be an integer.")
     }
 
     @Test
-    fun `getDiscoverMovies should return WhateverResponse on any valid response`(): Unit =
+    fun `any call should return WhateverResponse on any valid response`(): Unit =
         runBlocking {
             val responseJson = """
             {
@@ -106,15 +103,152 @@ class MovieRepositoryTest {
                     .setBody(responseJson)
             )
 
-            val result = movieRepository.getDiscoverMovies(0, "en")
+            val response = movieService.getDiscoverMovies(0, "en")
 
-            assertTrue(result is ApiResult.Success) // Let's make sure that we have a success
-
-            val discoverResult = (result as ApiResult.Success).data
+            assertTrue(response is ApiResult.Success) // Let's make sure that we have an error
+            val discoverResult = (response as ApiResult.Success).data
             assertTrue(discoverResult.totalPages == 1)
             assertTrue(discoverResult.totalResults == 1)
             assertTrue(discoverResult.page == 1)
             assertTrue(discoverResult.results.size == 1)
             assertTrue(discoverResult.results.first().originalTitle == "The Crow")
         }
+
+
+    @Test
+    fun `any call should return HTTP error response, when response code error such as 404 and totally unexpected response such as HTML`(): Unit =
+        runBlocking {
+            val responseJson = """
+            <html>
+                <head>
+                    <title>404 Not Found</title>
+                </head>
+                <body>
+                    <h1>Not Found</h1>
+                    <p>The requested URL was not found on this server.</p>
+                </body>
+            </html>
+        """.trimIndent()
+
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(404)
+                    .setBody(responseJson)
+            )
+
+            val response = movieService.getDiscoverMovies(0, "en")
+
+            assertTrue(response is ApiResult.Error) // Let's make sure that we have an error
+
+            val apiError = (response as ApiResult.Error).apiError
+            assertEquals(apiError, ApiError.ResourceNotFound)
+        }
+
+    @Test
+    fun `any call should return error when HTTP code is 200 but the content is totally wrong`() =
+        runBlocking {
+            val responseJson = """
+            <html>
+                <head>
+                    <title>404 Not Found</title>
+                </head>
+                <body>
+                    <h1>Not Found</h1>
+                    <p>The requested URL was not found on this server.</p>
+                </body>
+            </html>
+        """.trimIndent()
+
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody(responseJson)
+            )
+
+            val response = movieService.getDiscoverMovies(0, "en")
+
+            assertTrue(response is ApiResult.Error) // Let's make sure that we have an error
+            val apiError = (response as ApiResult.Error).apiError
+            assertTrue(apiError is ApiError.Unknown)
+        }
+
+
+    @Test
+    fun `test successful response with correct JSON`() = runBlocking {
+        val mockResponse = MockResponse()
+            .setResponseCode(200)
+            .setBody(
+                """{
+                "page": 1,
+                "results": [],
+                "total_pages": 10,
+                "total_results": 100
+            }"""
+            )
+        mockWebServer.enqueue(mockResponse)
+
+        val response = movieService.getDiscoverMovies(1)
+
+        assertTrue(response is ApiResult.Success)
+        val discoverResult = (response as ApiResult.Success).data
+        assertEquals(discoverResult.page, 1)
+        assertEquals(discoverResult.results.size, 0)
+        assertEquals(discoverResult.totalPages, 10)
+        assertEquals(discoverResult.totalResults, 100)
+    }
+
+    @Test
+    fun `test error response with correct JSON`() = runBlocking {
+        val mockResponse = MockResponse()
+            .setResponseCode(400)
+            .setBody(
+                """{
+                "success": false,
+                "status_code": 7,
+                "status_message": "Invalid API key."
+            }"""
+            )
+        mockWebServer.enqueue(mockResponse)
+
+        val response = movieService.getDiscoverMovies(1)
+
+        assertTrue(response is ApiResult.Error)
+        val apiError = (response as ApiResult.Error).apiError
+        assertTrue(apiError is ApiError.InvalidApiKey)
+    }
+
+    @Test
+    fun `test HTTP status error with no body`() {
+        val mockResponse = MockResponse()
+            .setResponseCode(500)
+        mockWebServer.enqueue(mockResponse)
+
+        val response = runBlocking { movieService.getDiscoverMovies(1) }
+        val apiError = (response as ApiResult.Error).apiError
+        assertTrue(apiError is ApiError.InternalError)
+    }
+
+    @Test
+    fun `test broken JSON response`() {
+        val mockResponse = MockResponse()
+            .setResponseCode(200)
+            .setBody("{ broken_json")
+        mockWebServer.enqueue(mockResponse)
+
+        val response = runBlocking { movieService.getDiscoverMovies(1) }
+        val apiError = (response as ApiResult.Error).apiError
+        assertTrue(apiError is ApiError.Unknown)
+    }
+
+    @Test
+    fun `test unexpected HTML response`() = runBlocking {
+        val mockResponse = MockResponse()
+            .setResponseCode(200)
+            .setBody("<html><body>Error</body></html>")
+        mockWebServer.enqueue(mockResponse)
+
+        val response = movieService.getDiscoverMovies(1)
+        val apiError = (response as ApiResult.Error).apiError
+        assertTrue(apiError is ApiError.Unknown)
+    }
 }

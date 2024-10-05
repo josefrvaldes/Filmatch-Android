@@ -48,7 +48,7 @@ fun LoginScreen(navController: NavController) {
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
-    val signInResult = viewModel.authResult.collectAsState()
+    val signInResult = viewModel.authResult.collectAsState(null)
     var shouldDisplayForgotPasswordDialog by remember { mutableStateOf(false) }
     var shouldDisplaySuccessForgettingPasswordDialog by remember { mutableStateOf(false) }
 
@@ -89,7 +89,11 @@ fun LoginScreen(navController: NavController) {
     }
 
     when (val result = signInResult.value) {
-        is AuthResult.Success -> navController.navigate(Screen.SlideMovieScreen.route)
+        is AuthResult.Success -> navController.navigate(Screen.SlideMovieScreen.route) {
+            // this will clean the stack up to SlideMovieScreen except for SlideMovieScreen itself
+            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+            launchSingleTop = true // avoid multiple instances of SlideMovieScreen
+        }
         is AuthResult.Error -> {
             errorMessage =
                 ErrorMessageWrapper(LocalContext.current).getErrorMessage(result.authError)
