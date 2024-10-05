@@ -1,7 +1,7 @@
 package es.josevaldes.data.services
 
 import es.josevaldes.data.responses.DiscoverMoviesResponse
-import retrofit2.Response
+import es.josevaldes.data.results.ApiResult
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -11,5 +11,5 @@ interface MovieService {
         @Query("page") page: Int,
         @Query("language") language: String? = "en-US",
         @Query("sort_by") sortBy: String? = "popularity.desc"
-    ): Response<DiscoverMoviesResponse>
+    ): ApiResult<DiscoverMoviesResponse>
 }

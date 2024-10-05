@@ -10,11 +10,13 @@ import es.josevaldes.data.model.Movie
 import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.paging.MoviesPagingSource
 import es.josevaldes.data.repositories.MovieRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
 
 @HiltViewModel
@@ -25,16 +27,16 @@ class SlideMovieViewModel @Inject constructor(
     private val _language = MutableStateFlow("en-US")
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val moviesFlow: Flow<PagingData<Movie>> = _language.flatMapLatest {
-        Pager(MovieDBPagingConfig.pagingConfig) {
-            MoviesPagingSource(movieRepository, it)
-        }.flow.cachedIn(viewModelScope)
+    val moviesFlow: Flow<PagingData<Movie>> = _language.flatMapLatest { language ->
+        Pager(
+            config = MovieDBPagingConfig.pagingConfig,
+            pagingSourceFactory = { MoviesPagingSource(movieRepository, language) }
+        ).flow.cachedIn(viewModelScope).flowOn(Dispatchers.IO)
     }
 
     fun setLanguage(language: String) {
         _language.value = language
     }
-
 
     enum class SwipeAction {
         LIKE, DISLIKE
