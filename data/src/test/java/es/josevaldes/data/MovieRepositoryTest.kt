@@ -7,6 +7,7 @@ import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MovieService
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -34,8 +35,8 @@ class MovieRepositoryTest {
             )
         )
 
-        val result = movieRepository.getDiscoverMovies(0, "en")
-
+        val resultFlow = movieRepository.getDiscoverMovies(0, "en")
+        val result = resultFlow.first()
         assertTrue(result is ApiResult.Success)
         val data = (result as ApiResult.Success).data
         assertTrue(data.totalPages == 10)
@@ -46,7 +47,8 @@ class MovieRepositoryTest {
     @Test
     fun `any call should return ApiError Unknown on unexpected error`(): Unit = runBlocking {
         coEvery { movieService.getDiscoverMovies(any(), any()) } returns ApiResult.Error(ApiError.Unknown)
-        val result = movieRepository.getDiscoverMovies(0, "en")
+        val resultFlow = movieRepository.getDiscoverMovies(0, "en")
+        val result = resultFlow.first()
 
         assertTrue(result is ApiResult.Error) // Let's make sure that we have an error
 
@@ -57,7 +59,8 @@ class MovieRepositoryTest {
     @Test
     fun `any call should return ApiError ResourceNotFound on not found error`(): Unit = runBlocking {
         coEvery { movieService.getDiscoverMovies(any(), any()) } returns ApiResult.Error(ApiError.ResourceNotFound)
-        val result = movieRepository.getDiscoverMovies(0, "en")
+        val resultFlow = movieRepository.getDiscoverMovies(0, "en")
+        val result = resultFlow.first()
 
         assertTrue(result is ApiResult.Error) // Let's make sure that we have an error
 
