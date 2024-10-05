@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
 import es.josevaldes.data.network.HttpClient
 import es.josevaldes.data.services.MovieService
 import okhttp3.OkHttpClient
@@ -32,6 +33,7 @@ class NetworkModule {
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
+            .addCallAdapterFactory(ApiResultCallAdapterFactory())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

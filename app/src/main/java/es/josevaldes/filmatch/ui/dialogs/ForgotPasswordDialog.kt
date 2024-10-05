@@ -24,7 +24,7 @@ fun ForgotPasswordDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
     val viewModel: AuthViewModel = hiltViewModel()
     val email = remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
-    val forgetPasswordResult = viewModel.forgotPasswordResult.collectAsState()
+    val forgetPasswordResult = viewModel.forgotPasswordResult.collectAsState(null)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -59,6 +59,7 @@ fun ForgotPasswordDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
     if (errorMessage.isNotEmpty()) {
         ErrorDialog(errorMessage) {
             errorMessage = ""
+            viewModel.clearError()
         }
     }
 }

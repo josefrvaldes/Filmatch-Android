@@ -1,7 +1,6 @@
 package es.josevaldes.filmatch.ui.screens
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationEndReason
@@ -93,6 +92,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -414,9 +414,9 @@ private suspend fun handleSwipeRelease(
     screenWidth: Int,
 ) {
     if (translationOffset.value.absoluteValue > swipedMaxOffset) {
-        Log.d("SlideMovieScreen", "Swiped confirmed")
+        Timber.tag("SlideMovieScreen").d("Swiped confirmed")
 
-        Log.d("SlideMovieScreen", "Removing tint")
+        Timber.tag("SlideMovieScreen").d( "Removing tint")
         movie.swipedStatus = MovieSwipedStatus.NONE
         currentSwipedStatus.value = movie.swipedStatus
 
@@ -428,7 +428,7 @@ private suspend fun handleSwipeRelease(
 
         if (result.endReason == AnimationEndReason.Finished) {
             // let's remove the last movie
-            Log.d("SlideMovieScreen", "Removing movie: ${movie.movie.title}")
+            Timber.tag("SlideMovieScreen").d( "Removing movie: ${movie.movie.title}")
             val firstMovie = observableMovies.first()
             observableMovies.remove(firstMovie)
             translationOffset.snapTo(0f)
@@ -468,22 +468,22 @@ private fun handleSwipeMovement(
         rotationOffset.snapTo(newRotationOffset)
     }
     if (previousTranslationOffset.absoluteValue < swipedMaxOffset && newTranslationOffset.absoluteValue >= swipedMaxOffset) {
-        Log.d("SlideMovieScreen", "Swiped reached")
+        Timber.tag("SlideMovieScreen").d("Swiped reached")
         vibrationUtils.vibrateOneShot()
 
         // box
         movie.swipedStatus = if (newTranslationOffset > 0) {
-            Log.d("SlideMovieScreen", "Tinting green")
+            Timber.tag("SlideMovieScreen").d("Tinting green")
             MovieSwipedStatus.LIKED
         } else {
-            Log.d("SlideMovieScreen", "Tinting red")
+            Timber.tag("SlideMovieScreen").d("Tinting red")
             MovieSwipedStatus.DISLIKED
         }
         currentSwipedStatus.value = movie.swipedStatus
 
 
     } else if (previousTranslationOffset.absoluteValue >= swipedMaxOffset && newTranslationOffset.absoluteValue < swipedMaxOffset) {
-        Log.d("SlideMovieScreen", "Removing tint")
+        Timber.tag("SlideMovieScreen").d("Removing tint")
         movie.swipedStatus = MovieSwipedStatus.NONE
         currentSwipedStatus.value = movie.swipedStatus
     }

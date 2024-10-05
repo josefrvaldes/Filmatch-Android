@@ -8,15 +8,13 @@ import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.responses.DiscoverMoviesResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiErrorException
+import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MovieService
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import retrofit2.HttpException
-import retrofit2.Response
 
 
 class MoviesPagingSourceUnitTest {
@@ -67,13 +65,13 @@ class MoviesPagingSourceUnitTest {
         )
 
         // let's mock a successful response for each page
-        coEvery { movieService.getDiscoverMovies(1, any(), any()) } returns Response.success(
+        coEvery { movieService.getDiscoverMovies(1, any(), any()) } returns ApiResult.Success(
             mockedResponse1
         )
-        coEvery { movieService.getDiscoverMovies(2, any(), any()) } returns Response.success(
+        coEvery { movieService.getDiscoverMovies(2, any(), any()) } returns ApiResult.Success(
             mockedResponse2
         )
-        coEvery { movieService.getDiscoverMovies(3, any(), any()) } returns Response.success(
+        coEvery { movieService.getDiscoverMovies(3, any(), any()) } returns ApiResult.Success(
             mockedResponse3
         )
 
@@ -144,12 +142,13 @@ class MoviesPagingSourceUnitTest {
 
     @Test
     fun `MoviesPagingSource should handle server exception properly`() = runBlocking {
-        coEvery { movieService.getDiscoverMovies(1, any(), any()) } throws HttpException(
-            Response.error<DiscoverMoviesResponse>(
-                500,
-                "Internal Server Error".toResponseBody()
+        coEvery {
+            movieService.getDiscoverMovies(
+                1,
+                any(),
+                any()
             )
-        )
+        } returns ApiResult.Error(ApiError.Unknown)
 
         val movieRepository = MovieRepository(movieService)
         val pagingSource = MoviesPagingSource(movieRepository, "en")
@@ -170,10 +169,13 @@ class MoviesPagingSourceUnitTest {
 
     @Test
     fun `MoviesPagingSource should handle 404 error properly`() = runBlocking {
-        coEvery { movieService.getDiscoverMovies(1, any(), any()) } returns Response.error(
-            404,
-            "Not Found".toResponseBody()
-        )
+        coEvery {
+            movieService.getDiscoverMovies(
+                1,
+                any(),
+                any()
+            )
+        } returns ApiResult.Error(ApiError.ResourceNotFound)
 
         val movieRepository = MovieRepository(movieService)
         val pagingSource = MoviesPagingSource(movieRepository, "en")
@@ -203,7 +205,7 @@ class MoviesPagingSourceUnitTest {
             totalPages = 1
         )
 
-        coEvery { movieService.getDiscoverMovies(1, any(), any()) } returns Response.success(
+        coEvery { movieService.getDiscoverMovies(1, any(), any()) } returns ApiResult.Success(
             emptyResponse
         )
 
@@ -238,7 +240,7 @@ class MoviesPagingSourceUnitTest {
             totalPages = 3
         )
 
-        coEvery { movieService.getDiscoverMovies(1, any(), any()) } returns Response.success(
+        coEvery { movieService.getDiscoverMovies(1, any(), any()) } returns ApiResult.Success(
             firstResponse
         )
 

@@ -19,8 +19,9 @@ import es.josevaldes.data.model.User
 import es.josevaldes.data.results.AuthError
 import es.josevaldes.data.results.AuthResult
 import kotlinx.coroutines.tasks.await
+import timber.log.Timber
 
-class FirebaseAuthService : AuthService {
+class FirebaseAuthService(private val auth: FirebaseAuth) : AuthService {
 
     override suspend fun signInWithGoogle(
         context: Context
@@ -34,7 +35,6 @@ class FirebaseAuthService : AuthService {
     private suspend fun firebaseAuthWithGoogle(
         idToken: String
     ): AuthResult<User> {
-        val auth = FirebaseAuth.getInstance()
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         return try {
             val result = auth.signInWithCredential(credential).await()
@@ -102,7 +102,6 @@ class FirebaseAuthService : AuthService {
         email: String,
         pass: String
     ): AuthResult<User> {
-        val auth = FirebaseAuth.getInstance()
         return try {
             val result = auth.createUserWithEmailAndPassword(email, pass).await()
             result.user?.let {
@@ -119,6 +118,7 @@ class FirebaseAuthService : AuthService {
         } catch (e: FirebaseAuthUserCollisionException) {
             AuthResult.Error(AuthError.UserExists)
         } catch (e: Exception) {
+            Timber.tag("AuthService").d("register: ${e.message}")
             AuthResult.Error(AuthError.Unknown)
         }
     }
@@ -127,7 +127,6 @@ class FirebaseAuthService : AuthService {
         email: String,
         pass: String
     ): AuthResult<User> {
-        val auth = FirebaseAuth.getInstance()
         return try {
             val result = auth.signInWithEmailAndPassword(email, pass).await()
             result.user?.let { currentUser ->
@@ -145,6 +144,7 @@ class FirebaseAuthService : AuthService {
         } catch (e: FirebaseAuthInvalidCredentialsException) {
             AuthResult.Error(AuthError.InvalidCredentials)
         } catch (e: Exception) {
+            Timber.tag("AuthService").d("login: ${e.message}")
             AuthResult.Error(AuthError.Unknown)
         }
     }
@@ -152,19 +152,21 @@ class FirebaseAuthService : AuthService {
     override suspend fun callForgotPassword(
         email: String,
     ): AuthResult<Unit> {
-        val auth = FirebaseAuth.getInstance()
         return try {
             auth.sendPasswordResetEmail(email).await()
             AuthResult.Success(Unit)
         } catch (e: FirebaseAuthInvalidUserException) {
             AuthResult.Error(AuthError.UserNotFound)
+        } catch (e: FirebaseAuthInvalidCredentialsException) {
+            AuthResult.Error(AuthError.EmailIsNotValid)
         } catch (e: Exception) {
+            Timber.tag("AuthService").d("callForgotPassword: ${e.message}")
             AuthResult.Error(AuthError.Unknown)
         }
     }
 
     override fun isLoggedIn(): Boolean {
-        val user = FirebaseAuth.getInstance().currentUser
+        val user = auth.currentUser
         return user != null && user.isEmailVerified
     }
 }
