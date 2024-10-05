@@ -6,6 +6,7 @@ import es.josevaldes.data.model.Movie
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class MoviesPagingSource @Inject constructor(
@@ -22,7 +23,7 @@ class MoviesPagingSource @Inject constructor(
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Movie> {
         val page = params.key ?: 1
-        return when(val result = movieRepository.getDiscoverMovies(page, language)) {
+        return when (val result = movieRepository.getDiscoverMovies(page, language).first()) {
             is ApiResult.Success -> {
                 val response = result.data
                 totalPages = response.totalPages
@@ -36,7 +37,8 @@ class MoviesPagingSource @Inject constructor(
                     }
                 )
             }
-            is ApiResult.Error ->  {
+
+            is ApiResult.Error -> {
                 LoadResult.Error(ApiErrorException(result.apiError))
             }
         }
