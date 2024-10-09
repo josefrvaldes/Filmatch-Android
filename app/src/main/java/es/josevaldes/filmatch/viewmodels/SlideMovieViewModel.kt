@@ -10,11 +10,13 @@ import es.josevaldes.data.model.Movie
 import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.paging.MoviesPagingSource
 import es.josevaldes.data.repositories.MovieRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
@@ -35,11 +37,14 @@ class SlideMovieViewModel @Inject constructor(
         Pager(
             config = MovieDBPagingConfig.pagingConfig,
             pagingSourceFactory = { MoviesPagingSource(movieRepository, language) }
-        ).flow.onStart {
-            _isLoading.value = true
-        }.onCompletion {
-            _isLoading.value = false
-        }.cachedIn(viewModelScope)
+        ).flow
+            .flowOn(Dispatchers.IO)
+            .cachedIn(viewModelScope)
+            .onStart {
+                _isLoading.value = true
+            }.onCompletion {
+                _isLoading.value = false
+            }
     }
 
     fun setLanguage(language: String) {
