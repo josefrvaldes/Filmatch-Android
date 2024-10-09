@@ -29,6 +29,9 @@ roboelectricVersion = "4.13"
 coreTestingVersion = "2.2.0"
 coroutinesTestVersion = "1.8.1"
 testMonitorVersion = "1.7.2"
+pagingTestVersion = "3.3.2"
+pagingTestingAndroid = "3.3.2"
+lifecycleViewmodelKtx = "2.6.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -59,6 +62,7 @@ okhttpbom = { group = "com.squareup.okhttp3", name = "okhttp-bom", version.ref =
 okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okHttpVersion" }
 paging = { group = "androidx.paging", name = "paging-runtime-ktx", version.ref = "pagingVersion" }
 paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "pagingVersion" }
+paging-common = { group = "androidx.paging", name = "paging-common-ktx", version.ref = "pagingTestVersion" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBomVersion" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics-ktx" }
@@ -73,6 +77,8 @@ roboelectric = { group = "org.robolectric", name = "robolectric", version.ref = 
 core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "coreTestingVersion" }
 coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTestVersion" }
 test-monitor = { group = "androidx.test", name = "monitor", version.ref = "testMonitorVersion" }
+androidx-paging-testing-android = { group = "androidx.paging", name = "paging-testing-android", version.ref = "pagingTestingAndroid" }
+androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
