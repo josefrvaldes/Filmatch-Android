@@ -1,26 +1,25 @@
 package es.josevaldes.data.repositories
 
-import es.josevaldes.data.responses.DiscoverMoviesResponse
-import es.josevaldes.data.results.ApiError
-import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.MovieService
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import androidx.paging.Pager
+import es.josevaldes.data.model.Movie
+import es.josevaldes.data.paging.MovieDBPagingConfig
+import es.josevaldes.data.paging.MoviesPagingSource
 import javax.inject.Inject
 
 
-class MovieRepository @Inject constructor(private val moviesService: MovieService) {
+class MovieRepository @Inject constructor(
+    private val _moviesPagingSource: MoviesPagingSource
+) {
     fun getDiscoverMovies(
-        page: Int,
         language: String?
-    ): Flow<ApiResult<DiscoverMoviesResponse>> = flow {
-        try {
-            val apiResult = moviesService.getDiscoverMovies(page, language)
-            emit(apiResult)
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e // this is necessary for paging to work
-            emit(ApiResult.Error(ApiError.Unknown))
-        }
+    ): Pager<Int, Movie> {
+        return Pager(
+            config = MovieDBPagingConfig.pagingConfig,
+            pagingSourceFactory = {
+                _moviesPagingSource.apply {
+                    this.language = language
+                }
+            }
+        )
     }
 }

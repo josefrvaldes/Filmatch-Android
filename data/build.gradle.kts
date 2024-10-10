@@ -85,8 +85,13 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    testImplementation(libs.core.testing)
 
+    testImplementation(libs.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.mockk)
+    testImplementation(libs.paging.common)
+    testImplementation(libs.paging.testing.android)
+    testImplementation(libs.paging)
     testImplementation(libs.roboelectric)
 }

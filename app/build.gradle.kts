@@ -94,8 +94,6 @@ dependencies {
     // Hilt
     implementation(libs.hilt)
     implementation(libs.hilt.navigation.compose)
-    implementation(libs.androidx.paging.testing.android)
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     ksp(libs.hilt.compiler)
 
@@ -128,5 +126,6 @@ dependencies {
     androidTestImplementation(libs.mockk)
     testImplementation(libs.paging.common)
     testImplementation(libs.paging)
+    testImplementation(libs.paging.testing.android)
     testImplementation(libs.roboelectric)
 }
