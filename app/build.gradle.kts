@@ -94,10 +94,13 @@ dependencies {
     // Hilt
     implementation(libs.hilt)
     implementation(libs.hilt.navigation.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
     ksp(libs.hilt.compiler)
 
     // paging
     implementation(libs.paging.compose)
+    implementation(libs.paging.common)
+    implementation(libs.paging)
 
     // Firebase
     implementation(platform(libs.firebase.bom))
@@ -105,6 +108,7 @@ dependencies {
     implementation(libs.firebase.crashlytics)
 
     implementation(libs.timber)
+
 
 
     testImplementation(project(":data"))
@@ -120,4 +124,8 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.test.monitor)
     androidTestImplementation(libs.mockk)
+    testImplementation(libs.paging.common)
+    testImplementation(libs.paging)
+    testImplementation(libs.paging.testing.android)
+    testImplementation(libs.roboelectric)
 }
