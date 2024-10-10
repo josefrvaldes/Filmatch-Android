@@ -2,21 +2,16 @@ package es.josevaldes.filmatch.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.Pager
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
 import es.josevaldes.data.model.Movie
-import es.josevaldes.data.paging.MovieDBPagingConfig
-import es.josevaldes.data.paging.MoviesPagingSource
 import es.josevaldes.data.repositories.MovieRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
@@ -34,11 +29,7 @@ class SlideMovieViewModel @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val moviesFlow: Flow<PagingData<Movie>> = _language.flatMapLatest { language ->
-        Pager(
-            config = MovieDBPagingConfig.pagingConfig,
-            pagingSourceFactory = { MoviesPagingSource(movieRepository, language) }
-        ).flow
-            .flowOn(Dispatchers.IO)
+        movieRepository.getDiscoverMovies(language).flow
             .cachedIn(viewModelScope)
             .onStart {
                 _isLoading.value = true

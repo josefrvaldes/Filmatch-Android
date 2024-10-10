@@ -77,7 +77,7 @@ roboelectric = { group = "org.robolectric", name = "robolectric", version.ref = 
 core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "coreTestingVersion" }
 coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTestVersion" }
 test-monitor = { group = "androidx.test", name = "monitor", version.ref = "testMonitorVersion" }
-androidx-paging-testing-android = { group = "androidx.paging", name = "paging-testing-android", version.ref = "pagingTestingAndroid" }
+paging-testing-android = { group = "androidx.paging", name = "paging-testing-android", version.ref = "pagingTestingAndroid" }
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 
 [plugins]

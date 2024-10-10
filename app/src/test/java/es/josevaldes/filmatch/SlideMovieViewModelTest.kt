@@ -1,27 +1,15 @@
 package es.josevaldes.filmatch
 
-import androidx.paging.AsyncPagingDataDiffer
-import androidx.paging.PagingData
-import androidx.paging.PagingSource
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListUpdateCallback
+import androidx.paging.Pager
+import androidx.paging.testing.asPagingSourceFactory
+import androidx.paging.testing.asSnapshot
 import es.josevaldes.data.model.Movie
-import es.josevaldes.data.paging.MoviesPagingSource
+import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.repositories.MovieRepository
-import es.josevaldes.data.responses.DiscoverMoviesResponse
-import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.MovieService
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -34,24 +22,16 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class SlideMovieViewModelTest {
 
-    private val testDispatcher = StandardTestDispatcher()
 
-
-    private val movieService = mockk<MovieService>()
-    private val movieRepository = MovieRepository(movieService)
+    private val movieRepository = mockk<MovieRepository>()
     private val viewModel = SlideMovieViewModel(movieRepository)
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+
     @Before
-    fun setup() {
-        Dispatchers.setMain(testDispatcher) // Set main dispatcher for testing
+    fun setUp() {
+        viewModel.setLanguage("en-US")
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain() // Reset dispatcher after tests
-    }
 
     @Test
     fun `onLikeButtonClicked should modify swipeAction to LIKE`() = runTest {
@@ -94,112 +74,27 @@ class SlideMovieViewModelTest {
 
 
     @Test
-    fun `test AsyncPagingDataDiffer works with dispatcher`() = runTest {
-        val differ = AsyncPagingDataDiffer(
-            diffCallback = MovieDiffCallback(),
-            updateCallback = NoopListCallback(),
-            mainDispatcher = Dispatchers.Main,
-            workerDispatcher = testDispatcher
+    fun `movies flow should return a given amount of movies after scrolling`() = runTest {
+        val listOfMovies = mutableListOf<Movie>()
+        for (i in 0 until 50) {
+            listOfMovies.add(Movie(id = i))
+        }
+        coEvery {
+            movieRepository.getDiscoverMovies(any())
+        } returns Pager(
+            config = MovieDBPagingConfig.pagingConfig, // pages are 20 items long, prefetch distance is 5, we load 2 pages initially
+            initialKey = null,
+            pagingSourceFactory = listOfMovies.asPagingSourceFactory()
         )
+        val items = viewModel.moviesFlow
+        val itemsSnapshot = items.asSnapshot {
+            scrollTo(index = 12)
+        }
+        assertEquals(listOfMovies.subList(0, 40), itemsSnapshot)
 
-        val testData = listOf(Movie(id = 1, title = "Movie 1"))
-
-        val pagingData = PagingData.from(testData)
-
-        differ.submitData(pagingData)
-
-        testDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(testData, differ.snapshot().items)
+        val itemsSnapshot2 = items.asSnapshot {
+            scrollTo(index = 36)
+        }
+        assertEquals(listOfMovies, itemsSnapshot2)
     }
-
-
-    @Test
-    fun `test MoviesPagingSource returns correct data`() = runTest {
-
-        val responseEnglish = DiscoverMoviesResponse(
-            page = 1,
-            results = listOf(Movie(id = 1, title = "Movie 1")),
-            totalPages = 1,
-            totalResults = 1
-        )
-
-        coEvery { movieService.getDiscoverMovies(any(), any()) } returns ApiResult.Success(
-            responseEnglish
-        )
-
-        val pagingSource = MoviesPagingSource(movieRepository, "en-US")
-
-        val expected = PagingSource.LoadResult.Page(
-            data = responseEnglish.results,
-            prevKey = null,
-            nextKey = null
-        )
-
-        val actual = pagingSource.load(
-            PagingSource.LoadParams.Refresh(
-                key = null,
-                loadSize = 20,
-                placeholdersEnabled = false
-            )
-        )
-
-        assertEquals(expected, actual)
-    }
-
-
-    // TODO: this test is failing, we will have to fix it soon
-    @Test
-    fun `test moviesFlow emits correct data when language changes`() = runTest {
-        val responseEnglish = DiscoverMoviesResponse(
-            page = 1,
-            results = listOf(Movie(id = 1, title = "Movie 1")),
-            totalPages = 1,
-            totalResults = 1
-        )
-
-        val responseSpanish = DiscoverMoviesResponse(
-            page = 1,
-            results = listOf(Movie(id = 1, title = "Película 1")),
-            totalPages = 1,
-            totalResults = 1
-        )
-
-        // Let's mock the responses for the movies in different languages
-        val mockMoviesEnglish = ApiResult.Success(responseEnglish)
-        val mockMoviesSpanish = ApiResult.Success(responseSpanish)
-
-        coEvery { movieService.getDiscoverMovies(any(), "en-US") } returns mockMoviesEnglish
-        coEvery { movieService.getDiscoverMovies(any(), "es-ES") } returns mockMoviesSpanish
-
-        viewModel.setLanguage("en-US")
-
-        val pagingData = viewModel.moviesFlow.first()
-        val differ = AsyncPagingDataDiffer(
-            MovieDiffCallback(),
-            NoopListCallback(),
-            testDispatcher,
-            testDispatcher
-        )
-        differ.submitData(pagingData)
-        testDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(differ.snapshot().items, responseEnglish.results)
-    }
-}
-
-class MovieDiffCallback : DiffUtil.ItemCallback<Movie>() {
-    override fun areItemsTheSame(oldItem: Movie, newItem: Movie): Boolean {
-        return oldItem.id == newItem.id
-    }
-
-    override fun areContentsTheSame(oldItem: Movie, newItem: Movie): Boolean {
-        return oldItem == newItem
-    }
-}
-
-
-class NoopListCallback : ListUpdateCallback {
-    override fun onInserted(position: Int, count: Int) {}
-    override fun onRemoved(position: Int, count: Int) {}
-    override fun onMoved(fromPosition: Int, toPosition: Int) {}
-    override fun onChanged(position: Int, count: Int, payload: Any?) {}
 }

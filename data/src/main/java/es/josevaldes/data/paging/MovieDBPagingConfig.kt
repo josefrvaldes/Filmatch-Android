@@ -9,6 +9,7 @@ object MovieDBPagingConfig {
     val pagingConfig = PagingConfig(
         pageSize = PAGE_SIZE,
         prefetchDistance = PREFETCH_DISTANCE,
-        enablePlaceholders = false
+        enablePlaceholders = false,
+        initialLoadSize = PAGE_SIZE * 2
     )
 }

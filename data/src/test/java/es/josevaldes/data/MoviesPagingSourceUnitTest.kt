@@ -4,7 +4,6 @@ import androidx.paging.PagingSource
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.paging.MoviesPagingSource
-import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.responses.DiscoverMoviesResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiErrorException
@@ -76,8 +75,7 @@ class MoviesPagingSourceUnitTest {
         )
 
         // let's init the paging source
-        val movieRepository = MovieRepository(movieService)
-        val pagingSource = MoviesPagingSource(movieRepository, "en")
+        val pagingSource = MoviesPagingSource(movieService, "en")
         val pageSize = MovieDBPagingConfig.pagingConfig.pageSize
         val enablePlaceholders = MovieDBPagingConfig.pagingConfig.enablePlaceholders
 
@@ -150,8 +148,7 @@ class MoviesPagingSourceUnitTest {
             )
         } returns ApiResult.Error(ApiError.Unknown)
 
-        val movieRepository = MovieRepository(movieService)
-        val pagingSource = MoviesPagingSource(movieRepository, "en")
+        val pagingSource = MoviesPagingSource(movieService, "en")
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(
@@ -177,8 +174,7 @@ class MoviesPagingSourceUnitTest {
             )
         } returns ApiResult.Error(ApiError.ResourceNotFound)
 
-        val movieRepository = MovieRepository(movieService)
-        val pagingSource = MoviesPagingSource(movieRepository, "en")
+        val pagingSource = MoviesPagingSource(movieService, "en")
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(
@@ -209,8 +205,7 @@ class MoviesPagingSourceUnitTest {
             emptyResponse
         )
 
-        val movieRepository = MovieRepository(movieService)
-        val pagingSource = MoviesPagingSource(movieRepository, "en")
+        val pagingSource = MoviesPagingSource(movieService, "en")
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(
@@ -244,8 +239,7 @@ class MoviesPagingSourceUnitTest {
             firstResponse
         )
 
-        val movieRepository = MovieRepository(movieService)
-        val pagingSource = MoviesPagingSource(movieRepository, "en")
+        val pagingSource = MoviesPagingSource(movieService, "en")
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(
