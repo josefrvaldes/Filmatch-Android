@@ -90,6 +90,8 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.coil.compose)
     implementation(libs.google.fonts)
+    implementation(libs.coroutines.core)
+    implementation(libs.coroutines.android)
 
     // Hilt
     implementation(libs.hilt)
