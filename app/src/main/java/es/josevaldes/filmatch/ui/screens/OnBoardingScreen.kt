@@ -1,7 +1,6 @@
 package es.josevaldes.filmatch.ui.screens
 
 import android.content.Context
-import android.content.SharedPreferences
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

@@ -33,4 +33,12 @@
     <string name="onboarding_screen_1_title">OnBoarding Screen 1</string>
     <string name="start">Start</string>
     <string name="skip">Skip</string>
+    <string name="welcome_screen_title">Welcome to Filmatch!</string>
+    <string name="welcome_screen_subtitle">How do you want to start your adventure?</string>
+    <string name="welcome_screen_btn_room_title">Go to Rooms</string>
+    <string name="welcome_screen_btn_room_subtitle">(without login!)</string>
+    <string name="welcome_screen_btn_room_description">Choose films with your friends without the need of logging in!</string>
+    <string name="filmatch_logo">Filmatch Logo</string>
+    <string name="welcome_screen_login_button_title">Log in\n(full app)</string>
+    <string name="welcome_screen_login_button_description">Log in access to all the app\'s functionalities!</string>
 </resources>
