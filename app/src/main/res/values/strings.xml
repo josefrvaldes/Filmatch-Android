@@ -30,4 +30,7 @@
     <string name="forgot_your_password_dialog_text">Enter your email and we will send you a link to reset your password.</string>
     <string name="success">Success</string>
     <string name="success_sending_forgot_password_dialog_body">Check your email to reset your password</string>
+    <string name="onboarding_screen_1_title">OnBoarding Screen 1</string>
+    <string name="start">Start</string>
+    <string name="skip">Skip</string>
 </resources>

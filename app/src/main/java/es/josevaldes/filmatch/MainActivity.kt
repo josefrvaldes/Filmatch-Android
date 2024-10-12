@@ -14,9 +14,11 @@ import es.josevaldes.data.services.AuthService
 import es.josevaldes.filmatch.navigation.Screen
 import es.josevaldes.filmatch.ui.screens.AuthScreen
 import es.josevaldes.filmatch.ui.screens.LoginScreen
+import es.josevaldes.filmatch.ui.screens.OnBoardingScreen
 import es.josevaldes.filmatch.ui.screens.RegisterScreen
 import es.josevaldes.filmatch.ui.screens.SlideMovieScreen
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
+import es.josevaldes.filmatch.utils.SimplePreferencesManager
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -29,7 +31,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FilmatchApp(
-                startDestination = if (isLoggedIn()) Screen.SlideMovieScreen else Screen.AuthScreen
+                startDestination = if (isLoggedIn()) {
+                    Screen.SlideMovieScreen
+                } else {
+                    if (SimplePreferencesManager(this).isOnboardingFinished()) {
+                        Screen.AuthScreen
+                    } else {
+                        Screen.OnBoardingScren
+                    }
+                }
             )
         }
     }
@@ -47,6 +57,9 @@ fun FilmatchApp(startDestination: Screen) {
         NavHost(navController = navController, startDestination = startDestination.route) {
             composable(Screen.LoginScreen.route) {
                 LoginScreen(navController)
+            }
+            composable(Screen.OnBoardingScren.route) {
+                OnBoardingScreen(navController)
             }
             composable(Screen.AuthScreen.route) {
                 AuthScreen(navController)

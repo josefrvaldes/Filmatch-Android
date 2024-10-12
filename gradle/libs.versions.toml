@@ -76,6 +76,8 @@ timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "tim
 roboelectric = { group = "org.robolectric", name = "robolectric", version.ref = "roboelectricVersion" }
 core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "coreTestingVersion" }
 coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTestVersion" }
+coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutinesTestVersion" }
+coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutinesTestVersion" }
 test-monitor = { group = "androidx.test", name = "monitor", version.ref = "testMonitorVersion" }
 paging-testing-android = { group = "androidx.paging", name = "paging-testing-android", version.ref = "pagingTestingAndroid" }
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
