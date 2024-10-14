@@ -17,6 +17,7 @@ import es.josevaldes.filmatch.ui.screens.LoginScreen
 import es.josevaldes.filmatch.ui.screens.OnBoardingScreen
 import es.josevaldes.filmatch.ui.screens.RegisterScreen
 import es.josevaldes.filmatch.ui.screens.SlideMovieScreen
+import es.josevaldes.filmatch.ui.screens.WelcomeScreen
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.utils.SimplePreferencesManager
 import javax.inject.Inject
@@ -35,7 +36,7 @@ class MainActivity : ComponentActivity() {
                     Screen.SlideMovieScreen
                 } else {
                     if (SimplePreferencesManager(this).isOnboardingFinished()) {
-                        Screen.AuthScreen
+                        Screen.WelcomeScren
                     } else {
                         Screen.OnBoardingScren
                     }
@@ -56,7 +57,7 @@ fun FilmatchApp(startDestination: Screen) {
     FilmatchTheme(darkTheme = true) {
         NavHost(navController = navController, startDestination = startDestination.route) {
             composable(Screen.LoginScreen.route) {
-                LoginScreen(navController)
+                LoginScreen(navController) {}
             }
             composable(Screen.OnBoardingScren.route) {
                 OnBoardingScreen(navController)
@@ -68,7 +69,10 @@ fun FilmatchApp(startDestination: Screen) {
                 SlideMovieScreen(navController)
             }
             composable(Screen.RegisterScreen.route) {
-                RegisterScreen(navController)
+                RegisterScreen(navController) {}
+            }
+            composable(Screen.WelcomeScren.route) {
+                WelcomeScreen(navController)
             }
         }
     }

@@ -121,7 +121,10 @@ fun OnBoardingScreen(navController: NavHostController) {
                     .border(1.dp, Color.White, RoundedCornerShape(22.dp))
                     .clickable {
                         if (pagerState.currentPage == pagerState.pageCount - 1) {
-                            navigateToAuthAndDismissOnBoardingScreenForever(context, navController)
+                            navigateToWelcomeAndDismissOnBoardingScreenForever(
+                                context,
+                                navController
+                            )
                         } else {
                             scope.launch {
                                 pagerState.animateScrollToPage(pagerState.pageCount - 1)
@@ -155,12 +158,12 @@ fun OnBoardingScreen(navController: NavHostController) {
 }
 
 
-private fun navigateToAuthAndDismissOnBoardingScreenForever(
+private fun navigateToWelcomeAndDismissOnBoardingScreenForever(
     context: Context,
     navController: NavHostController
 ) {
     SimplePreferencesManager(context).setOnboardingFinished()
-    navController.navigate(Screen.AuthScreen.route) {
+    navController.navigate(Screen.WelcomeScren.route) {
         // this will clean the stack up to SlideMovieScreen except for AuthScreen itself
         popUpTo(navController.graph.startDestinationId) { inclusive = true }
         launchSingleTop = true // avoid multiple instances of AuthScreen
