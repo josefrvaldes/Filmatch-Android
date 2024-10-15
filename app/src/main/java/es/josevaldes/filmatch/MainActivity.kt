@@ -12,11 +12,13 @@ import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import es.josevaldes.data.services.AuthService
 import es.josevaldes.filmatch.navigation.Screen
-import es.josevaldes.filmatch.ui.screens.AuthScreen
 import es.josevaldes.filmatch.ui.screens.LoginScreen
+import es.josevaldes.filmatch.ui.screens.OnBoardingScreen
 import es.josevaldes.filmatch.ui.screens.RegisterScreen
 import es.josevaldes.filmatch.ui.screens.SlideMovieScreen
+import es.josevaldes.filmatch.ui.screens.WelcomeScreen
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
+import es.josevaldes.filmatch.utils.SimplePreferencesManager
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -29,7 +31,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FilmatchApp(
-                startDestination = if (isLoggedIn()) Screen.SlideMovieScreen else Screen.AuthScreen
+                startDestination = if (isLoggedIn()) {
+                    Screen.SlideMovieScreen
+                } else {
+                    if (SimplePreferencesManager(this).isOnboardingFinished()) {
+                        Screen.WelcomeScren
+                    } else {
+                        Screen.OnBoardingScren
+                    }
+                }
             )
         }
     }
@@ -46,16 +56,19 @@ fun FilmatchApp(startDestination: Screen) {
     FilmatchTheme(darkTheme = true) {
         NavHost(navController = navController, startDestination = startDestination.route) {
             composable(Screen.LoginScreen.route) {
-                LoginScreen(navController)
+                LoginScreen(navController) {}
             }
-            composable(Screen.AuthScreen.route) {
-                AuthScreen(navController)
+            composable(Screen.OnBoardingScren.route) {
+                OnBoardingScreen(navController)
             }
             composable(Screen.SlideMovieScreen.route) {
                 SlideMovieScreen(navController)
             }
             composable(Screen.RegisterScreen.route) {
-                RegisterScreen(navController)
+                RegisterScreen(navController) {}
+            }
+            composable(Screen.WelcomeScren.route) {
+                WelcomeScreen(navController)
             }
         }
     }
@@ -65,5 +78,5 @@ fun FilmatchApp(startDestination: Screen) {
 @Preview
 @Composable
 fun AppPreview() {
-    FilmatchApp(Screen.AuthScreen)
+    FilmatchApp(Screen.WelcomeScren)
 }

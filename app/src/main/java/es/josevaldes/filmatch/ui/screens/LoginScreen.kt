@@ -1,15 +1,21 @@
 package es.josevaldes.filmatch.ui.screens
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,8 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -43,50 +52,134 @@ import es.josevaldes.filmatch.viewmodels.AuthViewModel
 
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit) {
     val viewModel: AuthViewModel = hiltViewModel()
+    val context = LocalContext.current
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     val signInResult = viewModel.authResult.collectAsState(null)
     var shouldDisplayForgotPasswordDialog by remember { mutableStateOf(false) }
     var shouldDisplaySuccessForgettingPasswordDialog by remember { mutableStateOf(false) }
+    val isLoadingStatus = viewModel.isLoading.collectAsState(false)
+    var shouldDisplayErrors by remember { mutableStateOf(false) }
+
 
     fun isValidForm(): Boolean {
         return validateEmail(email.value) && validatePassword(password.value)
     }
 
-    Scaffold { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxWidth()
-                .fillMaxHeight()
-                .statusBarsPadding()
-                .imePadding(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            EmailTextField(email)
-            PasswordTextField(password, imeAction = ImeAction.Done)
 
-            Button(
-                onClick = {
-                    if (isValidForm()) {
-                        viewModel.login(email.value, password.value)
-                    }
-                },
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(20.dp)
-            ) {
-                Text(stringResource(R.string.login))
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .imePadding()
+            .padding(horizontal = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        EmailTextField(
+            email,
+            isEnabled = !isLoadingStatus.value,
+            shouldDisplayErrors = shouldDisplayErrors
+        )
+        PasswordTextField(
+            password,
+            imeAction = ImeAction.Done,
+            isEnabled = !isLoadingStatus.value,
+            shouldDisplayErrors = shouldDisplayErrors
+        )
+
+        Button(
+            enabled = !isLoadingStatus.value,
+            onClick = {
+                shouldDisplayErrors = true
+                if (isValidForm()) {
+                    viewModel.login(email.value, password.value)
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(20.dp)
+        ) {
+            Text(stringResource(R.string.login))
+            if (isLoadingStatus.value) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(start = 20.dp)
+                        .size(20.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
-            Text(stringResource(R.string.forgot_your_password), Modifier.clickable {
-                shouldDisplayForgotPasswordDialog = true
-            })
+        }
+
+
+        Text(stringResource(R.string.forgot_your_password),
+            Modifier
+                .clickable {
+                    shouldDisplayErrors = true
+                    if (!isLoadingStatus.value) {
+                        shouldDisplayForgotPasswordDialog = true
+                    }
+                }
+                .padding(bottom = 20.dp))
+
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(1.dp)
+                    .background(Color.Gray)
+            )
+            Text("Login with", modifier = Modifier.padding(horizontal = 10.dp))
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(1.dp)
+                    .background(Color.Gray)
+            )
+        }
+
+
+
+
+        Image(
+            painter = painterResource(id = R.drawable.ic_google),
+            contentDescription = stringResource(R.string.sign_in_with_google),
+            modifier = Modifier
+                .clickable {
+                    if (!isLoadingStatus.value) {
+                        viewModel.signInWithGoogle(context)
+                    }
+                }
+                .padding(20.dp)
+        )
+
+
+
+        Row(modifier = Modifier.padding(bottom = 20.dp)) {
+            Text(
+                text = stringResource(R.string.don_t_have_an_account_yet),
+            )
+            Text(
+                text = stringResource(R.string.register),
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clickable {
+                        if (!isLoadingStatus.value) onGoToRegisterClicked()
+                    }
+                    .padding(start = 10.dp)
+            )
         }
     }
+
 
     when (val result = signInResult.value) {
         is AuthResult.Success -> navController.navigate(Screen.SlideMovieScreen.route) {
@@ -94,6 +187,7 @@ fun LoginScreen(navController: NavController) {
             popUpTo(navController.graph.startDestinationId) { inclusive = true }
             launchSingleTop = true // avoid multiple instances of SlideMovieScreen
         }
+
         is AuthResult.Error -> {
             errorMessage =
                 ErrorMessageWrapper(LocalContext.current).getErrorMessage(result.authError)
@@ -124,6 +218,6 @@ fun LoginScreen(navController: NavController) {
 @Composable
 fun LoginScreenPreview() {
     FilmatchTheme(darkTheme = true) {
-        LoginScreen(rememberNavController())
+        LoginScreen(rememberNavController()) {}
     }
 }

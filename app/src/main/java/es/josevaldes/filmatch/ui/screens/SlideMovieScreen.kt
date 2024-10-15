@@ -1,5 +1,6 @@
 package es.josevaldes.filmatch.ui.screens
 
+
 import android.content.Context
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -90,7 +91,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import kotlin.math.absoluteValue
@@ -138,6 +141,19 @@ fun SlideMovieScreen(navController: NavController) {
                 SwipeableMoviesComponent(viewModel)
             }
         }
+    }
+}
+
+@Preview
+@Composable
+fun PreviewBottomLikeDislike() {
+    val swipeAction = remember { MutableStateFlow(SlideMovieViewModel.SwipeAction.DISLIKE) }
+    FilmatchTheme {
+        BottomLikeDislike(
+            swipeAction = swipeAction.asStateFlow(),
+            onLikeClicked = {},
+            onDislikeClicked = {}
+        )
     }
 }
 
@@ -416,7 +432,7 @@ private suspend fun handleSwipeRelease(
     if (translationOffset.value.absoluteValue > swipedMaxOffset) {
         Timber.tag("SlideMovieScreen").d("Swiped confirmed")
 
-        Timber.tag("SlideMovieScreen").d( "Removing tint")
+        Timber.tag("SlideMovieScreen").d("Removing tint")
         movie.swipedStatus = MovieSwipedStatus.NONE
         currentSwipedStatus.value = movie.swipedStatus
 
@@ -428,7 +444,7 @@ private suspend fun handleSwipeRelease(
 
         if (result.endReason == AnimationEndReason.Finished) {
             // let's remove the last movie
-            Timber.tag("SlideMovieScreen").d( "Removing movie: ${movie.movie.title}")
+            Timber.tag("SlideMovieScreen").d("Removing movie: ${movie.movie.title}")
             val firstMovie = observableMovies.first()
             observableMovies.remove(firstMovie)
             translationOffset.snapTo(0f)
@@ -599,6 +615,7 @@ private fun BackButtonRow() {
     }
 }
 
+
 @Composable
 private fun BottomLikeDislike(
     swipeAction: StateFlow<SlideMovieViewModel.SwipeAction?>,
@@ -613,30 +630,24 @@ private fun BottomLikeDislike(
             .navigationBarsPadding(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        IconButton(
-            enabled = swipeActionValue == null,
-            onClick = { onDislikeClicked() },
+        Icon(
+            painter = painterResource(id = R.drawable.btn_thumbs_down),
+            contentDescription = stringResource(R.string.back_button_content_description),
+            tint = DislikeButtonBackground,
             modifier = Modifier
                 .size(100.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.btn_thumbs_down),
-                contentDescription = stringResource(R.string.back_button_content_description),
-                tint = DislikeButtonBackground
-            )
-        }
-        IconButton(
-            enabled = swipeActionValue == null,
-            onClick = { onLikeClicked() },
+                .clip(CircleShape)
+                .clickable { if (swipeActionValue == null) onDislikeClicked() },
+        )
+        Icon(
+            painter = painterResource(id = R.drawable.btn_thumbs_up),
+            contentDescription = stringResource(R.string.back_button_content_description),
+            tint = LikeButtonBackground,
             modifier = Modifier
                 .size(100.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.btn_thumbs_up),
-                contentDescription = stringResource(R.string.back_button_content_description),
-                tint = LikeButtonBackground
-            )
-        }
+                .clip(CircleShape)
+                .clickable { if (swipeActionValue == null) onLikeClicked() },
+        )
     }
 }
 

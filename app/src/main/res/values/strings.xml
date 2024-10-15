@@ -13,7 +13,7 @@
     <string name="repeat_password">Repeat password</string>
     <string name="register">Register</string>
     <string name="register_with_email_and_password">Register with email and password</string>
-    <string name="already_have_an_account_log_in">Already have an account? Log in</string>
+    <string name="already_have_an_account_log_in">Already have an account?</string>
     <string name="sign_in_with_google">Sign in with google</string>
     <string name="invalid_email">Invalid email</string>
     <string name="enter_your_email">Enter your email</string>
@@ -30,4 +30,20 @@
     <string name="forgot_your_password_dialog_text">Enter your email and we will send you a link to reset your password.</string>
     <string name="success">Success</string>
     <string name="success_sending_forgot_password_dialog_body">Check your email to reset your password</string>
+    <string name="onboarding_screen_1_title">OnBoarding Screen 1</string>
+    <string name="start">Start</string>
+    <string name="skip">Skip</string>
+    <string name="welcome_screen_title">Welcome to Filmatch!</string>
+    <string name="welcome_screen_subtitle">How do you want to start your adventure?</string>
+    <string name="welcome_screen_btn_room_title">Go to Rooms</string>
+    <string name="welcome_screen_btn_room_subtitle">(without login!)</string>
+    <string name="welcome_screen_btn_room_description">Choose films with your friends without the need of logging in!</string>
+    <string name="filmatch_logo">Filmatch Logo</string>
+    <string name="welcome_screen_login_button_title">Log in\n(full app)</string>
+    <string name="welcome_screen_login_button_description">Log in access to all the app\'s functionalities!</string>
+    <string name="content_description_clear_email">Clear email</string>
+    <string name="agree_tc_title">I agree with the %1$s</string>
+    <string name="agree_tc_clickable">Terms and Conditions</string>
+    <string name="log_in">Log in</string>
+    <string name="don_t_have_an_account_yet">Don\'t have an account yet?</string>
 </resources>

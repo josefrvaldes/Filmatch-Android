@@ -1,15 +1,24 @@
 package es.josevaldes.filmatch.ui.screens
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,8 +28,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -40,61 +55,170 @@ import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.viewmodels.AuthViewModel
 
 @Composable
-fun RegisterScreen(navController: NavController) {
+fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit) {
     val authViewModel: AuthViewModel = hiltViewModel()
 
+    val context = LocalContext.current
     val email = remember { mutableStateOf("") }
     val pass1 = remember { mutableStateOf("") }
     val pass2 = remember { mutableStateOf("") }
+    var signInWithGoogle by remember { mutableStateOf(false) }
+    val tcAccepted = remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val registerResult = authViewModel.authResult.collectAsState(null)
+    val isLoadingStatus = authViewModel.isLoading.collectAsState(false)
+    var shouldDisplayErrors by remember { mutableStateOf(false) }
 
 
     fun isValidForm(): Boolean {
-        return validateEmail(email.value) && validatePassword(pass1.value) && pass1.value == pass2.value
+        return validateEmail(email.value) && validatePassword(pass1.value) && pass1.value == pass2.value && tcAccepted.value
     }
 
-    Scaffold { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxWidth()
-                .fillMaxHeight()
-                .statusBarsPadding()
-                .imePadding(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
 
-        ) {
-            EmailTextField(email)
-            PasswordTextField(pass1)
-            PasswordTextField(
-                pass2,
-                label = stringResource(R.string.repeat_password),
-                imeAction = ImeAction.Done,
-                isError = pass1.value != pass2.value,
-                supportingText = stringResource(R.string.passwords_don_t_match_error_message),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .imePadding()
+            .padding(horizontal = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+
+    ) {
+        Text(
+            "Get Started",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            modifier = Modifier.padding(bottom = 20.dp)
+        )
+        EmailTextField(
+            email,
+            isEnabled = !isLoadingStatus.value,
+            shouldDisplayErrors = shouldDisplayErrors
+        )
+        PasswordTextField(
+            pass1,
+            isEnabled = !isLoadingStatus.value,
+            shouldDisplayErrors = shouldDisplayErrors
+        )
+        PasswordTextField(
+            pass2,
+            label = stringResource(R.string.repeat_password),
+            imeAction = ImeAction.Done,
+            isError = pass1.value != pass2.value,
+            supportingText = stringResource(R.string.passwords_don_t_match_error_message),
+            isEnabled = !isLoadingStatus.value,
+            shouldDisplayErrors = shouldDisplayErrors
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable {
+                if (!isLoadingStatus.value) tcAccepted.value = !tcAccepted.value
+            }) {
+            Checkbox(
+                enabled = !isLoadingStatus.value,
+                checked = tcAccepted.value,
+                onCheckedChange = { tcAccepted.value = it },
             )
 
-            Button(
-                onClick = {
-                    if (isValidForm()) {
-                        authViewModel.register(email.value, pass1.value)
-                    }
-                },
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(20.dp)
-            ) {
-                Text(stringResource(R.string.register))
+            TermsAndConditionsText {
+                if (!isLoadingStatus.value) tcAccepted.value = !tcAccepted.value
             }
+        }
+
+        Button(
+            enabled = !isLoadingStatus.value,
+            onClick = {
+                shouldDisplayErrors = true
+                if (isValidForm()) {
+                    signInWithGoogle = false
+                    authViewModel.register(email.value, pass1.value)
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .fillMaxWidth()
+                .padding(vertical = 20.dp)
+        ) {
+            Text(stringResource(R.string.register))
+            if (isLoadingStatus.value) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(start = 20.dp)
+                        .size(20.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(1.dp)
+                    .background(Color.Gray)
+            )
+            Text("Register with", modifier = Modifier.padding(horizontal = 10.dp))
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(1.dp)
+                    .background(Color.Gray)
+            )
+        }
+
+
+        Image(
+            painter = painterResource(id = R.drawable.ic_google),
+            contentDescription = stringResource(R.string.sign_in_with_google),
+            modifier = Modifier
+                .clickable {
+                    if (!isLoadingStatus.value) {
+                        signInWithGoogle = true
+                        authViewModel.signInWithGoogle(context)
+                    }
+                }
+                .padding(20.dp)
+        )
+
+        Row(modifier = Modifier.padding(bottom = 20.dp)) {
+            Text(
+                text = stringResource(R.string.already_have_an_account_log_in),
+            )
+            Text(
+                text = stringResource(R.string.log_in),
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clickable {
+                        if (!isLoadingStatus.value) onGoToLoginClicked()
+                    }
+                    .padding(start = 10.dp)
+            )
         }
     }
 
 
+
     when (val result = registerResult.value) {
-        is AuthResult.Success -> showSuccessDialog = true
+        is AuthResult.Success -> {
+            if (signInWithGoogle) {
+                navController.navigate(Screen.SlideMovieScreen.route) {
+                    // this will clean the stack up to SlideMovieScreen except for SlideMovieScreen itself
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    launchSingleTop = true // avoid multiple instances of SlideMovieScreen
+                }
+            } else {
+                showSuccessDialog = true
+            }
+        }
+
         is AuthResult.Error -> {
             errorMessage =
                 ErrorMessageWrapper(LocalContext.current).getErrorMessage(result.authError)
@@ -108,15 +232,63 @@ fun RegisterScreen(navController: NavController) {
     if (showSuccessDialog) {
         SuccessDialog {
             showSuccessDialog = false
-            navController.navigate(Screen.LoginScreen.route) {
-                // this will clean the stack up to AuthScreen except for AuthScreen itself
-                popUpTo(Screen.AuthScreen.route) { inclusive = false }
-                launchSingleTop = true // avoid multiple instances of login screen
-            }
+            onGoToLoginClicked()
         }
     } else if (errorMessage.isNotEmpty()) {
         ErrorDialog(errorMessage) { errorMessage = "" }
     }
+}
+
+@Suppress("DEPRECATION")
+@Composable
+fun TermsAndConditionsText(onTermsClick: () -> Unit) {
+    val termsAndConditions = stringResource(id = R.string.agree_tc_clickable)
+    val agreeTerms = stringResource(id = R.string.agree_tc_title, termsAndConditions)
+    val uriHandler = LocalUriHandler.current
+
+    val annotatedText = buildAnnotatedString {
+        val termsStartIndex = agreeTerms.indexOf(termsAndConditions)
+        append(agreeTerms)
+
+        addStyle(
+            style = SpanStyle(
+                color = MaterialTheme.colorScheme.onSurface
+            ),
+            start = 0,
+            end = length
+        )
+
+        addStyle(
+            style = SpanStyle(
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            ),
+            start = termsStartIndex,
+            end = termsStartIndex + termsAndConditions.length
+        )
+
+        addStringAnnotation(
+            tag = "terms",
+            annotation = "https://example.com/terms",
+            start = termsStartIndex,
+            end = termsStartIndex + termsAndConditions.length
+        )
+    }
+
+
+    ClickableText(
+        text = annotatedText,
+        style = MaterialTheme.typography.labelLarge,
+        onClick = { offset ->
+            val annotation =
+                annotatedText.getStringAnnotations("terms", offset, offset).firstOrNull()
+            annotation?.let {
+                uriHandler.openUri(it.item)
+            } ?: run {
+                onTermsClick()
+            }
+        }
+    )
 }
 
 
@@ -147,6 +319,6 @@ private fun SuccessDialog(onDismissRequest: () -> Unit) {
 @Composable
 fun RegisterScreenPreview() {
     FilmatchTheme(darkTheme = true) {
-        RegisterScreen(rememberNavController())
+        RegisterScreen(rememberNavController()) {}
     }
 }
