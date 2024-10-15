@@ -56,9 +56,11 @@ import es.josevaldes.filmatch.viewmodels.AuthViewModel
 fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit) {
     val authViewModel: AuthViewModel = hiltViewModel()
 
+    val context = LocalContext.current
     val email = remember { mutableStateOf("") }
     val pass1 = remember { mutableStateOf("") }
     val pass2 = remember { mutableStateOf("") }
+    var signInWithGoogle by remember { mutableStateOf(false) }
     val tcAccepted = remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
@@ -111,6 +113,7 @@ fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit)
         Button(
             onClick = {
                 if (isValidForm()) {
+                    signInWithGoogle = false
                     authViewModel.register(email.value, pass1.value)
                 }
             },
@@ -149,7 +152,8 @@ fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit)
             contentDescription = stringResource(R.string.sign_in_with_google),
             modifier = Modifier
                 .clickable {
-//                    authViewModel.signInWithGoogle(LocalContext.current)
+                    signInWithGoogle = true
+                    authViewModel.signInWithGoogle(context)
                 }
                 .padding(20.dp)
         )
@@ -174,7 +178,18 @@ fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit)
 
 
     when (val result = registerResult.value) {
-        is AuthResult.Success -> showSuccessDialog = true
+        is AuthResult.Success -> {
+            if (signInWithGoogle) {
+                navController.navigate(Screen.SlideMovieScreen.route) {
+                    // this will clean the stack up to SlideMovieScreen except for SlideMovieScreen itself
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    launchSingleTop = true // avoid multiple instances of SlideMovieScreen
+                }
+            } else {
+                showSuccessDialog = true
+            }
+        }
+
         is AuthResult.Error -> {
             errorMessage =
                 ErrorMessageWrapper(LocalContext.current).getErrorMessage(result.authError)

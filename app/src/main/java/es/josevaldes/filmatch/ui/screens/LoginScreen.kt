@@ -52,6 +52,7 @@ import es.josevaldes.filmatch.viewmodels.AuthViewModel
 @Composable
 fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit) {
     val viewModel: AuthViewModel = hiltViewModel()
+    val context = LocalContext.current
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -125,9 +126,7 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
             painter = painterResource(id = R.drawable.ic_google),
             contentDescription = stringResource(R.string.sign_in_with_google),
             modifier = Modifier
-                .clickable {
-//                    authViewModel.signInWithGoogle(LocalContext.current)
-                }
+                .clickable { viewModel.signInWithGoogle(context) }
                 .padding(20.dp)
         )
 
