@@ -1,0 +1,25 @@
+<!--<vector xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    android:width="48dp"-->
+<!--    android:height="41dp"-->
+<!--    android:viewportWidth="48"-->
+<!--    android:viewportHeight="41">-->
+<!--  <path-->
+<!--      android:pathData="M38,35L24,25L10,35V3C10,1.939 10.421,0.922 11.172,0.172C11.922,-0.579 12.939,-1 14,-1H34C35.061,-1 36.078,-0.579 36.828,0.172C37.579,0.922 38,1.939 38,3V35Z"-->
+<!--      android:strokeAlpha="0.3"-->
+<!--      android:fillColor="#EECE00"-->
+<!--      android:fillAlpha="0.3"/>-->
+<!--</vector>-->
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="41dp"
+    android:viewportWidth="48"
+    android:viewportHeight="41">
+    <group>
+        <path
+            android:fillAlpha="0.3"
+            android:fillColor="#FF3955"
+            android:pathData="M38,35L24,25L10,35V3C10,1.939 10.421,0.922 11.172,0.172C11.922,-0.579 12.939,-1 14,-1H34C35.061,-1 36.078,-0.579 36.828,0.172C37.579,0.922 38,1.939 38,3V35Z"
+            android:strokeAlpha="0.3" />
+    </group>
+</vector>

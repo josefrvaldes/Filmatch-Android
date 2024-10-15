@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import es.josevaldes.core.utils.validateEmail
 import es.josevaldes.data.results.AuthResult
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.errors.ErrorMessageWrapper
@@ -25,6 +26,13 @@ fun ForgotPasswordDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
     val email = remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     val forgetPasswordResult = viewModel.forgotPasswordResult.collectAsState(null)
+    val isLoadingStatus = viewModel.isLoading.collectAsState(false)
+    var shouldDisplayErrors by remember { mutableStateOf(false) }
+
+
+    fun isValidForm(): Boolean {
+        return validateEmail(email.value)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -34,13 +42,21 @@ fun ForgotPasswordDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
         text = {
             Column {
                 Text(text = stringResource(R.string.forgot_your_password_dialog_text))
-                EmailTextField(email)
+                EmailTextField(
+                    email,
+                    isEnabled = !isLoadingStatus.value,
+                    shouldDisplayErrors = shouldDisplayErrors
+                )
             }
         },
         confirmButton = {
             Button(
+                enabled = !isLoadingStatus.value,
                 onClick = {
-                    viewModel.callForgotPassword(email.value)
+                    shouldDisplayErrors = true
+                    if (isValidForm()) {
+                        viewModel.callForgotPassword(email.value)
+                    }
                 }
             ) {
                 Text(text = stringResource(R.string.ok))
