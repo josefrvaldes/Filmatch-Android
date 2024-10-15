@@ -12,7 +12,6 @@ import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import es.josevaldes.data.services.AuthService
 import es.josevaldes.filmatch.navigation.Screen
-import es.josevaldes.filmatch.ui.screens.AuthScreen
 import es.josevaldes.filmatch.ui.screens.LoginScreen
 import es.josevaldes.filmatch.ui.screens.OnBoardingScreen
 import es.josevaldes.filmatch.ui.screens.RegisterScreen
@@ -62,9 +61,6 @@ fun FilmatchApp(startDestination: Screen) {
             composable(Screen.OnBoardingScren.route) {
                 OnBoardingScreen(navController)
             }
-            composable(Screen.AuthScreen.route) {
-                AuthScreen(navController)
-            }
             composable(Screen.SlideMovieScreen.route) {
                 SlideMovieScreen(navController)
             }
@@ -82,5 +78,5 @@ fun FilmatchApp(startDestination: Screen) {
 @Preview
 @Composable
 fun AppPreview() {
-    FilmatchApp(Screen.AuthScreen)
+    FilmatchApp(Screen.WelcomeScren)
 }
