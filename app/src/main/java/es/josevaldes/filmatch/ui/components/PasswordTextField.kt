@@ -24,9 +24,12 @@ fun PasswordTextField(
     label: String = stringResource(R.string.password),
     imeAction: ImeAction = ImeAction.Next,
     isError: Boolean = !validatePassword(pass.value),
-    supportingText: String = stringResource(R.string.wrong_password_created_error_message)
+    supportingText: String = stringResource(R.string.wrong_password_created_error_message),
+    isEnabled: Boolean = true,
+    shouldDisplayErrors: Boolean = false,
 ) {
     OutlinedTextField(
+        enabled = isEnabled,
         value = pass.value,
         maxLines = 1,
         modifier = Modifier.fillMaxWidth(),
@@ -37,9 +40,9 @@ fun PasswordTextField(
         ),
         label = { Text(label) },
         visualTransformation = PasswordVisualTransformation(),
-        isError = isError,
+        isError = shouldDisplayErrors && isError,
         supportingText = {
-            if (isError) {
+            if (shouldDisplayErrors && isError) {
                 Text(supportingText)
             }
         }

@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -65,10 +67,12 @@ fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit)
     var showSuccessDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val registerResult = authViewModel.authResult.collectAsState(null)
+    val isLoadingStatus = authViewModel.isLoading.collectAsState(false)
+    var shouldDisplayErrors by remember { mutableStateOf(false) }
 
 
     fun isValidForm(): Boolean {
-        return validateEmail(email.value) && validatePassword(pass1.value) && pass1.value == pass2.value
+        return validateEmail(email.value) && validatePassword(pass1.value) && pass1.value == pass2.value && tcAccepted.value
     }
 
 
@@ -87,31 +91,46 @@ fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit)
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             modifier = Modifier.padding(bottom = 20.dp)
         )
-        EmailTextField(email)
-        PasswordTextField(pass1)
+        EmailTextField(
+            email,
+            isEnabled = !isLoadingStatus.value,
+            shouldDisplayErrors = shouldDisplayErrors
+        )
+        PasswordTextField(
+            pass1,
+            isEnabled = !isLoadingStatus.value,
+            shouldDisplayErrors = shouldDisplayErrors
+        )
         PasswordTextField(
             pass2,
             label = stringResource(R.string.repeat_password),
             imeAction = ImeAction.Done,
             isError = pass1.value != pass2.value,
             supportingText = stringResource(R.string.passwords_don_t_match_error_message),
+            isEnabled = !isLoadingStatus.value,
+            shouldDisplayErrors = shouldDisplayErrors
         )
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable { tcAccepted.value = !tcAccepted.value }) {
+            modifier = Modifier.clickable {
+                if (!isLoadingStatus.value) tcAccepted.value = !tcAccepted.value
+            }) {
             Checkbox(
+                enabled = !isLoadingStatus.value,
                 checked = tcAccepted.value,
                 onCheckedChange = { tcAccepted.value = it },
             )
 
             TermsAndConditionsText {
-                tcAccepted.value = !tcAccepted.value
+                if (!isLoadingStatus.value) tcAccepted.value = !tcAccepted.value
             }
         }
 
         Button(
+            enabled = !isLoadingStatus.value,
             onClick = {
+                shouldDisplayErrors = true
                 if (isValidForm()) {
                     signInWithGoogle = false
                     authViewModel.register(email.value, pass1.value)
@@ -123,6 +142,14 @@ fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit)
                 .padding(vertical = 20.dp)
         ) {
             Text(stringResource(R.string.register))
+            if (isLoadingStatus.value) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(start = 20.dp)
+                        .size(20.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
 
 
@@ -152,8 +179,10 @@ fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit)
             contentDescription = stringResource(R.string.sign_in_with_google),
             modifier = Modifier
                 .clickable {
-                    signInWithGoogle = true
-                    authViewModel.signInWithGoogle(context)
+                    if (!isLoadingStatus.value) {
+                        signInWithGoogle = true
+                        authViewModel.signInWithGoogle(context)
+                    }
                 }
                 .padding(20.dp)
         )
@@ -168,7 +197,7 @@ fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit)
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .clickable {
-                        onGoToLoginClicked()
+                        if (!isLoadingStatus.value) onGoToLoginClicked()
                     }
                     .padding(start = 10.dp)
             )

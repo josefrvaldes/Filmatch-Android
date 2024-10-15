@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,6 +61,9 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
     val signInResult = viewModel.authResult.collectAsState(null)
     var shouldDisplayForgotPasswordDialog by remember { mutableStateOf(false) }
     var shouldDisplaySuccessForgettingPasswordDialog by remember { mutableStateOf(false) }
+    val isLoadingStatus = viewModel.isLoading.collectAsState(false)
+    var shouldDisplayErrors by remember { mutableStateOf(false) }
+
 
     fun isValidForm(): Boolean {
         return validateEmail(email.value) && validatePassword(password.value)
@@ -74,11 +79,22 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        EmailTextField(email)
-        PasswordTextField(password, imeAction = ImeAction.Done)
+        EmailTextField(
+            email,
+            isEnabled = !isLoadingStatus.value,
+            shouldDisplayErrors = shouldDisplayErrors
+        )
+        PasswordTextField(
+            password,
+            imeAction = ImeAction.Done,
+            isEnabled = !isLoadingStatus.value,
+            shouldDisplayErrors = shouldDisplayErrors
+        )
 
         Button(
+            enabled = !isLoadingStatus.value,
             onClick = {
+                shouldDisplayErrors = true
                 if (isValidForm()) {
                     viewModel.login(email.value, password.value)
                 }
@@ -88,13 +104,24 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
                 .padding(20.dp)
         ) {
             Text(stringResource(R.string.login))
+            if (isLoadingStatus.value) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(start = 20.dp)
+                        .size(20.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
 
 
         Text(stringResource(R.string.forgot_your_password),
             Modifier
                 .clickable {
-                    shouldDisplayForgotPasswordDialog = true
+                    shouldDisplayErrors = true
+                    if (!isLoadingStatus.value) {
+                        shouldDisplayForgotPasswordDialog = true
+                    }
                 }
                 .padding(bottom = 20.dp))
 
@@ -126,7 +153,11 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
             painter = painterResource(id = R.drawable.ic_google),
             contentDescription = stringResource(R.string.sign_in_with_google),
             modifier = Modifier
-                .clickable { viewModel.signInWithGoogle(context) }
+                .clickable {
+                    if (!isLoadingStatus.value) {
+                        viewModel.signInWithGoogle(context)
+                    }
+                }
                 .padding(20.dp)
         )
 
@@ -142,7 +173,7 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .clickable {
-                        onGoToRegisterClicked()
+                        if (!isLoadingStatus.value) onGoToRegisterClicked()
                     }
                     .padding(start = 10.dp)
             )

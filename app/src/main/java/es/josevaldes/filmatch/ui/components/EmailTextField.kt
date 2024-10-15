@@ -2,7 +2,6 @@ package es.josevaldes.filmatch.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
@@ -18,14 +17,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import es.josevaldes.core.utils.validateEmail
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 
 @Composable
-fun EmailTextField(email: MutableState<String>, imeAction: ImeAction = ImeAction.Next) {
+fun EmailTextField(
+    email: MutableState<String>,
+    imeAction: ImeAction = ImeAction.Next,
+    isEnabled: Boolean = true,
+    shouldDisplayErrors: Boolean = false
+) {
     OutlinedTextField(
+        enabled = isEnabled,
         value = email.value,
         maxLines = 1,
         modifier = Modifier.fillMaxWidth(),
@@ -35,12 +39,14 @@ fun EmailTextField(email: MutableState<String>, imeAction: ImeAction = ImeAction
             keyboardType = KeyboardType.Email,
             imeAction = imeAction
         ),
-        isError = !validateEmail(email.value),
+        isError = !validateEmail(email.value) && shouldDisplayErrors,
         supportingText = {
-            if (email.value.isEmpty()) {
-                Text(stringResource(R.string.enter_your_email))
-            } else if (!validateEmail(email.value)) {
-                Text(stringResource(R.string.invalid_email))
+            if (shouldDisplayErrors) {
+                if (email.value.isEmpty()) {
+                    Text(stringResource(R.string.enter_your_email))
+                } else if (!validateEmail(email.value)) {
+                    Text(stringResource(R.string.invalid_email))
+                }
             }
         },
         trailingIcon = {

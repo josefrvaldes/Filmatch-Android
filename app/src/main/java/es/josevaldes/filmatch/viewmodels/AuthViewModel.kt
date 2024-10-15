@@ -25,12 +25,17 @@ class AuthViewModel @Inject constructor(
     private val _forgotPasswordResult = MutableSharedFlow<AuthResult<Unit>?>()
     val forgotPasswordResult = _forgotPasswordResult.asSharedFlow()
 
+    private val _isLoading = MutableSharedFlow<Boolean>()
+    val isLoading = _isLoading.asSharedFlow()
+
     fun signInWithGoogle(
         context: Context
     ) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                _isLoading.emit(true)
                 val result = authService.signInWithGoogle(context)
+                _isLoading.emit(false)
                 _authResult.emit(result)
             }
         }
@@ -42,7 +47,9 @@ class AuthViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                _isLoading.emit(true)
                 val result = authService.register(email, pass)
+                _isLoading.emit(false)
                 _authResult.emit(result)
             }
         }
@@ -54,7 +61,9 @@ class AuthViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                _isLoading.emit(true)
                 val result = authService.login(email, pass)
+                _isLoading.emit(false)
                 _authResult.emit(result)
             }
         }
@@ -63,7 +72,9 @@ class AuthViewModel @Inject constructor(
     fun callForgotPassword(email: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                _isLoading.emit(true)
                 val result = authService.callForgotPassword(email)
+                _isLoading.emit(false)
                 _forgotPasswordResult.emit(result)
             }
         }
