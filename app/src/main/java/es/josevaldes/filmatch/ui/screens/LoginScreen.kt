@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -79,6 +80,12 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        Text(
+            stringResource(R.string.welcome_back),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(bottom = 20.dp)
+        )
         EmailTextField(
             email,
             isEnabled = !isLoadingStatus.value,
@@ -101,7 +108,14 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
             },
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(20.dp)
+                .padding(vertical = 20.dp)
+                .fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+            )
         ) {
             Text(stringResource(R.string.login))
             if (isLoadingStatus.value) {
@@ -169,7 +183,7 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
             )
             Text(
                 text = stringResource(R.string.register),
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.secondary,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .clickable {

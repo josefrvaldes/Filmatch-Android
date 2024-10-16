@@ -172,7 +172,8 @@ private fun LoginBottomSheetDialog(
 ) {
     ModalBottomSheet(
         onDismissRequest = { showRegisterBottomSheet.value = false },
-        sheetState = sheetState
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.onSurface
     ) {
         LoginScreen(navController) {
             showLoginBottomSheet.value = false
@@ -192,7 +193,8 @@ private fun RegisterBottomSheetDialog(
 ) {
     ModalBottomSheet(
         onDismissRequest = { showRegisterBottomSheet.value = false },
-        sheetState = sheetState
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.onSurface
     ) {
         RegisterScreen(navController) {
             showRegisterBottomSheet.value = false
