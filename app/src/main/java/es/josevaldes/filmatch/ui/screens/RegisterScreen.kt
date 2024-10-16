@@ -147,7 +147,7 @@ fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit)
                     modifier = Modifier
                         .padding(start = 20.dp)
                         .size(20.dp),
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.secondary
                 )
             }
         }
