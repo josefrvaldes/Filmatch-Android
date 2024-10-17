@@ -1,5 +1,6 @@
 package es.josevaldes.filmatch.ui.theme
 
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -21,4 +22,12 @@ fun getWelcomeScreenInputFieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedLabelColor = MaterialTheme.colorScheme.onSecondary,
     disabledBorderColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.6f),
     disabledLabelColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.6f)
+)
+
+@Composable
+fun getDefaultAccentButtonColors() = ButtonDefaults.buttonColors(
+    contentColor = MaterialTheme.colorScheme.onSurface,
+    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
+    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
 )

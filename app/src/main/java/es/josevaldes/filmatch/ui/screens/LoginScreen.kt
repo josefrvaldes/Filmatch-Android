@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -49,6 +48,7 @@ import es.josevaldes.filmatch.ui.dialogs.ErrorDialog
 import es.josevaldes.filmatch.ui.dialogs.ForgotPasswordDialog
 import es.josevaldes.filmatch.ui.dialogs.SuccessSendingForgotPasswordDialog
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
+import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 import es.josevaldes.filmatch.viewmodels.AuthViewModel
 
 
@@ -110,12 +110,7 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
                 .align(Alignment.CenterHorizontally)
                 .padding(vertical = 20.dp)
                 .fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-            )
+            colors = getDefaultAccentButtonColors()
         ) {
             Text(stringResource(R.string.login))
             if (isLoadingStatus.value) {
@@ -213,9 +208,10 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
 
     if (errorMessage.isNotEmpty()) {
         viewModel.clearError()
-        ErrorDialog(errorMessage) { errorMessage = "" }
+        ErrorDialog(errorMessage, MaterialTheme.colorScheme.onSurface) { errorMessage = "" }
     } else if (shouldDisplayForgotPasswordDialog) {
         ForgotPasswordDialog(
+            backgroundColor = MaterialTheme.colorScheme.onSurface,
             onSuccess = {
                 shouldDisplayForgotPasswordDialog = false
                 shouldDisplaySuccessForgettingPasswordDialog = true
@@ -223,7 +219,9 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
             onDismiss = { shouldDisplayForgotPasswordDialog = false }
         )
     } else if (shouldDisplaySuccessForgettingPasswordDialog) {
-        SuccessSendingForgotPasswordDialog { shouldDisplaySuccessForgettingPasswordDialog = false }
+        SuccessSendingForgotPasswordDialog(backgroundColor = MaterialTheme.colorScheme.onSurface) {
+            shouldDisplaySuccessForgettingPasswordDialog = false
+        }
     }
 }
 

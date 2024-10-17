@@ -1,5 +1,10 @@
 package es.josevaldes.filmatch.ui.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.repeatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,25 +15,27 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +48,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -54,7 +62,9 @@ import es.josevaldes.filmatch.ui.components.EmailTextField
 import es.josevaldes.filmatch.ui.components.PasswordTextField
 import es.josevaldes.filmatch.ui.dialogs.ErrorDialog
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
+import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 import es.josevaldes.filmatch.viewmodels.AuthViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit) {
@@ -78,13 +88,22 @@ fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit)
     }
 
 
-    RegisterScreenContent(email, isLoadingStatus, shouldDisplayErrors, pass1, pass2, tcAccepted, isValidForm(), {
-        signInWithGoogle.value = false
-        authViewModel.register(email.value, pass1.value)
-    }, {
-        signInWithGoogle.value = true
-        authViewModel.signInWithGoogle(context)
-    },
+    RegisterScreenContent(
+        email,
+        isLoadingStatus,
+        shouldDisplayErrors,
+        pass1,
+        pass2,
+        tcAccepted,
+        isValidForm(),
+        {
+            signInWithGoogle.value = false
+            authViewModel.register(email.value, pass1.value)
+        },
+        {
+            signInWithGoogle.value = true
+            authViewModel.signInWithGoogle(context)
+        },
         onGoToLoginClicked
     )
 
@@ -172,18 +191,18 @@ fun RegisterScreenContent(
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable {
-                if (!isLoadingStatus.value) tcAccepted.value = !tcAccepted.value
-            }) {
-            Checkbox(
-                enabled = !isLoadingStatus.value,
-                checked = tcAccepted.value,
-                onCheckedChange = { tcAccepted.value = it },
-                colors = CheckboxDefaults.colors(
-                    checkmarkColor = MaterialTheme.colorScheme.onSurface,
-                    checkedColor = MaterialTheme.colorScheme.onSecondary,
-                    uncheckedColor = MaterialTheme.colorScheme.onSecondary
-                )
+            modifier = Modifier
+                .clickable {
+                    if (!isLoadingStatus.value) tcAccepted.value = !tcAccepted.value
+                }
+                .padding(top = 5.dp)
+        ) {
+
+            ShakingCheckBox(
+                modifier = Modifier.padding(end = 10.dp),
+                tcAccepted = tcAccepted,
+                isLoadingStatus = isLoadingStatus,
+                shouldDisplayErrors = shouldDisplayErrors
             )
 
             TermsAndConditionsText {
@@ -203,12 +222,7 @@ fun RegisterScreenContent(
                 .align(Alignment.CenterHorizontally)
                 .fillMaxWidth()
                 .padding(vertical = 20.dp),
-            colors = ButtonDefaults.buttonColors(
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-            )
+            colors = getDefaultAccentButtonColors()
         ) {
             Text(stringResource(R.string.register))
             if (isLoadingStatus.value) {
@@ -233,7 +247,11 @@ fun RegisterScreenContent(
                     .height(1.dp)
                     .background(MaterialTheme.colorScheme.inverseOnSurface)
             )
-            Text("Register with", modifier = Modifier.padding(horizontal = 10.dp), color = MaterialTheme.colorScheme.inverseOnSurface)
+            Text(
+                "Register with",
+                modifier = Modifier.padding(horizontal = 10.dp),
+                color = MaterialTheme.colorScheme.inverseOnSurface
+            )
             Box(
                 Modifier
                     .weight(1f)
@@ -271,6 +289,61 @@ fun RegisterScreenContent(
             )
         }
     }
+}
+
+@Composable
+fun ShakingCheckBox(
+    isLoadingStatus: State<Boolean>,
+    tcAccepted: MutableState<Boolean>,
+    modifier: Modifier,
+    shouldDisplayErrors: MutableState<Boolean>
+) {
+    val shakeOffset = remember { Animatable(0f) }
+    val coroutineScope = rememberCoroutineScope()
+
+
+    LaunchedEffect(tcAccepted.value, shouldDisplayErrors.value) {
+        if (!tcAccepted.value && shouldDisplayErrors.value) {
+            coroutineScope.launch {
+                shakeOffset.animateTo(
+                    targetValue = 4f,
+                    animationSpec = repeatable(
+                        iterations = 4,
+                        animation = tween(durationMillis = 50, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+                shakeOffset.snapTo(0f)
+            }
+        }
+    }
+
+    val shouldWeDisplayColorRed = !tcAccepted.value && shouldDisplayErrors.value
+    val colorToDisplay =
+        if (shouldWeDisplayColorRed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondary
+
+    Box(
+        modifier = modifier
+            .size(20.dp)
+            .offset {
+                IntOffset(
+                    x = if (!tcAccepted.value && shouldDisplayErrors.value) shakeOffset.value.dp.roundToPx() else 0,
+                    y = 0
+                )
+            }
+    ) {
+        Checkbox(
+            enabled = !isLoadingStatus.value,
+            checked = tcAccepted.value,
+            onCheckedChange = { tcAccepted.value = it },
+            colors = CheckboxDefaults.colors(
+                checkmarkColor = MaterialTheme.colorScheme.onSurface,
+                checkedColor = colorToDisplay,
+                uncheckedColor = colorToDisplay
+            )
+        )
+    }
+
 }
 
 @Suppress("DEPRECATION")
@@ -329,6 +402,7 @@ fun TermsAndConditionsText(onTermsClick: () -> Unit) {
 @Composable
 private fun SuccessDialog(onDismissRequest: () -> Unit) {
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.onSurface,
         onDismissRequest = {
             onDismissRequest()
         },

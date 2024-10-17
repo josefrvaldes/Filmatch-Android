@@ -171,7 +171,7 @@ private fun LoginBottomSheetDialog(
     sheetState: SheetState
 ) {
     ModalBottomSheet(
-        onDismissRequest = { showRegisterBottomSheet.value = false },
+        onDismissRequest = { showLoginBottomSheet.value = false },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.onSurface
     ) {
