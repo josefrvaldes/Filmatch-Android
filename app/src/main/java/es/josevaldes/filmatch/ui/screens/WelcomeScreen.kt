@@ -71,11 +71,13 @@ fun WelcomeScreen(navController: NavHostController) {
             )
             Text(
                 stringResource(R.string.welcome_screen_title),
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 stringResource(R.string.welcome_screen_subtitle),
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             ButtonRooms()
@@ -102,14 +104,14 @@ fun WelcomeScreen(navController: NavHostController) {
                         stringResource(R.string.welcome_screen_login_button_title),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                     Text(
                         stringResource(R.string.welcome_screen_login_button_description),
                         modifier = Modifier.padding(top = 10.dp),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                 }
 
@@ -169,8 +171,9 @@ private fun LoginBottomSheetDialog(
     sheetState: SheetState
 ) {
     ModalBottomSheet(
-        onDismissRequest = { showRegisterBottomSheet.value = false },
-        sheetState = sheetState
+        onDismissRequest = { showLoginBottomSheet.value = false },
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.onSurface
     ) {
         LoginScreen(navController) {
             showLoginBottomSheet.value = false
@@ -190,7 +193,8 @@ private fun RegisterBottomSheetDialog(
 ) {
     ModalBottomSheet(
         onDismissRequest = { showRegisterBottomSheet.value = false },
-        sheetState = sheetState
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.onSurface
     ) {
         RegisterScreen(navController) {
             showRegisterBottomSheet.value = false
@@ -218,17 +222,20 @@ private fun ButtonRooms() {
         ) {
             Text(
                 stringResource(R.string.welcome_screen_btn_room_title),
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 stringResource(R.string.welcome_screen_btn_room_subtitle),
-                style = MaterialTheme.typography.labelSmall
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 stringResource(R.string.welcome_screen_btn_room_description),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 10.dp),
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
         Icon(

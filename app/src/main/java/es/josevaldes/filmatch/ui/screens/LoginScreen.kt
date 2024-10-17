@@ -48,6 +48,7 @@ import es.josevaldes.filmatch.ui.dialogs.ErrorDialog
 import es.josevaldes.filmatch.ui.dialogs.ForgotPasswordDialog
 import es.josevaldes.filmatch.ui.dialogs.SuccessSendingForgotPasswordDialog
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
+import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 import es.josevaldes.filmatch.viewmodels.AuthViewModel
 
 
@@ -79,6 +80,12 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        Text(
+            stringResource(R.string.welcome_back),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(bottom = 20.dp)
+        )
         EmailTextField(
             email,
             isEnabled = !isLoadingStatus.value,
@@ -101,7 +108,9 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
             },
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(20.dp)
+                .padding(vertical = 20.dp)
+                .fillMaxWidth(),
+            colors = getDefaultAccentButtonColors()
         ) {
             Text(stringResource(R.string.login))
             if (isLoadingStatus.value) {
@@ -169,7 +178,7 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
             )
             Text(
                 text = stringResource(R.string.register),
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.secondary,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .clickable {
@@ -199,9 +208,10 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
 
     if (errorMessage.isNotEmpty()) {
         viewModel.clearError()
-        ErrorDialog(errorMessage) { errorMessage = "" }
+        ErrorDialog(errorMessage, MaterialTheme.colorScheme.onSurface) { errorMessage = "" }
     } else if (shouldDisplayForgotPasswordDialog) {
         ForgotPasswordDialog(
+            backgroundColor = MaterialTheme.colorScheme.onSurface,
             onSuccess = {
                 shouldDisplayForgotPasswordDialog = false
                 shouldDisplaySuccessForgettingPasswordDialog = true
@@ -209,7 +219,9 @@ fun LoginScreen(navController: NavController, onGoToRegisterClicked: () -> Unit)
             onDismiss = { shouldDisplayForgotPasswordDialog = false }
         )
     } else if (shouldDisplaySuccessForgettingPasswordDialog) {
-        SuccessSendingForgotPasswordDialog { shouldDisplaySuccessForgettingPasswordDialog = false }
+        SuccessSendingForgotPasswordDialog(backgroundColor = MaterialTheme.colorScheme.onSurface) {
+            shouldDisplaySuccessForgettingPasswordDialog = false
+        }
     }
 }
 

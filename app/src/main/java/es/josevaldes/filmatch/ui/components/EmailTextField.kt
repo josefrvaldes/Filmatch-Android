@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import es.josevaldes.core.utils.validateEmail
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
+import es.josevaldes.filmatch.ui.theme.getWelcomeScreenInputFieldColors
 
 @Composable
 fun EmailTextField(
@@ -56,10 +58,12 @@ fun EmailTextField(
                     contentDescription = stringResource(R.string.content_description_clear_email),
                     modifier = Modifier.clickable {
                         email.value = ""
-                    }
+                    },
+                    tint = MaterialTheme.colorScheme.inverseOnSurface
                 )
             }
-        }
+        },
+        colors = getWelcomeScreenInputFieldColors()
     )
 }
 
@@ -67,7 +71,7 @@ fun EmailTextField(
 @Composable
 fun EmailTextFieldPreview() {
     val email = remember { mutableStateOf("") }
-    FilmatchTheme {
+    FilmatchTheme(darkTheme = true) {
         EmailTextField(email = email)
     }
 }
@@ -76,7 +80,7 @@ fun EmailTextFieldPreview() {
 @Composable
 fun EmailTextFieldFilledPreview() {
     val email = remember { mutableStateOf("jose@gmail.com") }
-    FilmatchTheme {
+    FilmatchTheme(darkTheme = true) {
         EmailTextField(email = email)
     }
 }
