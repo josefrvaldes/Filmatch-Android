@@ -223,11 +223,6 @@ private fun SwipeableMoviesComponent(
                 onSwipeCompleted = { viewModel.clearSwipeAction() },
                 onMovieClicked = { movie ->
                     onNavigateToMovieDetailsScreen(movie)
-
-//                    movie.id?.let { movieId ->
-//                        onNavigateToMovieDetailsScreen(movieId)
-//                    }
-                    // TODO: we should display an error message when id is null
                 }
             )
         }
