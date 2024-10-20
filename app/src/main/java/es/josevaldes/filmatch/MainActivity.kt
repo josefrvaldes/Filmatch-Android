@@ -9,17 +9,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import dagger.hilt.android.AndroidEntryPoint
+import es.josevaldes.data.model.Movie
 import es.josevaldes.data.services.AuthService
-import es.josevaldes.filmatch.navigation.Screen
-import es.josevaldes.filmatch.ui.screens.LoginScreen
+import es.josevaldes.filmatch.navigation.MovieParameterType
+import es.josevaldes.filmatch.navigation.Route
+import es.josevaldes.filmatch.ui.screens.MovieDetailsScreen
 import es.josevaldes.filmatch.ui.screens.OnBoardingScreen
-import es.josevaldes.filmatch.ui.screens.RegisterScreen
 import es.josevaldes.filmatch.ui.screens.SlideMovieScreen
 import es.josevaldes.filmatch.ui.screens.WelcomeScreen
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.utils.SimplePreferencesManager
 import javax.inject.Inject
+import kotlin.reflect.typeOf
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -32,12 +35,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             FilmatchApp(
                 startDestination = if (isLoggedIn()) {
-                    Screen.SlideMovieScreen
+                    Route.SlideMovieRoute
                 } else {
                     if (SimplePreferencesManager(this).isOnboardingFinished()) {
-                        Screen.WelcomeScren
+                        Route.WelcomeRoute
                     } else {
-                        Screen.OnBoardingScren
+                        Route.OnBoardingRoute
                     }
                 }
             )
@@ -51,24 +54,36 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun FilmatchApp(startDestination: Screen) {
+fun FilmatchApp(startDestination: Route) {
     val navController = rememberNavController()
     FilmatchTheme(darkTheme = true) {
-        NavHost(navController = navController, startDestination = startDestination.route) {
-            composable(Screen.LoginScreen.route) {
-                LoginScreen(navController) {}
+        NavHost(navController = navController, startDestination = startDestination) {
+            composable<Route.MovieDetailsRoute>(typeMap = mapOf(typeOf<Movie>() to MovieParameterType)) { backStackEntry ->
+                val movieDetailsRoute = backStackEntry.toRoute<Route.MovieDetailsRoute>()
+                MovieDetailsScreen(movieDetailsRoute.movie)
             }
-            composable(Screen.OnBoardingScren.route) {
-                OnBoardingScreen(navController)
+            composable<Route.OnBoardingRoute> {
+                OnBoardingScreen(onNavigateToWelcomeScreen = {
+                    navController.navigate(Route.WelcomeRoute) {
+                        // this will clean the stack up to SlideMovieScreen except for AuthScreen itself
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        launchSingleTop = true // avoid multiple instances of AuthScreen
+                    }
+                })
             }
-            composable(Screen.SlideMovieScreen.route) {
-                SlideMovieScreen(navController)
+            composable<Route.SlideMovieRoute> {
+                SlideMovieScreen(onNavigateToMovieDetailsScreen = { movie ->
+                    navController.navigate(Route.MovieDetailsRoute(movie))
+                })
             }
-            composable(Screen.RegisterScreen.route) {
-                RegisterScreen(navController) {}
-            }
-            composable(Screen.WelcomeScren.route) {
-                WelcomeScreen(navController)
+            composable<Route.WelcomeRoute> {
+                WelcomeScreen(onNavigateToSlideMovieScreen = {
+                    navController.navigate(Route.SlideMovieRoute) {
+                        // this will clean the stack up to SlideMovieScreen except for SlideMovieScreen itself
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        launchSingleTop = true // avoid multiple instances of SlideMovieScreen
+                    }
+                })
             }
         }
     }
@@ -78,5 +93,5 @@ fun FilmatchApp(startDestination: Screen) {
 @Preview
 @Composable
 fun AppPreview() {
-    FilmatchApp(Screen.WelcomeScren)
+    FilmatchApp(Route.WelcomeRoute)
 }

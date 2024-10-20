@@ -1,8 +1,13 @@
 package es.josevaldes.data.model
 
+import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
+import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 
 
+@Serializable
+@Parcelize
 data class Movie(
     @SerializedName("adult") var adult: Boolean? = null,
     @SerializedName("backdrop_path") var backdropPath: String? = null,
@@ -18,7 +23,7 @@ data class Movie(
     @SerializedName("video") var video: Boolean? = null,
     @SerializedName("vote_average") var voteAverage: Double? = null,
     @SerializedName("vote_count") var voteCount: Int? = null
-) {
+) : Parcelable {
     val posterUrl: String
         get() = "https://image.tmdb.org/t/p/w500${posterPath}"
 }

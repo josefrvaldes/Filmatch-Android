@@ -35,10 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import es.josevaldes.filmatch.R
-import es.josevaldes.filmatch.navigation.Screen
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.utils.SimplePreferencesManager
 import kotlinx.coroutines.launch
@@ -60,7 +57,7 @@ fun OnBoardingScreen1(screenNumber: Int) {
 
 
 @Composable
-fun OnBoardingScreen(navController: NavHostController) {
+fun OnBoardingScreen(onNavigateToWelcomeScreen: () -> Unit) {
     val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -121,9 +118,9 @@ fun OnBoardingScreen(navController: NavHostController) {
                     .border(1.dp, Color.White, RoundedCornerShape(22.dp))
                     .clickable {
                         if (pagerState.currentPage == pagerState.pageCount - 1) {
-                            navigateToWelcomeAndDismissOnBoardingScreenForever(
-                                context,
-                                navController
+                            onNavigateToWelcomeScreen()
+                            dismissOnBoardingScreenForever(
+                                context
                             )
                         } else {
                             scope.launch {
@@ -158,16 +155,10 @@ fun OnBoardingScreen(navController: NavHostController) {
 }
 
 
-private fun navigateToWelcomeAndDismissOnBoardingScreenForever(
-    context: Context,
-    navController: NavHostController
+private fun dismissOnBoardingScreenForever(
+    context: Context
 ) {
     SimplePreferencesManager(context).setOnboardingFinished()
-    navController.navigate(Screen.WelcomeScren.route) {
-        // this will clean the stack up to SlideMovieScreen except for AuthScreen itself
-        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-        launchSingleTop = true // avoid multiple instances of AuthScreen
-    }
 }
 
 
@@ -175,6 +166,6 @@ private fun navigateToWelcomeAndDismissOnBoardingScreenForever(
 @Composable
 fun OnBoardingScreenPreview() {
     FilmatchTheme(darkTheme = true) {
-        OnBoardingScreen(rememberNavController())
+        OnBoardingScreen {}
     }
 }

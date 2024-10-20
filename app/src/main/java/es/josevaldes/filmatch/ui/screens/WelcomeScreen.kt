@@ -37,14 +37,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WelcomeScreen(navController: NavHostController) {
+fun WelcomeScreen(onNavigateToSlideMovieScreen: () -> Unit) {
     val registerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val loginSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val showRegisterBottomSheet = remember { mutableStateOf(false) }
@@ -148,14 +146,14 @@ fun WelcomeScreen(navController: NavHostController) {
         RegisterBottomSheetDialog(
             showLoginBottomSheet = showLoginBottomSheet,
             showRegisterBottomSheet = showRegisterBottomSheet,
-            navController = navController,
+            onNavigateToSlideMovieScreen = onNavigateToSlideMovieScreen,
             sheetState = registerSheetState
         )
     } else if (showLoginBottomSheet.value) {
         LoginBottomSheetDialog(
             showLoginBottomSheet = showLoginBottomSheet,
             showRegisterBottomSheet = showRegisterBottomSheet,
-            navController = navController,
+            onNavigateToSlideMovieScreen = onNavigateToSlideMovieScreen,
             sheetState = loginSheetState
         )
     }
@@ -167,7 +165,7 @@ fun WelcomeScreen(navController: NavHostController) {
 private fun LoginBottomSheetDialog(
     showRegisterBottomSheet: MutableState<Boolean>,
     showLoginBottomSheet: MutableState<Boolean>,
-    navController: NavHostController,
+    onNavigateToSlideMovieScreen: () -> Unit,
     sheetState: SheetState
 ) {
     ModalBottomSheet(
@@ -175,7 +173,7 @@ private fun LoginBottomSheetDialog(
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.onSurface
     ) {
-        LoginScreen(navController) {
+        LoginScreen(onNavigateToSlideMovieScreen) {
             showLoginBottomSheet.value = false
             showRegisterBottomSheet.value = true
         }
@@ -188,7 +186,7 @@ private fun LoginBottomSheetDialog(
 private fun RegisterBottomSheetDialog(
     showRegisterBottomSheet: MutableState<Boolean>,
     showLoginBottomSheet: MutableState<Boolean>,
-    navController: NavHostController,
+    onNavigateToSlideMovieScreen: () -> Unit,
     sheetState: SheetState
 ) {
     ModalBottomSheet(
@@ -196,7 +194,7 @@ private fun RegisterBottomSheetDialog(
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.onSurface
     ) {
-        RegisterScreen(navController) {
+        RegisterScreen(onNavigateToSlideMovieScreen) {
             showRegisterBottomSheet.value = false
             showLoginBottomSheet.value = true
         }
@@ -251,6 +249,6 @@ private fun ButtonRooms() {
 @Composable
 fun WelcomeScreenPreview() {
     FilmatchTheme(darkTheme = true) {
-        WelcomeScreen(rememberNavController())
+        WelcomeScreen {}
     }
 }
