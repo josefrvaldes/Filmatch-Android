@@ -51,13 +51,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import es.josevaldes.core.utils.validateEmail
 import es.josevaldes.core.utils.validatePassword
 import es.josevaldes.data.results.AuthResult
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.errors.ErrorMessageWrapper
-import es.josevaldes.filmatch.navigation.Screen
 import es.josevaldes.filmatch.ui.components.EmailTextField
 import es.josevaldes.filmatch.ui.components.PasswordTextField
 import es.josevaldes.filmatch.ui.dialogs.ErrorDialog
@@ -67,7 +65,7 @@ import es.josevaldes.filmatch.viewmodels.AuthViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit) {
+fun RegisterScreen(onNavigateToSlideMovieScreen: () -> Unit, onGoToLoginClicked: () -> Unit) {
     val authViewModel: AuthViewModel = hiltViewModel()
 
     val context = LocalContext.current
@@ -111,11 +109,7 @@ fun RegisterScreen(navController: NavController, onGoToLoginClicked: () -> Unit)
     when (val result = registerResult.value) {
         is AuthResult.Success -> {
             if (signInWithGoogle.value) {
-                navController.navigate(Screen.SlideMovieScreen.route) {
-                    // this will clean the stack up to SlideMovieScreen except for SlideMovieScreen itself
-                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                    launchSingleTop = true // avoid multiple instances of SlideMovieScreen
-                }
+                onNavigateToSlideMovieScreen()
             } else {
                 showSuccessDialog = true
             }

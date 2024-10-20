@@ -66,8 +66,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.Coil
@@ -109,7 +107,7 @@ val user = User(
 )
 
 @Composable
-fun SlideMovieScreen(navController: NavController) {
+fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
     val viewModel: SlideMovieViewModel = hiltViewModel()
     val deviceLanguage = getDeviceLocale()
     viewModel.setLanguage(deviceLanguage)
@@ -138,7 +136,7 @@ fun SlideMovieScreen(navController: NavController) {
                     .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
-                SwipeableMoviesComponent(viewModel)
+                SwipeableMoviesComponent(viewModel, onNavigateToMovieDetailsScreen)
             }
         }
     }
@@ -158,7 +156,10 @@ fun PreviewBottomLikeDislike() {
 }
 
 @Composable
-private fun SwipeableMoviesComponent(viewModel: SlideMovieViewModel) {
+private fun SwipeableMoviesComponent(
+    viewModel: SlideMovieViewModel,
+    onNavigateToMovieDetailsScreen: (Movie) -> Unit
+) {
     var counter by remember { mutableIntStateOf(0) }
     val moviesLazyPaging = viewModel.moviesFlow.collectAsLazyPagingItems()
 
@@ -215,11 +216,15 @@ private fun SwipeableMoviesComponent(viewModel: SlideMovieViewModel) {
     observableMovies.reversed().forEachIndexed { index, movie ->
         key(movie.movie.id) {
             SwipeableMovieView(
-                swipeAction,
-                observableMovies,
-                movie,
-                index
-            ) { viewModel.clearSwipeAction() }
+                swipeAction = swipeAction,
+                observableMovies = observableMovies,
+                movie = movie,
+                index = index,
+                onSwipeCompleted = { viewModel.clearSwipeAction() },
+                onMovieClicked = { movie ->
+                    onNavigateToMovieDetailsScreen(movie)
+                }
+            )
         }
     }
 }
@@ -274,6 +279,7 @@ private fun SwipeableMovieView(
     movie: SwipeableMovie,
     index: Int,
     onSwipeCompleted: () -> Unit,
+    onMovieClicked: (Movie) -> Unit
 ) {
     val translationOffset = remember { Animatable(0f) }
     val rotationOffset = getProperRotation(movie, index, observableMovies)
@@ -298,6 +304,9 @@ private fun SwipeableMovieView(
             .setupMovieGraphics(movie, rotationOffset)
             .zIndex(index.toFloat())
             .offset { IntOffset(translationOffset.value.roundToInt(), 0) }
+            .clickable {
+                onMovieClicked(movie.movie)
+            }
             .swipeHandler(
                 enabled = index == observableMovies.size - 1,
                 translationOffset = translationOffset,
@@ -697,6 +706,6 @@ fun UserTopBar(user: User) {
 @Composable
 fun SlideMovieScreenPreview() {
     FilmatchTheme(darkTheme = true) {
-        SlideMovieScreen(rememberNavController())
+        SlideMovieScreen {}
     }
 }
