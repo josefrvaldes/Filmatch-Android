@@ -1,11 +1,11 @@
 package es.josevaldes.data.responses
 
-import com.google.gson.annotations.SerializedName
+import com.fasterxml.jackson.annotation.JsonProperty
 import es.josevaldes.data.model.Movie
 
 data class DiscoverMoviesResponse(
-    @SerializedName("results") val results: List<Movie>,
-    @SerializedName("page") val page: Int,
-    @SerializedName("total_results") val totalResults: Int,
-    @SerializedName("total_pages") val totalPages: Int
+    @JsonProperty("results") val results: List<Movie>,
+    @JsonProperty("page") val page: Int,
+    @JsonProperty("total_results") val totalResults: Int,
+    @JsonProperty("total_pages") val totalPages: Int
 )

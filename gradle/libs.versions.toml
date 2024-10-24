@@ -35,6 +35,7 @@ lifecycleViewmodelKtx = "2.6.2"
 navigationVersion = "2.8.3"
 kotlinxSerializationVersion = "1.7.3"
 kotlinxSerializationPluginVersion = "2.0.20"
+jacksonVersion = "2.13.0"
 
 
 [libraries]
@@ -59,7 +60,7 @@ hilt = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hiltVersion" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationComposeVersion" }
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofitVersion" }
-retrofit-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofitVersion" }
+retrofit-jackson = { group = "com.squareup.retrofit2", name = "converter-jackson", version.ref = "retrofitVersion" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp" }
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okHttpVersion" }
 okhttpbom = { group = "com.squareup.okhttp3", name = "okhttp-bom", version.ref = "okHttpVersion" }
@@ -87,7 +88,7 @@ paging-testing-android = { group = "androidx.paging", name = "paging-testing-and
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 androidx-navigation = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationVersion" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationVersion" }
-
+jackson = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jacksonVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

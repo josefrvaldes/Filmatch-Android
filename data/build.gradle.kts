@@ -54,7 +54,7 @@ dependencies {
 
     // Retrofit
     implementation(libs.retrofit)
-    implementation(libs.retrofit.gson)
+    implementation(libs.retrofit.jackson)
 
     // OkHttp
     implementation(platform(libs.okhttpbom))
@@ -78,6 +78,7 @@ dependencies {
 
     // serialization
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.jackson)
 
 
     // Timber

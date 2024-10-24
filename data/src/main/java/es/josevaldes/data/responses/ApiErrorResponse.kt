@@ -1,9 +1,9 @@
 package es.josevaldes.data.responses
 
-import com.google.gson.annotations.SerializedName
+import com.fasterxml.jackson.annotation.JsonProperty
 
 data class ApiErrorResponse(
-    @SerializedName("success") val success: Boolean,
-    @SerializedName("status_code") val code: Int,
-    @SerializedName("status_message") val message: String
+    @JsonProperty("success") val success: Boolean,
+    @JsonProperty("status_code") val code: Int,
+    @JsonProperty("status_message") val message: String
 )
