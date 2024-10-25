@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 @Parcelize
-@JsonIgnoreProperties(ignoreUnknown = true) // Ignorar propiedades desconocidas
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class Movie(
     @JsonProperty("id") val id: Int,
     @JsonProperty("adult") val adult: Boolean? = null,
@@ -40,12 +40,44 @@ data class Movie(
 ) : Parcelable {
     val posterUrl: String
         get() = "https://image.tmdb.org/t/p/w500${posterPath}"
+
+    fun getGenresString(andSeparator: String = "and"): String {
+        var categoriesString = ""
+        for (i in genres.size - 1 downTo 0) {
+            when (i) {
+                genres.size - 1 -> {
+                    categoriesString += genres[i].name
+                }
+
+                genres.size - 2 -> {
+                    categoriesString = "${genres[i].name} $andSeparator $categoriesString"
+                }
+
+                else -> {
+                    categoriesString = "${genres[i].name}, $categoriesString"
+                }
+            }
+        }
+        return categoriesString
+    }
+
+    fun getDurationString(): String {
+        val hours = runtime?.div(60) ?: 0
+        val minutes = runtime?.rem(60) ?: 0
+        return "${hours}h ${minutes}m"
+    }
+
+    fun getReleaseYear(): String? {
+        val regex = "\\b(\\d{4})\\b".toRegex()
+        val matchResult = regex.find(releaseDate ?: "")
+        return matchResult?.value
+    }
 }
 
 
 @Serializable
 @Parcelize
-@JsonIgnoreProperties(ignoreUnknown = true) // Ignorar propiedades desconocidas
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class Collection(
     @JsonProperty("id") val id: Int,
     @JsonProperty("name") val name: String? = null,
