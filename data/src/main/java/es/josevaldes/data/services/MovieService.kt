@@ -16,7 +16,7 @@ interface MovieService {
     ): ApiResult<DiscoverMoviesResponse>
 
 
-    @GET("/3/movie/{id}")
+    @GET("/3/movie/{id}?append_to_response=credits,videos")
     suspend fun findById(
         @Path("id") id: Int,
         @Query("language") language: String? = "en-US",

@@ -36,7 +36,9 @@ data class Movie(
     @JsonProperty("title") val title: String? = null,
     @JsonProperty("video") val video: Boolean? = null,
     @JsonProperty("vote_average") val voteAverage: Double? = null,
-    @JsonProperty("vote_count") val voteCount: Int? = null
+    @JsonProperty("vote_count") val voteCount: Int? = null,
+    @JsonProperty("credits") val credits: Credits? = null,
+    @JsonProperty("videos") val videos: Videos? = null
 ) : Parcelable {
     val posterUrl: String
         get() = "https://image.tmdb.org/t/p/w500${posterPath}"
@@ -115,3 +117,91 @@ data class SpokenLanguage(
     @JsonProperty("iso_639_1") val isoCode: String,
     @JsonProperty("name") val name: String
 ) : Parcelable
+
+
+@Serializable
+@Parcelize
+data class Credits(
+    @JsonProperty("cast") val cast: List<CastMember> = emptyList(),
+    @JsonProperty("crew") val crew: List<CrewMember> = emptyList()
+) : Parcelable
+
+@Serializable
+@Parcelize
+data class CastMember(
+    @JsonProperty("adult") val adult: Boolean,
+    @JsonProperty("gender") val gender: Int?,
+    @JsonProperty("id") val id: Int,
+    @JsonProperty("knownForDepartment") val knownForDepartment: String?,
+    @JsonProperty("name") val name: String,
+    @JsonProperty("originalName") val originalName: String?,
+    @JsonProperty("popularity") val popularity: Float?,
+    @JsonProperty("profilePath") val profilePath: String?,
+    @JsonProperty("castId") val castId: Int?,
+    @JsonProperty("character") val character: String?,
+    @JsonProperty("creditId") val creditId: String?,
+    @JsonProperty("order") val order: Int
+) : Parcelable
+
+@Serializable
+@Parcelize
+data class CrewMember(
+    @JsonProperty("adult") val adult: Boolean,
+    @JsonProperty("gender") val gender: Int?,
+    @JsonProperty("id") val id: Int,
+    @JsonProperty("knownForDepartment") val knownForDepartment: String?,
+    @JsonProperty("name") val name: String,
+    @JsonProperty("originalName") val originalName: String?,
+    @JsonProperty("popularity") val popularity: Float?,
+    @JsonProperty("profilePath") val profilePath: String?,
+    @JsonProperty("creditId") val creditId: String?,
+    @JsonProperty("department") val department: String?,
+    @JsonProperty("job") val job: String?
+) : Parcelable
+
+@Serializable
+@Parcelize
+data class Videos(
+    @JsonProperty("results") val results: List<VideoResult> = emptyList()
+) : Parcelable
+
+@Serializable
+@Parcelize
+data class VideoResult(
+    @JsonProperty("iso_639_1") val iso_639_1: String,
+    @JsonProperty("iso_3166_1") val iso_3166_1: String,
+    @JsonProperty("name") val name: String,
+    @JsonProperty("key") val key: String,
+    @JsonProperty("site") val site: String,
+    @JsonProperty("size") val size: Int,
+    @JsonProperty("type") private val type: String,
+    @JsonProperty("official") val official: Boolean,
+    @JsonProperty("publishedAt") val publishedAt: String?,
+    @JsonProperty("id") val id: String
+) : Parcelable {
+    val videoType: VideoType
+        get() = VideoType.from(type)
+}
+
+@Serializable
+enum class VideoType {
+    Featurette,
+    Clip,
+    Teaser,
+    Trailer,
+    BehindTheScenes,
+    Other;
+
+    companion object {
+        fun from(value: String): VideoType {
+            return when (value) {
+                "Featurette" -> Featurette
+                "Clip" -> Clip
+                "Teaser" -> Teaser
+                "Trailer" -> Trailer
+                "Behind the Scenes" -> BehindTheScenes
+                else -> Other // Si el tipo no es ninguno de los conocidos, devolvemos "Other"
+            }
+        }
+    }
+}
