@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
@@ -56,11 +59,39 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun FilmatchApp(startDestination: Route) {
     val navController = rememberNavController()
+    val animationDuration = 150
     FilmatchTheme(darkTheme = true) {
-        NavHost(navController = navController, startDestination = startDestination) {
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth }, // starts from the right
+                    animationSpec = tween(animationDuration)
+                )
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> -fullWidth }, // ends at the left
+                    animationSpec = tween(animationDuration)
+                )
+            },
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> -fullWidth }, // from the left when going back
+                    animationSpec = tween(animationDuration)
+                )
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth }, // to the right when going back
+                    animationSpec = tween(animationDuration)
+                )
+            }
+        ) {
             composable<Route.MovieDetailsRoute>(typeMap = mapOf(typeOf<Movie>() to MovieParameterType)) { backStackEntry ->
                 val movieDetailsRoute = backStackEntry.toRoute<Route.MovieDetailsRoute>()
-                MovieDetailsScreen(movieDetailsRoute.movie)
+                MovieDetailsScreen(movieDetailsRoute.movie, backStackEntry)
             }
             composable<Route.OnBoardingRoute> {
                 OnBoardingScreen(onNavigateToWelcomeScreen = {

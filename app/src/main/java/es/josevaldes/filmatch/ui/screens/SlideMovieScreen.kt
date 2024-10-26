@@ -304,9 +304,6 @@ private fun SwipeableMovieView(
             .setupMovieGraphics(movie, rotationOffset)
             .zIndex(index.toFloat())
             .offset { IntOffset(translationOffset.value.roundToInt(), 0) }
-            .clickable {
-                onMovieClicked(movie.movie)
-            }
             .swipeHandler(
                 enabled = index == observableMovies.size - 1,
                 translationOffset = translationOffset,
@@ -320,7 +317,9 @@ private fun SwipeableMovieView(
             movie = movie,
             blurRadius = blurRadius,
             tint = tint,
-            modifier = Modifier.matchParentSize()
+            modifier = Modifier
+                .matchParentSize(),
+            onMovieClicked = onMovieClicked
         )
     }
 }
@@ -392,7 +391,8 @@ private fun PosterImageView(
     movie: SwipeableMovie,
     blurRadius: State<Dp>,
     tint: State<Color>,
-    modifier: Modifier
+    modifier: Modifier,
+    onMovieClicked: (Movie) -> Unit
 ) {
     AsyncImage(
         filterQuality = FilterQuality.Medium,
@@ -404,7 +404,8 @@ private fun PosterImageView(
                 radius = blurRadius.value,
                 edgeTreatment = BlurredEdgeTreatment.Unbounded
             )
-            .background(BackButtonBackground),
+            .background(BackButtonBackground)
+            .clickable { onMovieClicked(movie.movie) },
 
         model = ImageRequest.Builder(LocalContext.current)
             .data(movie.movie.posterUrl)
