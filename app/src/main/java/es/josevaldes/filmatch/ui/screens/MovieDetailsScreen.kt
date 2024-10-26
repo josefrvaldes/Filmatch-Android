@@ -1,17 +1,16 @@
 package es.josevaldes.filmatch.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
@@ -24,8 +23,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +44,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavBackStackEntry
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
@@ -59,22 +63,48 @@ import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.viewmodels.MovieDetailsViewModel
 
 @Composable
-fun MovieDetailsScreen(movie: Movie) {
+fun MovieDetailsScreen(movie: Movie, backStackEntry: NavBackStackEntry) {
     val viewModel: MovieDetailsViewModel = hiltViewModel()
     val deviceLanguage = getDeviceLocale()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(
+        false,
+        minActiveState = Lifecycle.State.STARTED
+    )
+
+    // what we are doing here is that we are using a mutableStateOf to hold the movie that we are going to show in the screen
+    // we initialize it with the movie that we receive as a parameter
+    val fullMovieState = remember { mutableStateOf<Movie?>(movie) }
+
+    // on startup, we call the getMovieById method of the viewModel to get the full movie details
     LaunchedEffect(movie.id) {
         viewModel.setInitialMovie(movie)
         viewModel.getMovieById(movie.id, deviceLanguage)
     }
 
-    val fullMovie by viewModel.movie.collectAsState(movie)
-    val isLoading by viewModel.isLoading.collectAsState(false)
+    // we collect the movie from the viewModel and update the fullMovieState.
+    // the main important thing here is that we do it after the transition animation has finished
+    // otherwise, the transition animation will be laggy
+    LaunchedEffect(backStackEntry.lifecycle) {
+        backStackEntry.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.movie.collect {
+                fullMovieState.value = it
+            }
+        }
+    }
 
-    MovieDetailsScreenContent(fullMovie, isLoading)
+    MovieDetailsScreenContent(
+        fullMovie = fullMovieState.value,
+        initialMovie = movie,
+        isLoading = isLoading
+    )
 }
 
 @Composable
-private fun MovieDetailsScreenContent(movie: Movie?, isLoading: Boolean) {
+private fun MovieDetailsScreenContent(
+    fullMovie: Movie?,
+    initialMovie: Movie? = fullMovie,
+    isLoading: Boolean
+) {
     val scrollState = rememberScrollState()
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
         Column(
@@ -87,15 +117,15 @@ private fun MovieDetailsScreenContent(movie: Movie?, isLoading: Boolean) {
                 .fillMaxSize()
         ) {
 
-            PhotoAndProgressIndicatorSection(this@Column, movie, isLoading)
+            PhotoAndProgressIndicatorSection(initialMovie, isLoading)
 
 
-            PercentageTitleAndDurationSection(movie)
-            TitleAndYearSection(movie)
-            OverviewSection(movie)
-            DirectedBySection(movie)
-            VideosSection(movie)
-            CastSection(movie)
+            PercentageTitleAndDurationSection(fullMovie)
+            TitleAndYearSection(initialMovie)
+            OverviewSection(initialMovie)
+            DirectedBySection(fullMovie)
+            VideosSection(fullMovie)
+            CastSection(fullMovie)
         }
     }
 }
@@ -282,17 +312,10 @@ private fun VideosSection(movie: Movie?) {
 
 @Composable
 private fun PhotoAndProgressIndicatorSection(
-    columnScope: ColumnScope,
     movie: Movie?,
     isLoading: Boolean
 ) {
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopStart) {
-        columnScope.AnimatedVisibility(
-            visible = isLoading,
-            modifier = Modifier.align(Alignment.TopStart)
-        ) {
-            CircularProgressIndicator()
-        }
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(movie?.posterUrl)
@@ -309,6 +332,15 @@ private fun PhotoAndProgressIndicatorSection(
                 .align(Alignment.TopStart)
                 .padding(bottom = 16.dp)
         )
+
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(start = 20.dp)
+            )
+        }
     }
 }
 
@@ -471,7 +503,7 @@ fun MovieDetailsScreenPreview() {
 
     FilmatchTheme(darkTheme = true) {
         MovieDetailsScreenContent(
-            movie = movie,
+            fullMovie = movie,
             isLoading = isLoading
         )
     }
