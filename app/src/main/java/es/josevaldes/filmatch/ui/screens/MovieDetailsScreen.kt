@@ -2,17 +2,21 @@ package es.josevaldes.filmatch.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,13 +28,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -39,16 +48,18 @@ import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import es.josevaldes.core.utils.getDeviceLocale
+import es.josevaldes.data.model.Credits
+import es.josevaldes.data.model.CrewMember
 import es.josevaldes.data.model.Genre
 import es.josevaldes.data.model.Movie
 import es.josevaldes.filmatch.R
+import es.josevaldes.filmatch.extensions.openYoutubeVideo
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.viewmodels.MovieDetailsViewModel
 
 @Composable
 fun MovieDetailsScreen(movie: Movie) {
-    val scrollState = rememberScrollState()
     val viewModel: MovieDetailsViewModel = hiltViewModel()
     val deviceLanguage = getDeviceLocale()
     LaunchedEffect(movie.id) {
@@ -59,11 +70,12 @@ fun MovieDetailsScreen(movie: Movie) {
     val fullMovie by viewModel.movie.collectAsState(movie)
     val isLoading by viewModel.isLoading.collectAsState(false)
 
-    MovieDetailsScreenContent(scrollState, fullMovie, isLoading)
+    MovieDetailsScreenContent(fullMovie, isLoading)
 }
 
 @Composable
-private fun MovieDetailsScreenContent(scrollState: ScrollState, movie: Movie?, isLoading: Boolean) {
+private fun MovieDetailsScreenContent(movie: Movie?, isLoading: Boolean) {
+    val scrollState = rememberScrollState()
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
         Column(
             modifier = Modifier
@@ -71,58 +83,25 @@ private fun MovieDetailsScreenContent(scrollState: ScrollState, movie: Movie?, i
                     top = 0.dp,
                     bottom = padding.calculateBottomPadding(),
                 )
-                .scrollable(enabled = true, state = scrollState, orientation = Orientation.Vertical)
+                .verticalScroll(enabled = true, state = scrollState)
                 .fillMaxSize()
         ) {
 
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopStart) {
-                this@Column.AnimatedVisibility(
-                    visible = isLoading,
-                    modifier = Modifier.align(Alignment.TopStart)
-                ) {
-                    CircularProgressIndicator()
-                }
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(movie?.posterUrl)
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .memoryCachePolicy(CachePolicy.ENABLED)
-                        .diskCacheKey(movie?.posterUrl)
-                        .networkCachePolicy(CachePolicy.READ_ONLY)
-                        .build(),
-                    contentScale = ContentScale.FillWidth,
-                    alignment = Alignment.TopStart,
-                    contentDescription = movie?.title,
-                    placeholder = painterResource(id = android.R.drawable.ic_menu_report_image),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopStart)
-                        .padding(bottom = 16.dp)
-                )
-            }
+            PhotoAndProgressIndicatorSection(this@Column, movie, isLoading)
 
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                PercentageTitleAndDurationRow(movie)
-
-                Row(
-                    modifier = Modifier.padding(top = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(movie?.title ?: "", style = MaterialTheme.typography.titleLarge)
-                    movie?.getReleaseYear()?.let {
-                        Text(
-                            "($it)",
-                            modifier = Modifier.padding(start = 8.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                    }
-                }
-
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+            ) {
+                PercentageTitleAndDurationSection(movie)
+                TitleAndYearSection(movie)
+                OverviewSection(movie)
+                DirectedBySection(movie)
+                VideosSection(movie)
                 Text(
-                    movie?.overview ?: "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 8.dp)
+                    "Cast",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(top = 16.dp)
                 )
             }
         }
@@ -130,7 +109,166 @@ private fun MovieDetailsScreenContent(scrollState: ScrollState, movie: Movie?, i
 }
 
 @Composable
-private fun PercentageTitleAndDurationRow(movie: Movie?) {
+private fun VideosSection(movie: Movie?) {
+    val context = LocalContext.current
+    val displayableVideos = movie?.displayableYoutubeVideos
+    displayableVideos?.let { videos ->
+        Text(
+            "Videos",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        LazyRow(modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)) {
+            items(
+                count = videos.size,
+                key = { index -> videos[index].id.toString() },
+                contentType = { index -> videos[index] },
+            ) { index ->
+                val currentVideo = videos[index]
+                val paddingEnd = 16.dp
+                SubcomposeLayout { constraints ->
+                    // let's compose and measure the AsyncImage and the Icon
+                    val imagePlaceable = subcompose("AsyncImage") {
+                        Box {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data("https://img.youtube.com/vi/${currentVideo.key}/0.jpg")
+                                    .diskCachePolicy(CachePolicy.ENABLED)
+                                    .memoryCachePolicy(CachePolicy.ENABLED)
+                                    .diskCacheKey(currentVideo.key)
+                                    .networkCachePolicy(CachePolicy.READ_ONLY)
+                                    .build(),
+                                contentScale = ContentScale.Crop,
+                                contentDescription = currentVideo.name,
+                                placeholder = painterResource(id = android.R.drawable.ic_menu_report_image),
+                                modifier = Modifier
+                                    .height(180.dp)
+                                    .padding(end = paddingEnd)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .clickable {
+                                        currentVideo.openYoutubeVideo(context)
+                                    }
+                            )
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_play_circle),
+                                contentDescription = "play",
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .size(54.dp)
+                            )
+                        }
+                    }.first().measure(
+                        constraints.copy(
+                            minWidth = 0,
+                            maxWidth = constraints.maxWidth
+                        )
+                    )
+
+                    // now let's use the width of the image to measure the Text
+                    val textPlaceable = subcompose("Text") {
+                        currentVideo.name?.let { name ->
+                            Text(
+                                name,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .padding(top = 8.dp)
+
+                                    // let's use the calculated width of the image - the end padding
+                                    .width(with(LocalDensity.current) { imagePlaceable.width.toDp() - paddingEnd })
+                            )
+                        }
+                    }.first().measure(constraints.copy(maxWidth = imagePlaceable.width))
+
+                    // let's put everything together
+                    layout(
+                        width = imagePlaceable.width,
+                        height = imagePlaceable.height + textPlaceable.height
+                    ) {
+                        imagePlaceable.placeRelative(0, 0)
+                        textPlaceable.placeRelative(0, imagePlaceable.height)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhotoAndProgressIndicatorSection(
+    columnScope: ColumnScope,
+    movie: Movie?,
+    isLoading: Boolean
+) {
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopStart) {
+        columnScope.AnimatedVisibility(
+            visible = isLoading,
+            modifier = Modifier.align(Alignment.TopStart)
+        ) {
+            CircularProgressIndicator()
+        }
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(movie?.posterUrl)
+                .diskCachePolicy(CachePolicy.ENABLED)
+                .memoryCachePolicy(CachePolicy.ENABLED)
+                .diskCacheKey(movie?.posterUrl)
+                .networkCachePolicy(CachePolicy.READ_ONLY)
+                .build(),
+            contentScale = ContentScale.FillWidth,
+            alignment = Alignment.TopStart,
+            contentDescription = movie?.title,
+            placeholder = painterResource(id = android.R.drawable.ic_menu_report_image),
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopStart)
+                .padding(bottom = 16.dp)
+        )
+    }
+}
+
+@Composable
+private fun TitleAndYearSection(movie: Movie?) {
+    Row(
+        modifier = Modifier.padding(top = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(movie?.title ?: "", style = MaterialTheme.typography.titleLarge)
+        movie?.getReleaseYear()?.let {
+            Text(
+                "($it)",
+                modifier = Modifier.padding(start = 8.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun OverviewSection(movie: Movie?) {
+    Text(
+        movie?.overview ?: "",
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(top = 8.dp)
+    )
+}
+
+@Composable
+private fun DirectedBySection(movie: Movie?) {
+    val directorsString = movie?.getDirectorsString(stringResource(R.string.and))
+    directorsString?.let {
+        Text(
+            stringResource(R.string.directed_by, directorsString),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            modifier = Modifier.padding(top = 16.dp)
+        )
+    }
+}
+
+@Composable
+private fun PercentageTitleAndDurationSection(movie: Movie?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -174,8 +312,8 @@ private fun CircularProgressBar(
     size: Dp = 44.dp,
     modifier: Modifier = Modifier.size(size)
 ) {
-    val mediumColor = DislikeButtonBackground
-    val badColor = Color(0xFFC62828)
+    val mediumColor = Color(0xFFFFA000)
+    val badColor = DislikeButtonBackground
     val color = when {
         percentage < 50 -> badColor
         percentage in 50..70 -> mediumColor
@@ -237,15 +375,19 @@ fun MovieDetailsScreenPreview() {
             Genre(id = 1, name = "Action"),
             Genre(id = 2, name = "Adventure"),
             Genre(id = 3, name = "Comedy"),
-        )
+        ),
+        credits = Credits(
+            crew = listOf(
+                CrewMember(id = 1, name = "Mike White", department = "Directing"),
+                CrewMember(id = 2, name = "Brenda Chapman", department = "Directing"),
+            )
+        ),
     )
     val isLoading = false
-    val scrollState = rememberScrollState()
 
     FilmatchTheme(darkTheme = true) {
         MovieDetailsScreenContent(
             movie = movie,
-            scrollState = scrollState,
             isLoading = isLoading
         )
     }

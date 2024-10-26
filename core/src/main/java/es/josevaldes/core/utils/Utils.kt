@@ -24,3 +24,27 @@ fun validatePassword(pass: String): Boolean {
 fun validateEmail(email: String): Boolean {
     return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }
+
+fun joinWithSeparatorAndFinalSeparator(
+    separator: String = ", ",
+    finalSeparator: String,
+    list: List<String>
+): String {
+    var categoriesString = ""
+    for (i in list.size - 1 downTo 0) {
+        when (i) {
+            list.size - 1 -> {
+                categoriesString += list[i]
+            }
+
+            list.size - 2 -> {
+                categoriesString = "${list[i]}$finalSeparator$categoriesString"
+            }
+
+            else -> {
+                categoriesString = "${list[i]}$separator$categoriesString"
+            }
+        }
+    }
+    return categoriesString
+}

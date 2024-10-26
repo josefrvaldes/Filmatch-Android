@@ -1,5 +1,7 @@
 package es.josevaldes.data
 
+import es.josevaldes.data.model.Credits
+import es.josevaldes.data.model.CrewMember
 import es.josevaldes.data.model.Genre
 import es.josevaldes.data.model.Movie
 import org.junit.Assert.assertEquals
@@ -182,5 +184,70 @@ class MovieTest {
             releaseDate = "2021-06-15T00:00:00.000Z"
         )
         assertEquals("2021", movie9.getReleaseYear())
+    }
+
+    @Test
+    fun `getDirectorsString should return the right string`() {
+        val movie = Movie(
+            id = 1,
+            title = "Movie 1",
+            credits = Credits(
+                crew = listOf(
+                    CrewMember(id = 1, name = "Director 1", department = "Directing"),
+                )
+            )
+        )
+        assertEquals("Director 1", movie.getDirectorsString("and"))
+
+        val movie2 = Movie(
+            id = 1,
+            title = "Movie 1",
+            credits = Credits(
+                crew = listOf(
+                    CrewMember(id = 1, name = "Director 1", department = "Directing"),
+                    CrewMember(id = 1, name = "Director 2", department = "Directing"),
+                )
+            )
+        )
+        assertEquals("Director 1 and Director 2", movie2.getDirectorsString("and"))
+
+        val movie3 = Movie(
+            id = 1,
+            title = "Movie 1",
+            credits = Credits(
+                crew = listOf(
+                    CrewMember(id = 1, name = "Director 1", department = "Directing"),
+                    CrewMember(id = 1, name = "Director 2", department = "Directing"),
+                    CrewMember(id = 1, name = "Director 3", department = "Directing"),
+                )
+            )
+        )
+        assertEquals("Director 1, Director 2 and Director 3", movie3.getDirectorsString("and"))
+
+        val movie4 = Movie(
+            id = 1,
+            title = "Movie 1",
+            credits = Credits(
+                crew = listOf(
+                    CrewMember(id = 1, name = "Director 1", department = "Directing"),
+                    CrewMember(id = 1, name = "Director 2", department = "Directing"),
+                    CrewMember(id = 1, name = "Director 3", department = "Directing"),
+                    CrewMember(id = 1, name = "Director 4", department = "Directing"),
+                )
+            )
+        )
+        assertEquals(
+            "Director 1, Director 2, Director 3 and Director 4",
+            movie4.getDirectorsString("and")
+        )
+
+        val noDirectorsMovie = Movie(
+            id = 1,
+            title = "Movie 1",
+            credits = Credits(
+                crew = emptyList()
+            )
+        )
+        assertEquals("", noDirectorsMovie.getDirectorsString("and"))
     }
 }
