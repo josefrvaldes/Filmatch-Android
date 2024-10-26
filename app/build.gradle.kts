@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.crashlytics)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlinx.serialization)
 }
 
 android {
@@ -110,6 +111,10 @@ dependencies {
     implementation(libs.firebase.crashlytics)
 
     implementation(libs.timber)
+
+    // serialization + navigation
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.navigation)
 
 
 

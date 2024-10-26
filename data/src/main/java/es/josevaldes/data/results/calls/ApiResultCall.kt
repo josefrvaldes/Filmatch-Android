@@ -1,6 +1,6 @@
 package es.josevaldes.data.results.calls
 
-import com.google.gson.Gson
+import es.josevaldes.core.utils.serialization.JsonMapper
 import es.josevaldes.data.network.ApiResponseHandler
 import es.josevaldes.data.responses.ApiErrorResponse
 import es.josevaldes.data.results.ApiError
@@ -35,7 +35,10 @@ class ApiResultCall<T>(private val delegate: Call<T>) :
                         errorBody?.let {
                             try {
                                 val apiErrorResponse =
-                                    Gson().fromJson(it, ApiErrorResponse::class.java)
+                                    JsonMapper.objectMapper.readValue(
+                                        it,
+                                        ApiErrorResponse::class.java
+                                    )
                                 callback.onResponse(
                                     this@ApiResultCall,
                                     Response.success(

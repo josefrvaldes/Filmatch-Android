@@ -1,6 +1,6 @@
 package es.josevaldes.data.network
 
-import com.google.gson.Gson
+import es.josevaldes.core.utils.serialization.JsonMapper
 import es.josevaldes.data.responses.ApiErrorResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
@@ -19,8 +19,9 @@ object ApiResponseHandler {
             val errorBody = response.errorBody()?.string()
             errorBody?.let {
                 try {
-                    val apiErrorResponse = Gson().fromJson(it, ApiErrorResponse::class.java)
-                    ApiResult.Error( mapErrorCodeToApiError(apiErrorResponse.code))
+                    val apiErrorResponse =
+                        JsonMapper.objectMapper.readValue(it, ApiErrorResponse::class.java)
+                    ApiResult.Error(mapErrorCodeToApiError(apiErrorResponse.code))
                 } catch (e: Exception) {
                     ApiResult.Error(mapHttpCodeToApiError(response.code()))
                 }

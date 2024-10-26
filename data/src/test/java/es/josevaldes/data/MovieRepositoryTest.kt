@@ -35,7 +35,7 @@ class MovieRepositoryTest {
     fun setUp() {
         movieService = mockk()
         moviesPagingSource = MoviesPagingSource(movieService, "en")
-        movieRepository = MovieRepository(moviesPagingSource)
+        movieRepository = MovieRepository(moviesPagingSource, movieService)
         for (i in 1..20) {
             listOfMovies.add(Movie(id = i, title = "Movie $i"))
         }
@@ -87,7 +87,7 @@ class MovieRepositoryTest {
 
 
     @Test
-    fun `should handle Unknown errors correctly`() = runTest {
+    fun `getDiscoverMovies should handle Unknown errors correctly`() = runTest {
         coEvery { movieService.getDiscoverMovies(any(), any(), any()) } returns ApiResult.Error(
             ApiError.Unknown
         )
@@ -98,7 +98,7 @@ class MovieRepositoryTest {
 
 
     @Test
-    fun `should handle ResourceNotFound errors correctly`() = runTest {
+    fun `getDiscoverMovies should handle ResourceNotFound errors correctly`() = runTest {
         coEvery { movieService.getDiscoverMovies(any(), any(), any()) } returns ApiResult.Error(
             ApiError.ResourceNotFound
         )
@@ -108,5 +108,38 @@ class MovieRepositoryTest {
             ApiErrorException(ApiError.ResourceNotFound).toString(),
             result.throwable.toString()
         )
+    }
+
+    @Test
+    fun `findById should return success on valid result`() = runTest {
+        val movie = listOfMovies[0]
+        coEvery { movieService.findById(any(), any()) } returns ApiResult.Success(movie)
+        val resultFlow = movieRepository.findById(movie.id, "")
+        resultFlow.collect {
+            assertEquals(ApiResult.Success(movie), it)
+        }
+    }
+
+    @Test
+    fun `findById should return error on invalid result`() = runTest {
+        coEvery { movieService.findById(any(), any()) } returns ApiResult.Error(ApiError.Unknown)
+        val resultFlow = movieRepository.findById(1, "")
+        resultFlow.collect {
+            assertEquals(ApiResult.Error(ApiError.Unknown), it)
+        }
+    }
+
+    @Test
+    fun `findById should return error on resource not found`() = runTest {
+        coEvery {
+            movieService.findById(
+                any(),
+                any()
+            )
+        } returns ApiResult.Error(ApiError.ResourceNotFound)
+        val resultFlow = movieRepository.findById(1, "")
+        resultFlow.collect {
+            assertEquals(ApiResult.Error(ApiError.ResourceNotFound), it)
+        }
     }
 }

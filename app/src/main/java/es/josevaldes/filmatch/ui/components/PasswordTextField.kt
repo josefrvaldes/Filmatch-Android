@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import es.josevaldes.core.utils.validatePassword
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
+import es.josevaldes.filmatch.ui.theme.getWelcomeScreenInputFieldColors
 
 @Composable
 fun PasswordTextField(
@@ -45,7 +46,8 @@ fun PasswordTextField(
             if (shouldDisplayErrors && isError) {
                 Text(supportingText)
             }
-        }
+        },
+        colors = getWelcomeScreenInputFieldColors()
     )
 }
 
@@ -54,7 +56,7 @@ fun PasswordTextField(
 @Composable
 fun PasswordTextFieldPreview() {
     val email = remember { mutableStateOf("") }
-    FilmatchTheme {
+    FilmatchTheme(darkTheme = true) {
         PasswordTextField(pass = email)
     }
 }
@@ -63,7 +65,7 @@ fun PasswordTextFieldPreview() {
 @Composable
 fun PasswordTextFieldFilledPreview() {
     val email = remember { mutableStateOf("jose@gmail.com") }
-    FilmatchTheme {
+    FilmatchTheme(darkTheme = true) {
         PasswordTextField(pass = email)
     }
 }

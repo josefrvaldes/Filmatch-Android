@@ -4,12 +4,13 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import es.josevaldes.core.utils.serialization.JsonMapper
 import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
 import es.josevaldes.data.network.HttpClient
 import es.josevaldes.data.services.MovieService
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.jackson.JacksonConverterFactory
 import javax.inject.Singleton
 
 @Module
@@ -34,7 +35,7 @@ class NetworkModule {
             .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addCallAdapterFactory(ApiResultCallAdapterFactory())
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(JacksonConverterFactory.create(JsonMapper.objectMapper))
             .build()
     }
 

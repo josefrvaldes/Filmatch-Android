@@ -1,5 +1,6 @@
 package es.josevaldes.data
 
+import es.josevaldes.core.utils.serialization.JsonMapper
 import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
@@ -13,7 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.jackson.JacksonConverterFactory
 
 class ApiServiceTest {
 
@@ -29,7 +30,7 @@ class ApiServiceTest {
         // let's create the service
         movieService = Retrofit.Builder()
             .baseUrl(mockWebServer.url("/"))
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(JacksonConverterFactory.create(JsonMapper.objectMapper))
             .addCallAdapterFactory(ApiResultCallAdapterFactory())
             .build()
             .create(MovieService::class.java)

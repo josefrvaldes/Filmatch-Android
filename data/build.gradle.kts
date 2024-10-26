@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlinx.serialization)
+    id("kotlin-parcelize")
 }
 
 android {
@@ -52,7 +54,7 @@ dependencies {
 
     // Retrofit
     implementation(libs.retrofit)
-    implementation(libs.retrofit.gson)
+    implementation(libs.retrofit.jackson)
 
     // OkHttp
     implementation(platform(libs.okhttpbom))
@@ -73,6 +75,10 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.play.services.auth)
     implementation(libs.google.id)
+
+    // serialization
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.jackson)
 
 
     // Timber

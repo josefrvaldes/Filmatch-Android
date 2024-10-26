@@ -46,4 +46,8 @@
     <string name="agree_tc_clickable">Terms and Conditions</string>
     <string name="log_in">Log in</string>
     <string name="don_t_have_an_account_yet">Don\'t have an account yet?</string>
+    <string name="welcome_back">Welcome Back</string>
+    <string name="get_started">Get Started</string>
+    <string name="and">and</string>
+    <string name="directed_by">Directed by %1$s</string>
 </resources>
