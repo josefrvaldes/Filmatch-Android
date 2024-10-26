@@ -89,20 +89,105 @@ private fun MovieDetailsScreenContent(movie: Movie?, isLoading: Boolean) {
 
             PhotoAndProgressIndicatorSection(this@Column, movie, isLoading)
 
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
+
+            PercentageTitleAndDurationSection(movie)
+            TitleAndYearSection(movie)
+            OverviewSection(movie)
+            DirectedBySection(movie)
+            VideosSection(movie)
+            CastSection(movie)
+        }
+    }
+}
+
+@Composable
+private fun CastSection(movie: Movie?) {
+    val displayableCast = movie?.displayableCast
+    if (displayableCast?.isNotEmpty() == true) {
+        val paddingEnd = 16.dp
+        Text(
+            "Cast",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(top = 16.dp, start = 16.dp)
+        )
+        LazyRow(modifier = Modifier.padding(top = 16.dp, bottom = 32.dp)) {
+            items(
+                count = displayableCast.size,
+                key = { index -> displayableCast[index].id.toString() },
+                contentType = { index -> displayableCast[index] },
             ) {
-                PercentageTitleAndDurationSection(movie)
-                TitleAndYearSection(movie)
-                OverviewSection(movie)
-                DirectedBySection(movie)
-                VideosSection(movie)
-                Text(
-                    "Cast",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
+                val currentPerson = displayableCast[it]
+                val paddingForFirst = if (it == 0) 16.dp else 0.dp
+                SubcomposeLayout(modifier = Modifier.padding(start = paddingForFirst)) { constraints ->
+                    // let's compose and measure the AsyncImage and the Icon
+                    val imagePlaceable = subcompose("AsyncImage") {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(currentPerson.profileUrl)
+                                .diskCachePolicy(CachePolicy.ENABLED)
+                                .memoryCachePolicy(CachePolicy.ENABLED)
+                                .diskCacheKey(currentPerson.id.toString())
+                                .networkCachePolicy(CachePolicy.READ_ONLY)
+                                .build(),
+                            contentScale = ContentScale.Crop,
+                            contentDescription = currentPerson.name,
+                            modifier = Modifier
+                                .height(280.dp)
+                                .padding(end = paddingEnd)
+                                .clip(RoundedCornerShape(16.dp))
+                        )
+                    }.first().measure(
+                        constraints.copy(
+                            minWidth = 0,
+                            maxWidth = constraints.maxWidth
+                        )
+                    )
+
+                    // now let's use the width of the image to measure the Text
+                    val personPlaceable = subcompose("Person") {
+                        Text(
+                            currentPerson.name,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.ExtraBold),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+
+                                // let's use the calculated width of the image - the end padding
+                                .width(with(LocalDensity.current) { imagePlaceable.width.toDp() - paddingEnd })
+                        )
+                    }.first().measure(constraints.copy(maxWidth = imagePlaceable.width))
+
+
+                    // now let's use the width of the image to measure the Text
+                    val characterPlaceable = subcompose("Character") {
+                        currentPerson.character?.let { character ->
+                            Text(
+                                character,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+
+                                    // let's use the calculated width of the image - the end padding
+                                    .width(with(LocalDensity.current) { imagePlaceable.width.toDp() - paddingEnd })
+                            )
+                        }
+                    }.first().measure(constraints.copy(maxWidth = imagePlaceable.width))
+
+                    // let's put everything together
+                    layout(
+                        width = imagePlaceable.width,
+                        height = imagePlaceable.height + personPlaceable.height + characterPlaceable.height
+                    ) {
+                        imagePlaceable.placeRelative(0, 0)
+                        personPlaceable.placeRelative(0, imagePlaceable.height)
+                        characterPlaceable.placeRelative(
+                            0,
+                            imagePlaceable.height + personPlaceable.height
+                        )
+                    }
+                }
             }
         }
     }
@@ -116,7 +201,7 @@ private fun VideosSection(movie: Movie?) {
         Text(
             "Videos",
             style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp)
         )
         LazyRow(modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)) {
             items(
@@ -126,7 +211,8 @@ private fun VideosSection(movie: Movie?) {
             ) { index ->
                 val currentVideo = videos[index]
                 val paddingEnd = 16.dp
-                SubcomposeLayout { constraints ->
+                val paddingForFirst = if (index == 0) 16.dp else 0.dp
+                SubcomposeLayout(modifier = Modifier.padding(start = paddingForFirst)) { constraints ->
                     // let's compose and measure the AsyncImage and the Icon
                     val imagePlaceable = subcompose("AsyncImage") {
                         Box {
@@ -140,7 +226,6 @@ private fun VideosSection(movie: Movie?) {
                                     .build(),
                                 contentScale = ContentScale.Crop,
                                 contentDescription = currentVideo.name,
-                                placeholder = painterResource(id = android.R.drawable.ic_menu_report_image),
                                 modifier = Modifier
                                     .height(180.dp)
                                     .padding(end = paddingEnd)
@@ -219,7 +304,6 @@ private fun PhotoAndProgressIndicatorSection(
             contentScale = ContentScale.FillWidth,
             alignment = Alignment.TopStart,
             contentDescription = movie?.title,
-            placeholder = painterResource(id = android.R.drawable.ic_menu_report_image),
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopStart)
@@ -231,7 +315,7 @@ private fun PhotoAndProgressIndicatorSection(
 @Composable
 private fun TitleAndYearSection(movie: Movie?) {
     Row(
-        modifier = Modifier.padding(top = 16.dp),
+        modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(movie?.title ?: "", style = MaterialTheme.typography.titleLarge)
@@ -251,7 +335,7 @@ private fun OverviewSection(movie: Movie?) {
     Text(
         movie?.overview ?: "",
         style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(top = 8.dp)
+        modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp)
     )
 }
 
@@ -262,7 +346,7 @@ private fun DirectedBySection(movie: Movie?) {
         Text(
             stringResource(R.string.directed_by, directorsString),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp)
         )
     }
 }
@@ -272,7 +356,7 @@ private fun PercentageTitleAndDurationSection(movie: Movie?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 14.dp),
+            .padding(top = 14.dp, start = 16.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val percentage = movie?.voteAverage?.times(10)?.toInt()

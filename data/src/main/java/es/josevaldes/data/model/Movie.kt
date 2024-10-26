@@ -49,6 +49,9 @@ data class Movie(
             ?.reversed() // for some reason, the API returns the videos in what I consider the reversed order, like, the trailers are the last videos, and the featurettes are the first ones
             ?: emptyList()
 
+    val displayableCast: List<CastMember>
+        get() = credits?.cast?.filter { it.profilePath?.isNotEmpty() == true } ?: emptyList()
+
     fun getGenresString(andSeparator: String = "and"): String {
         return joinWithSeparatorAndFinalSeparator(
             finalSeparator = " $andSeparator ",
@@ -137,16 +140,19 @@ data class CastMember(
     @JsonProperty("adult") val adult: Boolean,
     @JsonProperty("gender") val gender: Int?,
     @JsonProperty("id") val id: Int,
-    @JsonProperty("knownForDepartment") val knownForDepartment: String?,
+    @JsonProperty("known_for_department") val knownForDepartment: String?,
     @JsonProperty("name") val name: String,
-    @JsonProperty("originalName") val originalName: String?,
+    @JsonProperty("original_name") val originalName: String?,
     @JsonProperty("popularity") val popularity: Float?,
-    @JsonProperty("profilePath") val profilePath: String?,
-    @JsonProperty("castId") val castId: Int?,
+    @JsonProperty("profile_path") val profilePath: String?,
+    @JsonProperty("cast_id") val castId: Int?,
     @JsonProperty("character") val character: String?,
-    @JsonProperty("creditId") val creditId: String?,
+    @JsonProperty("credit_id") val creditId: String?,
     @JsonProperty("order") val order: Int
-) : Parcelable
+) : Parcelable {
+    val profileUrl: String
+        get() = "https://image.tmdb.org/t/p/w185${profilePath}"
+}
 
 @Serializable
 @Parcelize
@@ -154,12 +160,12 @@ data class CrewMember(
     @JsonProperty("adult") val adult: Boolean? = null,
     @JsonProperty("gender") val gender: Int? = null,
     @JsonProperty("id") val id: Int,
-    @JsonProperty("knownForDepartment") val knownForDepartment: String? = null,
+    @JsonProperty("known_for_department") val knownForDepartment: String? = null,
     @JsonProperty("name") val name: String? = null,
-    @JsonProperty("originalName") val originalName: String? = null,
+    @JsonProperty("original_name") val originalName: String? = null,
     @JsonProperty("popularity") val popularity: Float? = null,
-    @JsonProperty("profilePath") val profilePath: String? = null,
-    @JsonProperty("creditId") val creditId: String? = null,
+    @JsonProperty("profile_path") val profilePath: String? = null,
+    @JsonProperty("cast_id") val creditId: String? = null,
     @JsonProperty("department") val department: String? = null,
     @JsonProperty("job") val job: String? = null
 ) : Parcelable
@@ -181,7 +187,7 @@ data class VideoResult(
     @JsonProperty("size") val size: Int? = null,
     @JsonProperty("type") private val type: String? = null,
     @JsonProperty("official") val official: Boolean? = null,
-    @JsonProperty("publishedAt") val publishedAt: String? = null,
+    @JsonProperty("published_at") val publishedAt: String? = null,
     @JsonProperty("id") val id: String? = null
 ) : Parcelable {
     val videoType: VideoType
