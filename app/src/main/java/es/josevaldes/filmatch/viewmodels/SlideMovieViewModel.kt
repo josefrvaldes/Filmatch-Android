@@ -24,6 +24,7 @@ class SlideMovieViewModel @Inject constructor(
 
     private var currentPage = 1
     private val loadingThreshold = 5
+    private var pages = 1
 
     private var counter: Int = 0
 
@@ -44,17 +45,24 @@ class SlideMovieViewModel @Inject constructor(
     val observableMovies = _observableMovies.asStateFlow()
 
     init {
-        loadNextPage()
+        loadCurrentPage()
     }
 
     private fun loadNextPage() {
+        if (currentPage < pages) {
+            currentPage++
+            loadCurrentPage()
+        }
+    }
+
+    private fun loadCurrentPage() {
         viewModelScope.launch {
             _isLoading.value = true
             var shouldRetry = true
             movieRepository.getDiscoverMovies(currentPage, _language.value).collect { result ->
                 _isLoading.value = false
                 if (result is ApiResult.Success) {
-                    currentPage++
+                    pages = result.data.totalPages
                     _isLoading.value = false
                     val swipeableMovies = result.data.results.map { SwipeableMovie(it) }
                     initializeMovies(swipeableMovies)
@@ -65,7 +73,7 @@ class SlideMovieViewModel @Inject constructor(
                 } else {
                     if (shouldRetry) {
                         shouldRetry = false
-                        loadNextPage()
+                        loadCurrentPage()
                     }
                 }
             }
@@ -99,6 +107,9 @@ class SlideMovieViewModel @Inject constructor(
         val movie = _movieListFlow.value.firstOrNull()
         if (movie != null) {
             _movieListFlow.value.remove(movie)
+            if (_movieListFlow.value.size < loadingThreshold) {
+                loadNextPage()
+            }
             refillObservableList()
         }
     }
@@ -107,22 +118,22 @@ class SlideMovieViewModel @Inject constructor(
         _language.value = language
     }
 
-    enum class SwipeAction {
+    enum class LikeButtonAction {
         LIKE, DISLIKE
     }
 
-    private val _swipeAction = MutableStateFlow<SwipeAction?>(null)
-    val swipeAction = _swipeAction.asStateFlow()
+    private val _likeButtonAction = MutableStateFlow<LikeButtonAction?>(null)
+    val likeButtonAction = _likeButtonAction.asStateFlow()
 
     fun onLikeButtonClicked() {
-        _swipeAction.value = SwipeAction.LIKE
+        _likeButtonAction.value = LikeButtonAction.LIKE
     }
 
     fun onDislikeButtonClicked() {
-        _swipeAction.value = SwipeAction.DISLIKE
+        _likeButtonAction.value = LikeButtonAction.DISLIKE
     }
 
     fun clearSwipeAction() {
-        _swipeAction.value = null
+        _likeButtonAction.value = null
     }
 }

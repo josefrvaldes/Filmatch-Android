@@ -106,13 +106,13 @@ fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
         bottomBar = {
             BottomLikeDislike(
                 onLikeClicked = {
-                    if (viewModel.swipeAction.value == null) {
+                    if (viewModel.likeButtonAction.value == null) {
                         vibrationManager.vibrateOneShot()
                         viewModel.onLikeButtonClicked()
                     }
                 },
                 onDislikeClicked = {
-                    if (viewModel.swipeAction.value == null) {
+                    if (viewModel.likeButtonAction.value == null) {
                         vibrationManager.vibrateOneShot()
                         viewModel.onDislikeButtonClicked()
                     }
@@ -132,7 +132,7 @@ fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
                     .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
-                SwipeableMoviesComponent(viewModel, onNavigateToMovieDetailsScreen)
+                SwipeableMoviesComponent(onNavigateToMovieDetailsScreen)
             }
         }
     }
@@ -151,23 +151,22 @@ fun PreviewBottomLikeDislike() {
 }
 
 @Composable
-private fun SwipeableMoviesComponent(
-    viewModel: SlideMovieViewModel,
-    onNavigateToMovieDetailsScreen: (Movie) -> Unit
-) {
+private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
+    val viewModel = hiltViewModel<SlideMovieViewModel>()
     val observableMovies = viewModel.observableMovies.collectAsState()
 
-
     PreloadMoviePosters(observableMovies.value)
-    val swipeAction = viewModel.swipeAction.collectAsState()
+    val likeButtonAction = viewModel.likeButtonAction.collectAsState()
     observableMovies.value.reversed().forEachIndexed { index, movie ->
         key(movie.movie.id) {
             SwipeableMovieView(
-                swipeAction = swipeAction,
+                likeButtonAction = likeButtonAction.value,
                 observableMovies = observableMovies,
                 movie = movie,
                 index = index,
-                onSwipeCompleted = { viewModel.clearSwipeAction(); viewModel.onSwipe() },
+                onSwipeCompleted = {
+                    viewModel.clearSwipeAction(); viewModel.onSwipe()
+                },
                 onMovieClicked = { movie ->
                     onNavigateToMovieDetailsScreen(movie)
                 }
@@ -204,7 +203,7 @@ private fun preloadPoster(
 
 @Composable
 private fun SwipeableMovieView(
-    swipeAction: State<SlideMovieViewModel.SwipeAction?>,
+    likeButtonAction: SlideMovieViewModel.LikeButtonAction?,
     observableMovies: State<List<SwipeableMovie>>,
     movie: SwipeableMovie,
     index: Int,
@@ -218,8 +217,8 @@ private fun SwipeableMovieView(
     val blurRadius = getProperBlurRadius(index = index, listSize = observableMovies.value.size)
     val tint = getProperTint(currentSwipedStatus)
 
-    PerformAnimationAccordingToSwipeAction(
-        swipeAction,
+    PerformAnimationAccordingToLikeButtonAction(
+        likeButtonAction,
         index,
         observableMovies,
         rotationOffset,
@@ -254,8 +253,8 @@ private fun SwipeableMovieView(
 }
 
 @Composable
-private fun PerformAnimationAccordingToSwipeAction(
-    swipeAction: State<SlideMovieViewModel.SwipeAction?>,
+private fun PerformAnimationAccordingToLikeButtonAction(
+    likeButtonAction: SlideMovieViewModel.LikeButtonAction?,
     index: Int,
     observableMovies: State<List<SwipeableMovie>>,
     rotationOffset: Animatable<Float, AnimationVector1D>,
@@ -263,17 +262,15 @@ private fun PerformAnimationAccordingToSwipeAction(
     onSwipeCompleted: () -> Unit
 ) {
     val context = LocalContext.current
-    LaunchedEffect(swipeAction.value) {
-        if (index == observableMovies.value.size - 1 && swipeAction.value != null) {
-            val targetTranslationOffset = when (swipeAction.value) {
-                SlideMovieViewModel.SwipeAction.LIKE -> context.resources.displayMetrics.widthPixels.toFloat() + 300
-                SlideMovieViewModel.SwipeAction.DISLIKE -> -context.resources.displayMetrics.widthPixels.toFloat() - 300
-                null -> 0f
+    LaunchedEffect(likeButtonAction) {
+        if (index == observableMovies.value.size - 1 && likeButtonAction != null) {
+            val targetTranslationOffset = when (likeButtonAction) {
+                SlideMovieViewModel.LikeButtonAction.LIKE -> context.resources.displayMetrics.widthPixels.toFloat() + 300
+                SlideMovieViewModel.LikeButtonAction.DISLIKE -> -context.resources.displayMetrics.widthPixels.toFloat() - 300
             }
-            val targetRotationOffset = when (swipeAction.value) {
-                SlideMovieViewModel.SwipeAction.LIKE -> 25f
-                SlideMovieViewModel.SwipeAction.DISLIKE -> -25f
-                null -> 0f
+            val targetRotationOffset = when (likeButtonAction) {
+                SlideMovieViewModel.LikeButtonAction.LIKE -> 25f
+                SlideMovieViewModel.LikeButtonAction.DISLIKE -> -25f
             }
 
 
