@@ -34,6 +34,8 @@ class MovieDetailsViewModel @Inject constructor(
             }.collect {
                 if (it is ApiResult.Success) {
                     _movie.value = it.data
+                } else {
+                    // TODO: Handle error
                 }
             }
         }
