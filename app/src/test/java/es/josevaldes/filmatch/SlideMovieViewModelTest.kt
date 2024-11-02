@@ -1,9 +1,26 @@
 package es.josevaldes.filmatch
 
+import es.josevaldes.data.model.Movie
 import es.josevaldes.data.repositories.MovieRepository
+import es.josevaldes.data.responses.DiscoverMoviesResponse
+import es.josevaldes.data.results.ApiResult
+import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel
+import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel.Companion.NUMBER_OF_VISIBLE_MOVIES
+import io.mockk.Runs
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -12,40 +29,49 @@ import org.robolectric.annotation.Config
 
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], manifest = Config.NONE)
 class SlideMovieViewModelTest {
 
 
     private val movieRepository = mockk<MovieRepository>()
-    private val viewModel = SlideMovieViewModel(movieRepository)
+    private lateinit var viewModel: SlideMovieViewModel
 
 
     @Before
     fun setUp() {
-        viewModel.setLanguage("en-US")
+        coEvery {
+            movieRepository.getDiscoverMovies(
+                any(),
+                any()
+            )
+        } returns flowOf(ApiResult.Success(DiscoverMoviesResponse(listOf(), 1, 1, 1)))
+        viewModel = SlideMovieViewModel(movieRepository)
     }
 
 
     @Test
     fun `onLikeButtonClicked should modify swipeAction to LIKE`() = runTest {
+        coEvery { movieRepository.getDiscoverMovies(any(), any()) } returns mockk()
         viewModel.onLikeButtonClicked()
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
     }
 
     @Test
     fun `onDislikeButtonClicked should modify swipeAction to DISLIKE`() = runTest {
+        coEvery { movieRepository.getDiscoverMovies(any(), any()) } returns mockk()
         viewModel.onDislikeButtonClicked()
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
     }
 
     @Test
-    fun `clearSwipeAction should modify swipeAction to null`() = runTest {
-        viewModel.clearSwipeAction()
+    fun `clearLikeButtonAction should modify likeButtonAction to null`() = runTest {
+        coEvery { movieRepository.getDiscoverMovies(any(), any()) } returns mockk()
+        viewModel.clearLikeButtonAction()
         assert(viewModel.likeButtonAction.value == null)
     }
 
     @Test
-    fun `swipeAction should be null by default`() = runTest {
+    fun `likeButtonAction should be null by default`() = runTest {
         assert(viewModel.likeButtonAction.value == null)
     }
 
@@ -55,17 +81,125 @@ class SlideMovieViewModelTest {
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
         viewModel.onDislikeButtonClicked()
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
-        viewModel.clearSwipeAction()
+        viewModel.clearLikeButtonAction()
         assert(viewModel.likeButtonAction.value == null)
         viewModel.onDislikeButtonClicked()
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
-        viewModel.clearSwipeAction()
+        viewModel.clearLikeButtonAction()
         assert(viewModel.likeButtonAction.value == null)
         viewModel.onLikeButtonClicked()
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `loadCurrentPage should return a list of movies in the flow and fill the observableMovies and load the next observable movie`() =
+        runTest {
+            val discoverMoviesResponse = DiscoverMoviesResponse(
+                listOf(
+                    Movie(id = 1),
+                    Movie(id = 2),
+                    Movie(id = 3),
+                    Movie(id = 4),
+                    Movie(id = 5),
+                ), 1, 5, 1
+            )
+            coEvery {
+                movieRepository.getDiscoverMovies(
+                    any(),
+                    any()
+                )
+            } returns flowOf(ApiResult.Success(discoverMoviesResponse))
 
+            viewModel.loadCurrentPage()
+
+            advanceUntilIdle()
+
+            assertFalse(viewModel.isLoading.value)
+            assertEquals(discoverMoviesResponse.results.size, viewModel.movieListFlow.value.size)
+
+            // let's test that the observable movies are filled correctly
+            for (i in 0 until SlideMovieViewModel.Companion.NUMBER_OF_VISIBLE_MOVIES) {
+                val currentMovie = discoverMoviesResponse.results[i]
+                assertEquals(
+                    currentMovie.id,
+                    viewModel.observableMovies.value[i].movie.id
+                )
+            }
+
+            // let's test that the next observable movie is the next one in the list
+            assertEquals(
+                discoverMoviesResponse.results[SlideMovieViewModel.Companion.NUMBER_OF_VISIBLE_MOVIES].id,
+                viewModel.movieThatWillBeObservableNext.value?.movie?.id
+            )
+
+            // let's test that
+        }
+
+
+    @Test
+    fun `getMovieThatWillBeObservableNext should chose the proper movie all the time`() = run {
+        val movies = List(5) { index -> SwipeableMovie(Movie(id = index)) }
+        viewModel.movieListFlow.value.addAll(movies)
+
+        viewModel.getMovieThatWillBeObservableNext()
+
+        // if list length > NUMBER_OF_VISIBLE_MOVIES (3), the next observable movie should be the one at index NUMBER_OF_VISIBLE_MOVIES (index 3 means fourth movie)
+        assertEquals(
+            movies[NUMBER_OF_VISIBLE_MOVIES],
+            viewModel.movieThatWillBeObservableNext.value
+        )
+
+        // if list lenght == NUMBER_OF_VISIBLE_MOVIES, the next observable movie should be the last one
+        viewModel.movieListFlow.value.clear()
+        viewModel.movieListFlow.value.addAll(movies.subList(0, NUMBER_OF_VISIBLE_MOVIES))
+        viewModel.getMovieThatWillBeObservableNext()
+        assertEquals(
+            movies[NUMBER_OF_VISIBLE_MOVIES - 1],
+            viewModel.movieThatWillBeObservableNext.value
+        )
+
+        // if list length < NUMBER_OF_VISIBLE_MOVIES, the next observable movie should be the last one
+        viewModel.movieListFlow.value.clear()
+        viewModel.movieListFlow.value.addAll(movies.subList(0, NUMBER_OF_VISIBLE_MOVIES - 1))
+        viewModel.getMovieThatWillBeObservableNext()
+        assertEquals(
+            movies[NUMBER_OF_VISIBLE_MOVIES - 2],
+            viewModel.movieThatWillBeObservableNext.value
+        )
+
+        // if list length == 0, the next observable movie should be null
+        viewModel.movieListFlow.value.clear()
+        viewModel.getMovieThatWillBeObservableNext()
+        assertEquals(
+            null,
+            viewModel.movieThatWillBeObservableNext.value
+        )
+    }
+
+
+    @Test
+    fun `loadNextPage increments currentPage and calls loadCurrentPage when currentPage is less than pages`() =
+        runTest {
+            // Configura el valor de `currentPage` y `pages` para que `loadNextPage` se ejecute
+            viewModel.currentPage = 1
+            viewModel.pages = 3
+
+            // Mockea `loadCurrentPage` para verificar si se llama
+            mockkObject(viewModel) // this allows us to mock functions of the viewModel
+            every { viewModel.loadCurrentPage() } just Runs
+
+            viewModel.loadNextPage()
+            assertEquals(2, viewModel.currentPage)
+            verify(exactly = 1) { viewModel.loadCurrentPage() }
+
+            // Desactiva el mock
+            unmockkObject(viewModel)
+        }
+
+
+    // this test is deprecated because we no longer use the paging library for this specific use case
+    // I'll keep it here for reference just in case I use the paging library in the future
 //    @Test
 //    fun `movies flow should return a given amount of movies after scrolling`() = runTest {
 //        val listOfMovies = mutableListOf<Movie>()

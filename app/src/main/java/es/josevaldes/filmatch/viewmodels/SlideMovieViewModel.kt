@@ -1,12 +1,15 @@
 package es.josevaldes.filmatch.viewmodels
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SwipeableMovie
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,40 +25,50 @@ class SlideMovieViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
-    private var currentPage = 1
+    private val _movieThatWillBeObservableNext = MutableStateFlow<SwipeableMovie?>(null)
+    val movieThatWillBeObservableNext = _movieThatWillBeObservableNext.asStateFlow()
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var currentPage = 1
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var pages = 1
+
     private val loadingThreshold = 5
-    private var pages = 1
+
 
     private var counter: Int = 0
 
-
-//    @OptIn(ExperimentalCoroutinesApi::class)
-//    val _moviesFlow: Flow<PagingData<Movie>> = _language.flatMapLatest { language ->
-//        movieRepository.getDiscoverMovies(language).flow
-//            .cachedIn(viewModelScope)
-//            .onStart {
-//                _isLoading.value = true
-//            }.onCompletion {
-//                _isLoading.value = false
-//            }
-//    }
+    companion object {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal const val NUMBER_OF_VISIBLE_MOVIES = 3
+    }
 
     private val _movieListFlow = MutableStateFlow<MutableList<SwipeableMovie>>(mutableListOf())
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val movieListFlow = _movieListFlow.asStateFlow()
+
     private val _observableMovies = MutableStateFlow<List<SwipeableMovie>>(mutableListOf())
     val observableMovies = _observableMovies.asStateFlow()
+
+    private val _errorMessage = MutableSharedFlow<ApiResult.Error?>(0)
+    val errorMessage = _errorMessage.asSharedFlow()
 
     init {
         loadCurrentPage()
     }
 
-    private fun loadNextPage() {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun loadNextPage() {
         if (currentPage < pages) {
             currentPage++
             loadCurrentPage()
         }
     }
 
-    private fun loadCurrentPage() {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun loadCurrentPage() {
         viewModelScope.launch {
             _isLoading.value = true
             var shouldRetry = true
@@ -69,11 +82,14 @@ class SlideMovieViewModel @Inject constructor(
                     _movieListFlow.value.addAll(swipeableMovies)
                     if (_observableMovies.value.isEmpty()) {
                         refillObservableList()
+                        getMovieThatWillBeObservableNext()
                     }
                 } else {
                     if (shouldRetry) {
                         shouldRetry = false
                         loadCurrentPage()
+                    } else {
+                        _errorMessage.emit(result as ApiResult.Error)
                     }
                 }
             }
@@ -81,7 +97,7 @@ class SlideMovieViewModel @Inject constructor(
     }
 
     private fun refillObservableList() {
-        val firstThreeMovies = _movieListFlow.value.take(3)
+        val firstThreeMovies = _movieListFlow.value.take(NUMBER_OF_VISIBLE_MOVIES)
         _observableMovies.value = firstThreeMovies
     }
 
@@ -104,14 +120,26 @@ class SlideMovieViewModel @Inject constructor(
     }
 
     fun onSwipe() {
-        val movie = _movieListFlow.value.firstOrNull()
-        if (movie != null) {
-            _movieListFlow.value.remove(movie)
-            if (_movieListFlow.value.size < loadingThreshold) {
+        if (_movieListFlow.value.isNotEmpty()) {
+            _movieListFlow.value.removeAt(0)
+            if (_movieListFlow.value.size < loadingThreshold && currentPage < pages) {
                 loadNextPage()
             }
             refillObservableList()
+            getMovieThatWillBeObservableNext()
         }
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun getMovieThatWillBeObservableNext() {
+        if (_movieListFlow.value.size > NUMBER_OF_VISIBLE_MOVIES) {
+            _movieThatWillBeObservableNext.value = _movieListFlow.value[NUMBER_OF_VISIBLE_MOVIES]
+        } else if (_movieListFlow.value.isNotEmpty() && _movieListFlow.value.size <= NUMBER_OF_VISIBLE_MOVIES) {
+            _movieThatWillBeObservableNext.value = _movieListFlow.value.last()
+        } else {
+            _movieThatWillBeObservableNext.value = null
+        }
+
     }
 
     fun setLanguage(language: String) {
@@ -133,7 +161,7 @@ class SlideMovieViewModel @Inject constructor(
         _likeButtonAction.value = LikeButtonAction.DISLIKE
     }
 
-    fun clearSwipeAction() {
+    fun clearLikeButtonAction() {
         _likeButtonAction.value = null
     }
 }
