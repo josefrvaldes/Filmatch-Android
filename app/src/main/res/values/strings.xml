@@ -1,8 +1,6 @@
 <resources>
     <string name="app_name">Filmatch</string>
     <string name="header_title">Total per person</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="content_description_user_image">User image</string>
     <string name="back_button_content_description">Back button</string>
     <string name="back">Back</string>
@@ -23,7 +21,7 @@
     <string name="user_registered_successfully_dialog_title">User registered successfully</string>
     <string name="user_registered_successfully_dialog_body">A validation email has been sent to your inbox. Click on the link there to validate your account and access the app.</string>
     <string name="error">Error</string>
-    <string name="ok">Ok</string>
+    <string name="ok">OK</string>
     <string name="login">Login</string>
     <string name="forgot_your_password">Forgot your password?</string>
     <string name="forgot_you_password_dialog_title">Forgot you password?</string>
@@ -50,4 +48,58 @@
     <string name="get_started">Get Started</string>
     <string name="and">and</string>
     <string name="directed_by">Directed by %1$s</string>
+    <string name="no_movies_to_show">No movies to show</string>
+
+    <!-- Errors -->
+    <string name="error_account_disabled">Account disabled</string>
+    <string name="error_server_is_under_maintenance">Server is under maintenance</string>
+    <string name="error_authentication_failed">Authentication failed</string>
+    <string name="error_backend_connection_failed">Backend connection failed</string>
+    <string name="error_confirmation_required">Confirmation required</string>
+    <string name="error_deleted_successfully">Deleted successfully</string>
+    <string name="error_device_denied">Device denied</string>
+    <string name="error_duplicate_entry">Duplicate entry</string>
+    <string name="error_email_not_verified">Email not verified</string>
+    <string name="error_entry_not_found">Entry not found</string>
+    <string name="error_failed">Failed</string>
+    <string name="error_internal_error">Internal error</string>
+    <string name="error_invalid_accept_header">Invalid accept header</string>
+    <string name="error_invalid_api_key">Invalid API key</string>
+    <string name="error_invalid_credentials">Invalid credentials</string>
+    <string name="error_invalid_date">Invalid date</string>
+    <string name="error_invalid_format">Invalid format</string>
+    <string name="error_invalid_id">Invalid id</string>
+    <string name="error_invalid_id_pre_requisite">Invalid id pre-requisite</string>
+    <string name="error_invalid_input">Invalid input</string>
+    <string name="error_invalid_page">Invalid page</string>
+    <string name="error_invalid_parameters">Invalid parameters</string>
+    <string name="error_invalid_request_token">Invalid request token</string>
+    <string name="error_invalid_service">Invalid service</string>
+    <string name="error_invalid_timezone">Invalid timezone</string>
+    <string name="error_invalid_token">Invalid token</string>
+    <string name="error_method_not_supported">Method not supported</string>
+    <string name="error_missing_credentials">Missing credentials</string>
+    <string name="error_no_permission_to_edit">No permission to edit</string>
+    <string name="error_no_write_permission">No write permission</string>
+    <string name="error_nothing_to_update">Nothing to update</string>
+    <string name="error_request_limit_exceeded">Request limit exceeded</string>
+    <string name="error_request_token_not_approved">Request token not approved</string>
+    <string name="error_resource_is_private">Resource is private</string>
+    <string name="error_resource_not_found">Resource not found</string>
+    <string name="error_service_offline">Service offline</string>
+    <string name="error_session_denied">Session denied</string>
+    <string name="error_session_not_found">Session not found</string>
+    <string name="error_suspended_api_key">Suspended API key</string>
+    <string name="error_timeout">Timeout</string>
+    <string name="error_too_many_response_objects">Too many response objects</string>
+    <string name="error_unknown_error">Unknown error</string>
+    <string name="error_updated_successfully">Updated successfully</string>
+    <string name="error_user_suspended">User suspended</string>
+    <string name="error_validation_failed">Validation failed</string>
+    <string name="error_user_not_found">User not found</string>
+    <string name="error_weak_password">Weak password</string>
+    <string name="error_user_exists">User exists</string>
+    <string name="error_couldn_t_fetch_token">Couldn\'t fetch token</string>
+    <string name="error_cancelled_by_user">Cancelled by user</string>
+    <string name="error_email_is_not_valid">Email is not valid</string>
 </resources>
