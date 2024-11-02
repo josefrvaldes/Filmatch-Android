@@ -453,7 +453,7 @@ private fun CircularProgressBar(
     val badColor = DislikeButtonBackground
     val color = when {
         percentage < 50 -> badColor
-        percentage in 50..70 -> mediumColor
+        percentage in 50..69 -> mediumColor
         else -> Color.Green
     }
     Box(
