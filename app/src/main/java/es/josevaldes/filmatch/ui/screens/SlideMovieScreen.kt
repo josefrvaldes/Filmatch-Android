@@ -70,6 +70,7 @@ import es.josevaldes.core.utils.getDeviceLocale
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.model.User
 import es.josevaldes.filmatch.R
+import es.josevaldes.filmatch.errors.ErrorMessageWrapper
 import es.josevaldes.filmatch.model.MovieSwipedStatus
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.ui.theme.BackButtonBackground
@@ -160,31 +161,38 @@ private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (Movie) -> 
     val likeButtonAction = viewModel.likeButtonAction.collectAsState()
     val movieThatWillBeObservableNext = viewModel.movieThatWillBeObservableNext.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState(null)
+    val errorMessageWrapper = remember<ErrorMessageWrapper> { ErrorMessageWrapper(context) }
 
 
     LaunchedEffect(movieThatWillBeObservableNext.value) {
         preloadMoviePoster(context, movieThatWillBeObservableNext.value?.movie)
     }
 
-    if (isLoading && observableMovies.value.isEmpty()) {
-        CircularProgressIndicator()
-    } else if (observableMovies.value.isEmpty()) {
-        Text(stringResource(R.string.no_movies_to_show))
-    } else {
-        observableMovies.value.reversed().forEachIndexed { index, movie ->
-            key(movie.movie.id) {
-                SwipeableMovieView(
-                    likeButtonAction = likeButtonAction.value,
-                    observableMoviesCount = observableMovies.value.size,
-                    movie = movie,
-                    index = index,
-                    onSwipeCompleted = {
-                        viewModel.clearLikeButtonAction(); viewModel.onSwipe()
-                    },
-                    onMovieClicked = { movie ->
-                        onNavigateToMovieDetailsScreen(movie)
-                    },
-                )
+    errorMessage?.let { error ->
+        val stringError = errorMessageWrapper.getErrorMessage(error)
+        Text(stringError)
+    } ?: run {
+        if (isLoading && observableMovies.value.isEmpty()) {
+            CircularProgressIndicator()
+        } else if (observableMovies.value.isEmpty()) {
+            Text(stringResource(R.string.no_movies_to_show))
+        } else {
+            observableMovies.value.reversed().forEachIndexed { index, movie ->
+                key(movie.movie.id) {
+                    SwipeableMovieView(
+                        likeButtonAction = likeButtonAction.value,
+                        observableMoviesCount = observableMovies.value.size,
+                        movie = movie,
+                        index = index,
+                        onSwipeCompleted = {
+                            viewModel.clearLikeButtonAction(); viewModel.onSwipe()
+                        },
+                        onMovieClicked = { movie ->
+                            onNavigateToMovieDetailsScreen(movie)
+                        },
+                    )
+                }
             }
         }
     }
