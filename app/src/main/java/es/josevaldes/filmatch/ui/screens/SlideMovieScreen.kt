@@ -162,7 +162,7 @@ private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (Movie) -> 
     val movieThatWillBeObservableNext = viewModel.movieThatWillBeObservableNext.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState(null)
-    val errorMessageWrapper = remember<ErrorMessageWrapper> { ErrorMessageWrapper(context) }
+    val errorMessageWrapper = remember { ErrorMessageWrapper(context) }
 
 
     LaunchedEffect(movieThatWillBeObservableNext.value) {
@@ -186,7 +186,7 @@ private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (Movie) -> 
                         movie = movie,
                         index = index,
                         onSwipeCompleted = {
-                            viewModel.clearLikeButtonAction(); viewModel.onSwipe()
+                            viewModel.onSwipe()
                         },
                         onMovieClicked = { movie ->
                             onNavigateToMovieDetailsScreen(movie)
@@ -229,16 +229,20 @@ private fun SwipeableMovieView(
 
     val blurRadius = getProperBlurRadius(index = index, listSize = observableMoviesCount)
     val tint = getProperTint(currentSwipedStatus)
+    val context = LocalContext.current
 
-    PerformAnimationAccordingToLikeButtonAction(
-        likeButtonAction,
-        index,
-        observableMoviesCount,
-        rotationOffset,
-        translationOffset,
-        onSwipeCompleted
-    )
-
+    // every time the like button action changes, we animate the movie
+    LaunchedEffect(likeButtonAction) {
+        performAnimationAccordingToLikeButtonAction(
+            context,
+            likeButtonAction,
+            index,
+            observableMoviesCount,
+            rotationOffset,
+            translationOffset,
+            onSwipeCompleted
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -263,8 +267,8 @@ private fun SwipeableMovieView(
     }
 }
 
-@Composable
-private fun PerformAnimationAccordingToLikeButtonAction(
+private suspend fun performAnimationAccordingToLikeButtonAction(
+    context: Context,
     likeButtonAction: SlideMovieViewModel.LikeButtonAction?,
     index: Int,
     observableMoviesCount: Int,
@@ -272,37 +276,34 @@ private fun PerformAnimationAccordingToLikeButtonAction(
     translationOffset: Animatable<Float, AnimationVector1D>,
     onSwipeCompleted: () -> Unit
 ) {
-    val context = LocalContext.current
-    LaunchedEffect(likeButtonAction) {
-        if (index == observableMoviesCount - 1 && likeButtonAction != null) {
-            val targetTranslationOffset = when (likeButtonAction) {
-                SlideMovieViewModel.LikeButtonAction.LIKE -> context.resources.displayMetrics.widthPixels.toFloat() + 300
-                SlideMovieViewModel.LikeButtonAction.DISLIKE -> -context.resources.displayMetrics.widthPixels.toFloat() - 300
-            }
-            val targetRotationOffset = when (likeButtonAction) {
-                SlideMovieViewModel.LikeButtonAction.LIKE -> 25f
-                SlideMovieViewModel.LikeButtonAction.DISLIKE -> -25f
-            }
-
-
-            coroutineScope {
-                val rotationJob = async {
-                    rotationOffset.animateTo(
-                        targetRotationOffset,
-                        animationSpec = tween(200)
-                    )
-                }
-                val translationJob = async {
-                    translationOffset.animateTo(
-                        targetTranslationOffset,
-                        animationSpec = tween(200)
-                    )
-                }
-                awaitAll(rotationJob, translationJob)
-            }
-
-            onSwipeCompleted()
+    if (index == observableMoviesCount - 1 && likeButtonAction != null) {
+        val targetTranslationOffset = when (likeButtonAction) {
+            SlideMovieViewModel.LikeButtonAction.LIKE -> context.resources.displayMetrics.widthPixels.toFloat() + 300
+            SlideMovieViewModel.LikeButtonAction.DISLIKE -> -context.resources.displayMetrics.widthPixels.toFloat() - 300
         }
+        val targetRotationOffset = when (likeButtonAction) {
+            SlideMovieViewModel.LikeButtonAction.LIKE -> 25f
+            SlideMovieViewModel.LikeButtonAction.DISLIKE -> -25f
+        }
+
+
+        coroutineScope {
+            val rotationJob = async {
+                rotationOffset.animateTo(
+                    targetRotationOffset,
+                    animationSpec = tween(200)
+                )
+            }
+            val translationJob = async {
+                translationOffset.animateTo(
+                    targetTranslationOffset,
+                    animationSpec = tween(200)
+                )
+            }
+            awaitAll(rotationJob, translationJob)
+        }
+
+        onSwipeCompleted()
     }
 }
 
@@ -417,7 +418,6 @@ private fun handleSwipeMovement(
     val newTranslationOffset = translationOffset.value + delta
 
     val newRotationOffset = rotationOffset.value + delta / 50
-//    Log.d("SlideMovieScreen", "Rotation offset: $newRotationOffset")
 
     coroutineScope.launch {
         translationOffset.snapTo(newTranslationOffset)

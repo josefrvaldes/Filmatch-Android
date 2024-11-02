@@ -125,6 +125,7 @@ class SlideMovieViewModel @Inject constructor(
             refillObservableList()
             getMovieThatWillBeObservableNext()
         }
+        clearLikeButtonAction()
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
