@@ -3,9 +3,11 @@ package es.josevaldes.filmatch
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.responses.DiscoverMoviesResponse
+import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel
+import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel.Companion.LOADING_THRESHOLD
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel.Companion.NUMBER_OF_VISIBLE_MOVIES
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -17,6 +19,8 @@ import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -111,9 +115,15 @@ class SlideMovieViewModelTest {
                 )
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
 
+
+            var emittedErrorMessage: ApiResult.Error? = null
+            // let's listen temporarily to the error message before calling the function
+            val job = viewModel.errorMessage.onEach { emittedErrorMessage = it }.launchIn(this)
+
             viewModel.loadCurrentPage()
 
             advanceUntilIdle()
+            job.cancel()
 
             assertFalse(viewModel.isLoading.value)
             assertEquals(discoverMoviesResponse.results.size, viewModel.movieListFlow.value.size)
@@ -127,15 +137,79 @@ class SlideMovieViewModelTest {
                 )
             }
 
+            assertEquals(viewModel.pages, discoverMoviesResponse.totalPages)
+
             // let's test that the next observable movie is the next one in the list
             assertEquals(
                 discoverMoviesResponse.results[SlideMovieViewModel.Companion.NUMBER_OF_VISIBLE_MOVIES].id,
                 viewModel.movieThatWillBeObservableNext.value?.movie?.id
             )
 
-            // let's test that
+            // let's test that there were no errors
+            assertEquals(
+                emittedErrorMessage,
+                null
+            )
         }
 
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `loadCurrentPage should emit an error message when the result is not successful`() =
+        runTest {
+            coEvery {
+                movieRepository.getDiscoverMovies(
+                    any(),
+                    any()
+                )
+            } returns flowOf(ApiResult.Error(ApiError.Unknown))
+
+            var emittedErrorMessage: ApiResult.Error? = null
+            // let's listen temporarily to the error message before calling the function
+            val job = viewModel.errorMessage.onEach { emittedErrorMessage = it }.launchIn(this)
+
+            viewModel.loadCurrentPage()
+
+            advanceUntilIdle()
+            job.cancel()
+
+            assertFalse(viewModel.isLoading.value)
+            assertEquals(0, viewModel.movieListFlow.value.size)
+
+            // let's test that there were errors
+            assertEquals(
+                emittedErrorMessage,
+                ApiResult.Error(ApiError.Unknown)
+            )
+        }
+
+    @Test
+    fun `onSwipe should remove the first movie from the list and load the next page if the list is below the threshold`() =
+        runTest {
+            val resultsPerPage = 10
+            val movies = List(resultsPerPage) { index -> Movie(id = index) }
+            val discoverMoviesResponse = DiscoverMoviesResponse(
+                movies, 1, 20, 2
+            )
+            coEvery {
+                movieRepository.getDiscoverMovies(
+                    any(),
+                    any()
+                )
+            } returns flowOf(ApiResult.Success(discoverMoviesResponse))
+
+            viewModel.loadCurrentPage()
+
+            // let's swipe all the movies right before reaching the threshold
+            for (i in 0 until LOADING_THRESHOLD) {
+                viewModel.onSwipe()
+                assertEquals(resultsPerPage - i - 1, viewModel.movieListFlow.value.size)
+            }
+
+            // let's swipe one more time we will reach the threshold and the next page will be loaded
+            viewModel.onSwipe()
+            assertEquals(resultsPerPage + LOADING_THRESHOLD - 1, viewModel.movieListFlow.value.size)
+        }
 
     @Test
     fun `getMovieThatWillBeObservableNext should chose the proper movie all the time`() = run {
@@ -150,7 +224,7 @@ class SlideMovieViewModelTest {
             viewModel.movieThatWillBeObservableNext.value
         )
 
-        // if list lenght == NUMBER_OF_VISIBLE_MOVIES, the next observable movie should be the last one
+        // if list length == NUMBER_OF_VISIBLE_MOVIES, the next observable movie should be the last one
         viewModel.movieListFlow.value.clear()
         viewModel.movieListFlow.value.addAll(movies.subList(0, NUMBER_OF_VISIBLE_MOVIES))
         viewModel.getMovieThatWillBeObservableNext()
@@ -181,19 +255,35 @@ class SlideMovieViewModelTest {
     @Test
     fun `loadNextPage increments currentPage and calls loadCurrentPage when currentPage is less than pages`() =
         runTest {
-            // Configura el valor de `currentPage` y `pages` para que `loadNextPage` se ejecute
+            // let's setup `currentPage` and `pages` value so `loadNextPage` will be executed
             viewModel.currentPage = 1
             viewModel.pages = 3
 
-            // Mockea `loadCurrentPage` para verificar si se llama
+            // it mocks `loadCurrentPage` to verify if it's being called
             mockkObject(viewModel) // this allows us to mock functions of the viewModel
             every { viewModel.loadCurrentPage() } just Runs
 
+            // it will increase the value because `currentPage` is less than `pages`
             viewModel.loadNextPage()
             assertEquals(2, viewModel.currentPage)
             verify(exactly = 1) { viewModel.loadCurrentPage() }
 
-            // Desactiva el mock
+            // it will increase the value because `currentPage` is less than `pages`
+            viewModel.loadNextPage()
+            assertEquals(3, viewModel.currentPage)
+            verify(exactly = 2) { viewModel.loadCurrentPage() }
+
+            // it will not increase the value because `currentPage` is equal to `pages`
+            viewModel.loadNextPage()
+            assertEquals(3, viewModel.currentPage)
+            verify(exactly = 2) { viewModel.loadCurrentPage() }
+
+            // it will not increase the value because `currentPage` is equal to `pages`
+            viewModel.loadNextPage()
+            assertEquals(3, viewModel.currentPage)
+            verify(exactly = 2) { viewModel.loadCurrentPage() }
+
+            // let's deactivate the mock
             unmockkObject(viewModel)
         }
 

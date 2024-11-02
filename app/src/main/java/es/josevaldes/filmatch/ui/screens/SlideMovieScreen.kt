@@ -166,21 +166,26 @@ private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (Movie) -> 
         preloadMoviePoster(context, movieThatWillBeObservableNext.value?.movie)
     }
 
-    observableMovies.value.reversed().forEachIndexed { index, movie ->
-        key(movie.movie.id) {
-            SwipeableMovieView(
-                likeButtonAction = likeButtonAction.value,
-                observableMoviesCount = observableMovies.value.size,
-                movie = movie,
-                index = index,
-                onSwipeCompleted = {
-                    viewModel.clearLikeButtonAction(); viewModel.onSwipe()
-                },
-                onMovieClicked = { movie ->
-                    onNavigateToMovieDetailsScreen(movie)
-                },
-                isLoading = isLoading
-            )
+    if (isLoading && observableMovies.value.isEmpty()) {
+        CircularProgressIndicator()
+    } else if (observableMovies.value.isEmpty()) {
+        Text(stringResource(R.string.no_movies_to_show))
+    } else {
+        observableMovies.value.reversed().forEachIndexed { index, movie ->
+            key(movie.movie.id) {
+                SwipeableMovieView(
+                    likeButtonAction = likeButtonAction.value,
+                    observableMoviesCount = observableMovies.value.size,
+                    movie = movie,
+                    index = index,
+                    onSwipeCompleted = {
+                        viewModel.clearLikeButtonAction(); viewModel.onSwipe()
+                    },
+                    onMovieClicked = { movie ->
+                        onNavigateToMovieDetailsScreen(movie)
+                    },
+                )
+            }
         }
     }
 }
@@ -209,7 +214,6 @@ private fun SwipeableMovieView(
     index: Int,
     onSwipeCompleted: () -> Unit,
     onMovieClicked: (Movie) -> Unit,
-    isLoading: Boolean,
 ) {
     val translationOffset = remember { Animatable(0f) }
     val rotationOffset = getProperRotation(movie, index, observableMoviesCount)
@@ -242,16 +246,12 @@ private fun SwipeableMovieView(
                 onSwipeCompleted = onSwipeCompleted
             )
     ) {
-        if (isLoading && observableMoviesCount == 0) {
-            CircularProgressIndicator()
-        } else {
-            PosterImageView(
-                movie = movie,
-                blurRadius = blurRadius,
-                tint = tint,
-                onMovieClicked = onMovieClicked
-            )
-        }
+        PosterImageView(
+            movie = movie,
+            blurRadius = blurRadius,
+            tint = tint,
+            onMovieClicked = onMovieClicked
+        )
     }
 }
 

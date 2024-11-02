@@ -34,14 +34,15 @@ class SlideMovieViewModel @Inject constructor(
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var pages = 1
 
-    private val loadingThreshold = 5
-
 
     private var counter: Int = 0
 
     companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal const val NUMBER_OF_VISIBLE_MOVIES = 3
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal const val LOADING_THRESHOLD = 5
     }
 
     private val _movieListFlow = MutableStateFlow<MutableList<SwipeableMovie>>(mutableListOf())
@@ -52,7 +53,7 @@ class SlideMovieViewModel @Inject constructor(
     private val _observableMovies = MutableStateFlow<List<SwipeableMovie>>(mutableListOf())
     val observableMovies = _observableMovies.asStateFlow()
 
-    private val _errorMessage = MutableSharedFlow<ApiResult.Error?>(0)
+    private val _errorMessage = MutableSharedFlow<ApiResult.Error?>(1)
     val errorMessage = _errorMessage.asSharedFlow()
 
     init {
@@ -67,11 +68,11 @@ class SlideMovieViewModel @Inject constructor(
         }
     }
 
+
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal fun loadCurrentPage() {
         viewModelScope.launch {
             _isLoading.value = true
-            var shouldRetry = true
             movieRepository.getDiscoverMovies(currentPage, _language.value).collect { result ->
                 _isLoading.value = false
                 if (result is ApiResult.Success) {
@@ -84,13 +85,9 @@ class SlideMovieViewModel @Inject constructor(
                         refillObservableList()
                         getMovieThatWillBeObservableNext()
                     }
+                    return@collect
                 } else {
-                    if (shouldRetry) {
-                        shouldRetry = false
-                        loadCurrentPage()
-                    } else {
-                        _errorMessage.emit(result as ApiResult.Error)
-                    }
+                    _errorMessage.emit(result as ApiResult.Error)
                 }
             }
         }
@@ -122,7 +119,7 @@ class SlideMovieViewModel @Inject constructor(
     fun onSwipe() {
         if (_movieListFlow.value.isNotEmpty()) {
             _movieListFlow.value.removeAt(0)
-            if (_movieListFlow.value.size < loadingThreshold && currentPage < pages) {
+            if (_movieListFlow.value.size < LOADING_THRESHOLD && currentPage < pages) {
                 loadNextPage()
             }
             refillObservableList()

@@ -10,6 +10,7 @@ import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MovieService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.retryWhen
 import javax.inject.Inject
 
 
@@ -45,6 +46,8 @@ class MovieRepository @Inject constructor(
         } catch (e: Exception) {
             emit(ApiResult.Error(ApiError.Unknown))
         }
+    }.retryWhen { _, attempt ->
+        attempt < 3
     }
 
 
