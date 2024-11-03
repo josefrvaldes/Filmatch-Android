@@ -631,7 +631,6 @@ fun UserTopBar(user: User) {
                     .data(user.photoUrl)
                     .build(),
                 contentScale = ContentScale.Crop,
-                placeholder = painterResource(R.drawable.ic_launcher_background),
                 contentDescription = stringResource(R.string.content_description_user_image)
             )
         }
