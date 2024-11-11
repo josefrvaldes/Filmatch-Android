@@ -36,6 +36,7 @@ navigationVersion = "2.8.3"
 kotlinxSerializationVersion = "1.7.3"
 kotlinxSerializationPluginVersion = "2.0.20"
 jacksonVersion = "2.13.0"
+splashScreenVersion = "1.0.1"
 
 
 [libraries]
@@ -89,6 +90,7 @@ androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifec
 androidx-navigation = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationVersion" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationVersion" }
 jackson = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jacksonVersion" }
+splashScreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashScreenVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
