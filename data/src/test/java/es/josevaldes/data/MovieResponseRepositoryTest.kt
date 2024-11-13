@@ -3,10 +3,13 @@ package es.josevaldes.data
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource.LoadResult
 import androidx.paging.testing.TestPager
+import es.josevaldes.data.extensions.mappers.toAppModel
 import es.josevaldes.data.model.Movie
+import es.josevaldes.data.model.MovieType
 import es.josevaldes.data.paging.MoviesPagingSource
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.responses.DiscoverMoviesResponse
+import es.josevaldes.data.responses.MovieResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
@@ -23,12 +26,12 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
-class MovieRepositoryTest {
+class MovieResponseRepositoryTest {
 
     private lateinit var movieRepository: MovieRepository
     private lateinit var moviesPagingSource: MoviesPagingSource
     private lateinit var movieService: MovieService
-    private var listOfMovies = mutableListOf<Movie>()
+    private var listOfMovies = mutableListOf<MovieResponse>()
     private val config = PagingConfig(pageSize = 5, enablePlaceholders = false)
 
     @Before
@@ -37,7 +40,7 @@ class MovieRepositoryTest {
         moviesPagingSource = MoviesPagingSource(movieService, "en")
         movieRepository = MovieRepository(moviesPagingSource, movieService)
         for (i in 1..20) {
-            listOfMovies.add(Movie(id = i, title = "Movie $i"))
+            listOfMovies.add(MovieResponse(id = i, title = "Movie $i"))
         }
     }
 
@@ -54,13 +57,13 @@ class MovieRepositoryTest {
         )
         val testPager = TestPager(config, moviesPagingSource)
         val result = testPager.refresh() as LoadResult.Page<Int, Movie>
-        assertEquals(resultList, result.data)
+        assertEquals(resultList.map { it.toAppModel(MovieType.MOVIE) }, result.data)
     }
 
     @Test
     fun `getDiscoverMovies should return success after appending data`() = runTest {
         var counter = 0
-        var currentSubList = mutableListOf<Movie>()
+        var currentSubList = mutableListOf<MovieResponse>()
         coEvery { movieService.getDiscoverMovies(any(), any(), any()) } answers {
             currentSubList = listOfMovies.subList(
                 counter * config.pageSize,
@@ -82,7 +85,7 @@ class MovieRepositoryTest {
             append()
             append()
         } as LoadResult.Page<Int, Movie>
-        assertEquals(currentSubList, result.data)
+        assertEquals(currentSubList.map { it.toAppModel(MovieType.MOVIE) }, result.data)
     }
 
 
@@ -116,7 +119,7 @@ class MovieRepositoryTest {
         coEvery { movieService.findById(any(), any()) } returns ApiResult.Success(movie)
         val resultFlow = movieRepository.findById(movie.id, "")
         resultFlow.collect {
-            assertEquals(ApiResult.Success(movie), it)
+            assertEquals(ApiResult.Success(movie.toAppModel(MovieType.MOVIE)), it)
         }
     }
 

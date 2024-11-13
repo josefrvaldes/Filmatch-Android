@@ -1,8 +1,8 @@
 package es.josevaldes.filmatch
 
+import es.josevaldes.data.model.DiscoverMoviesData
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.repositories.MovieRepository
-import es.josevaldes.data.responses.DiscoverMoviesResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SwipeableMovie
@@ -34,7 +34,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], manifest = Config.NONE)
-class SlideMovieViewModelTest {
+class SlideMovieResponseViewModelTest {
 
 
     private val movieRepository = mockk<MovieRepository>()
@@ -48,7 +48,7 @@ class SlideMovieViewModelTest {
                 any(),
                 any()
             )
-        } returns flowOf(ApiResult.Success(DiscoverMoviesResponse(listOf(), 1, 1, 1)))
+        } returns flowOf(ApiResult.Success(DiscoverMoviesData(listOf(), 1, 1, 1)))
         viewModel = SlideMovieViewModel(movieRepository)
     }
 
@@ -99,7 +99,7 @@ class SlideMovieViewModelTest {
     @Test
     fun `loadCurrentPage should return a list of movies in the flow and fill the observableMovies and load the next observable movie`() =
         runTest {
-            val discoverMoviesResponse = DiscoverMoviesResponse(
+            val discoverMoviesResponse = DiscoverMoviesData(
                 listOf(
                     Movie(id = 1),
                     Movie(id = 2),
@@ -188,7 +188,7 @@ class SlideMovieViewModelTest {
         runTest {
             val resultsPerPage = 10
             val movies = List(resultsPerPage) { index -> Movie(id = index) }
-            val discoverMoviesResponse = DiscoverMoviesResponse(
+            val discoverMoviesResponse = DiscoverMoviesData(
                 movies, 1, 20, 2
             )
             coEvery {

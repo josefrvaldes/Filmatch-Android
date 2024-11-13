@@ -20,6 +20,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,29 +29,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
+import es.josevaldes.filmatch.viewmodels.FiltersViewModel
 
 
 val contentTypes = listOf(
     "All",
     "Movies",
     "TV Shows"
-)
-
-val genres = listOf(
-    "All",
-    "Action",
-    "Adventure",
-    "Comedy",
-    "Biography",
-    "Drama",
-    "Horror",
-    "Romance",
-    "Sci-Fi",
-    "Thriller",
-    "Western"
 )
 
 val streamingProviders = listOf(
@@ -78,8 +68,11 @@ val otherFilters = listOf(
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 fun FiltersScreen() {
+    val viewModel: FiltersViewModel = hiltViewModel()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+
+    val genres by viewModel.genres.collectAsState()
 
     Column(
         modifier = Modifier

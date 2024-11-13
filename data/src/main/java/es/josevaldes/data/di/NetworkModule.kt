@@ -7,6 +7,7 @@ import dagger.hilt.components.SingletonComponent
 import es.josevaldes.core.utils.serialization.JsonMapper
 import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
 import es.josevaldes.data.network.HttpClient
+import es.josevaldes.data.services.GenreService
 import es.josevaldes.data.services.MovieService
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -43,5 +44,11 @@ class NetworkModule {
     @Singleton
     fun provideMoviesService(retrofit: Retrofit): MovieService {
         return retrofit.create(MovieService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGenresService(retrofit: Retrofit): GenreService {
+        return retrofit.create(GenreService::class.java)
     }
 }
