@@ -89,7 +89,7 @@ class FiltersViewModel @Inject constructor(
         mergedGenres.remove(allItem)
         mergedGenres.sortBy { it.item.name }
         mergedGenres.add(0, allItem)
-        return mergedGenres
+        return mergedGenres.toList()
     }
 
 
@@ -114,23 +114,39 @@ class FiltersViewModel @Inject constructor(
                 _filtersGenre.value = _tvGenres.toList()
             }
         }
+
+
+        val count = _filtersGenre.value.count { it.isSelected && it.item.id != -1 }
+        if (count > 0) {
+            deselectGenreFilterTypeAll()
+        } else {
+            selectGenreFilterTypeAll()
+        }
     }
 
     private fun deselectGenreFilterTypeAll() {
+        setGenreFilterTypeAll(false)
+    }
+
+    private fun setGenreFilterTypeAll(isSelected: Boolean) {
         val genres = _filtersGenre.value.toMutableList()
         if (genres.isNotEmpty() && genres[0].item.id == -1) {
-            genres[0] = genres[0].copy(isSelected = false)
+            genres[0] = genres[0].copy(isSelected = isSelected)
         }
 
         if (_movieGenres.isNotEmpty() && _movieGenres.first().item.id == -1) {
-            _movieGenres[0] = _movieGenres[0].copy(isSelected = false)
+            _movieGenres[0] = _movieGenres[0].copy(isSelected = isSelected)
         }
 
         if (_tvGenres.isNotEmpty() && _tvGenres.first().item.id == -1) {
-            _tvGenres[0] = _tvGenres[0].copy(isSelected = false)
+            _tvGenres[0] = _tvGenres[0].copy(isSelected = isSelected)
         }
 
         _filtersGenre.value = genres.toList()
+    }
+
+    private fun selectGenreFilterTypeAll() {
+        setGenreFilterTypeAll(true)
     }
 
     private fun deselectAllFiltersExceptForAllType() {
@@ -149,7 +165,7 @@ class FiltersViewModel @Inject constructor(
 
         _filtersGenre.value = genres.toList()
     }
-    
+
     fun genreClicked(genreClicked: SelectableItem<Genre>) {
         if (genreClicked.item.id == -1) {
             deselectAllFiltersExceptForAllType()
@@ -175,5 +191,12 @@ class FiltersViewModel @Inject constructor(
         }
 
         _filtersGenre.value = genres.toList()
+
+        val selectedCount = genres.count { it.isSelected }
+        if (selectedCount == 0) {
+            selectGenreFilterTypeAll()
+        }
     }
+
+
 }
