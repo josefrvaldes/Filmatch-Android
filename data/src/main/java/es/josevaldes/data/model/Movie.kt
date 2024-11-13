@@ -112,6 +112,14 @@ data class Genre(
     override fun toString(): String {
         return name
     }
+
+    override fun equals(other: Any?): Boolean {
+        return other is Genre && id == other.id
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
 }
 
 @Serializable

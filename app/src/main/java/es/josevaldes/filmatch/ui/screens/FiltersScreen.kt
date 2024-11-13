@@ -31,37 +31,32 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import es.josevaldes.filmatch.R
+import es.josevaldes.filmatch.model.SelectableItem
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 import es.josevaldes.filmatch.viewmodels.FiltersViewModel
 
 
-val contentTypes = listOf(
-    "All",
-    "Movies",
-    "TV Shows"
-)
-
 val streamingProviders = listOf(
-    "All",
-    "Netflix",
-    "Amazon Prime Video",
-    "Disney+",
-    "HBO Max",
-    "Hulu",
-    "Apple TV+",
-    "Peacock",
-    "Paramount+",
-    "Discovery+"
+    SelectableItem("All", false),
+    SelectableItem("Netflix", false),
+    SelectableItem("Amazon Prime Video", false),
+    SelectableItem("Disney+", false),
+    SelectableItem("HBO Max", false),
+    SelectableItem("Hulu", false),
+    SelectableItem("Apple TV+", false),
+    SelectableItem("Peacock", false),
+    SelectableItem("Paramount+", false),
+    SelectableItem("Discovery+", false)
 )
 
 val otherFilters = listOf(
-    "All",
-    "Year",
-    "Rating",
-    "Language",
-    "Country",
-    "Runtime"
+    SelectableItem("All", false),
+    SelectableItem("Year", false),
+    SelectableItem("Rating", false),
+    SelectableItem("Language", false),
+    SelectableItem("Country", false),
+    SelectableItem("Runtime", false)
 )
 
 
@@ -72,7 +67,8 @@ fun FiltersScreen() {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    val genres by viewModel.genres.collectAsState()
+    val genres by viewModel.filtersGenre.collectAsState()
+    val contentTypes by viewModel.contentTypes.collectAsState()
 
     Column(
         modifier = Modifier
@@ -103,7 +99,7 @@ fun FiltersScreen() {
         )
 
         HorizontalList(contentTypes) {
-            Toast.makeText(context, "Genre: $it", Toast.LENGTH_SHORT).show()
+            viewModel.contentTypeClicked(it)
         }
 
         Text(
@@ -113,7 +109,7 @@ fun FiltersScreen() {
         )
 
         HorizontalScrollGrid(genres) {
-            Toast.makeText(context, "Genre: $it", Toast.LENGTH_SHORT).show()
+            viewModel.genreClicked(it)
         }
 
         Text(
@@ -155,7 +151,10 @@ fun FiltersScreen() {
 }
 
 @Composable
-fun <T> HorizontalList(elements: List<T>, onItemClicked: (T) -> Unit = {}) {
+fun <T> HorizontalList(
+    elements: List<SelectableItem<T>>,
+    onItemClicked: (SelectableItem<T>) -> Unit = {}
+) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -169,7 +168,10 @@ fun <T> HorizontalList(elements: List<T>, onItemClicked: (T) -> Unit = {}) {
 }
 
 @Composable
-fun <T> HorizontalScrollGrid(elements: List<T>, onItemClicked: (T) -> Unit = {}) {
+fun <T> HorizontalScrollGrid(
+    elements: List<SelectableItem<T>>,
+    onItemClicked: (SelectableItem<T>) -> Unit = {}
+) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -195,21 +197,29 @@ fun <T> HorizontalScrollGrid(elements: List<T>, onItemClicked: (T) -> Unit = {})
 }
 
 @Composable
-private fun <T> FilterListItem(item: T, onItemClicked: (T) -> Unit) {
+private fun <T> FilterListItem(
+    item: SelectableItem<T>,
+    onItemClicked: (SelectableItem<T>) -> Unit
+) {
+    val color = if (item.isSelected) {
+        MaterialTheme.colorScheme.secondary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
     Box(
         modifier = Modifier
             .width(100.dp)
             .height(44.dp)
             .border(
                 1.dp,
-                MaterialTheme.colorScheme.outlineVariant,
+                color,
                 RoundedCornerShape(4.dp)
             )
             .clickable { onItemClicked(item) }
             .padding(horizontal = 6.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = item.toString(), overflow = TextOverflow.Ellipsis)
+        Text(text = item.item.toString(), overflow = TextOverflow.Ellipsis)
     }
 }
 
