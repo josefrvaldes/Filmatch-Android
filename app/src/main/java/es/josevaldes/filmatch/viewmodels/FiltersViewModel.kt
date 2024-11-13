@@ -198,5 +198,10 @@ class FiltersViewModel @Inject constructor(
         }
     }
 
+    fun resetFilters() {
+        deselectAllFiltersExceptForAllType()
+        contentTypeClicked(_contentTypes.value.first())
+    }
+
 
 }

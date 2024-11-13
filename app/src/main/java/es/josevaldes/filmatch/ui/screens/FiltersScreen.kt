@@ -87,7 +87,8 @@ fun FiltersScreen() {
                 stringResource(R.string.reset),
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = 20.dp),
+                    .clickable { viewModel.resetFilters() }
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
                 style = MaterialTheme.typography.labelLarge
             )
         }
