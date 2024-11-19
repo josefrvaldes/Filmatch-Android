@@ -14,5 +14,7 @@ sealed class AuthError {
     data object UserExists : AuthError()
     data object CouldNotFetchToken : AuthError()
     data object CancelledByUser : AuthError()
+    data object NoCredentialsAvailable : AuthError()
+    data object Interrupted : AuthError()
     data object Unknown : AuthError()
 }

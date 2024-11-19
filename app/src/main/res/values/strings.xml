@@ -102,6 +102,8 @@
     <string name="error_couldn_t_fetch_token">Couldn\'t fetch token</string>
     <string name="error_cancelled_by_user">Cancelled by user</string>
     <string name="error_email_is_not_valid">Email is not valid</string>
+    <string name="error_no_credentials_available">No credentials available. Please sign in using a google account in your device.</string>
+    <string name="error_the_operation_was_interrupted">The operation was interrupted</string>
     <string name="discover">Discover</string>
     <string name="filters">Filters</string>
     <string name="reset">reset</string>

@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import es.josevaldes.core.utils.validateEmail
 import es.josevaldes.core.utils.validatePassword
+import es.josevaldes.data.results.AuthError
 import es.josevaldes.data.results.AuthResult
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.errors.ErrorMessageWrapper
@@ -131,7 +132,13 @@ fun RegisterScreen(onNavigateToSlideMovieScreen: () -> Unit, onGoToLoginClicked:
             onGoToLoginClicked()
         }
     } else if (errorMessage.isNotEmpty()) {
-        ErrorDialog(errorMessage) { errorMessage = "" }
+
+        ErrorDialog(errorMessage) {
+            if(errorMessage == ErrorMessageWrapper(context).getErrorMessage(AuthError.NoCredentialsAvailable)) {
+                openAccountSettingsScreen(context)
+            }
+            errorMessage = ""
+        }
     }
 }
 
