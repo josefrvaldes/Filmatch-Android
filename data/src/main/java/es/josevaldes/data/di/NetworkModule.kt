@@ -9,6 +9,7 @@ import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
 import es.josevaldes.data.network.HttpClient
 import es.josevaldes.data.services.GenreService
 import es.josevaldes.data.services.MovieService
+import es.josevaldes.data.services.ProviderService
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
@@ -50,5 +51,11 @@ class NetworkModule {
     @Singleton
     fun provideGenresService(retrofit: Retrofit): GenreService {
         return retrofit.create(GenreService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideProvidersService(retrofit: Retrofit): ProviderService {
+        return retrofit.create(ProviderService::class.java)
     }
 }

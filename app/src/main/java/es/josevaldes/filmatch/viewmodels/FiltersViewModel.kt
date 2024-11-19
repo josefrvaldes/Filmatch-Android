@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import es.josevaldes.data.model.Genre
+import es.josevaldes.data.model.Provider
 import es.josevaldes.data.repositories.GenreRepository
+import es.josevaldes.data.repositories.ProviderRepository
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SelectableItem
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class FiltersViewModel @Inject constructor(
-    private val genresRepository: GenreRepository
+    private val genresRepository: GenreRepository,
+    private val providersRepository: ProviderRepository
 ) : ViewModel() {
 
     enum class ContentType(private val displayName: String) {
@@ -36,18 +39,32 @@ class FiltersViewModel @Inject constructor(
     )
     val contentTypes = _contentTypes.asStateFlow()
 
-
     private val _filtersGenre = MutableStateFlow<List<SelectableItem<Genre>>>(listOf())
     val filtersGenre = _filtersGenre.asStateFlow()
+
+    private val _providers =
+        MutableStateFlow<MutableList<SelectableItem<Provider>>>(mutableListOf())
+    val providers = _providers.asStateFlow()
 
     private val _tvGenres = mutableListOf<SelectableItem<Genre>>()
     private val _movieGenres = mutableListOf<SelectableItem<Genre>>()
 
-    init {
-        getAllGenres()
+
+    fun getAllProviders(language: String, region: String) {
+        viewModelScope.launch {
+            providersRepository.getMovieProviders(language, region).collect { result ->
+                if (result is ApiResult.Success) {
+                    val providers = result.data.map { SelectableItem(it, false) }.toMutableList()
+                    providers.add(0, SelectableItem(Provider(-1, "All", null, 0, emptyMap()), true))
+                    _providers.value = providers
+                } else {
+                    // TODO: Handle error
+                }
+            }
+        }
     }
 
-    private fun getAllGenres() {
+    fun getAllGenres() {
         viewModelScope.launch {
             genresRepository.getAllMovieGenres().collect { result ->
                 if (result is ApiResult.Success) {
@@ -91,7 +108,6 @@ class FiltersViewModel @Inject constructor(
         mergedGenres.add(0, allItem)
         return mergedGenres.toList()
     }
-
 
     fun contentTypeClicked(contentType: SelectableItem<ContentType>) {
         val types = _contentTypes.value.toMutableList()
@@ -201,6 +217,13 @@ class FiltersViewModel @Inject constructor(
     fun resetFilters() {
         deselectAllFiltersExceptForAllType()
         contentTypeClicked(_contentTypes.value.first())
+    }
+
+    fun providerClicked(provider: SelectableItem<Provider>) {
+        val providers = _providers.value.toMutableList()
+        val index = providers.indexOf(provider)
+        providers[index] = provider.copy(isSelected = !provider.isSelected)
+        _providers.value = providers
     }
 
 

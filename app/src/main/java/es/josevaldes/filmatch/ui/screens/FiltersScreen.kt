@@ -20,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,6 +31,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import es.josevaldes.core.utils.getDeviceCountry
+import es.josevaldes.core.utils.getDeviceLocale
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.model.SelectableItem
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
@@ -37,18 +40,18 @@ import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 import es.josevaldes.filmatch.viewmodels.FiltersViewModel
 
 
-val streamingProviders = listOf(
-    SelectableItem("All", false),
-    SelectableItem("Netflix", false),
-    SelectableItem("Amazon Prime Video", false),
-    SelectableItem("Disney+", false),
-    SelectableItem("HBO Max", false),
-    SelectableItem("Hulu", false),
-    SelectableItem("Apple TV+", false),
-    SelectableItem("Peacock", false),
-    SelectableItem("Paramount+", false),
-    SelectableItem("Discovery+", false)
-)
+//val streamingProviders = listOf(
+//    SelectableItem("All", false),
+//    SelectableItem("Netflix", false),
+//    SelectableItem("Amazon Prime Video", false),
+//    SelectableItem("Disney+", false),
+//    SelectableItem("HBO Max", false),
+//    SelectableItem("Hulu", false),
+//    SelectableItem("Apple TV+", false),
+//    SelectableItem("Peacock", false),
+//    SelectableItem("Paramount+", false),
+//    SelectableItem("Discovery+", false)
+//)
 
 val otherFilters = listOf(
     SelectableItem("All", false),
@@ -67,7 +70,15 @@ fun FiltersScreen() {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
+    LaunchedEffect(Unit) {
+        val language = getDeviceLocale()
+        val country = getDeviceCountry()
+        viewModel.getAllGenres()
+        viewModel.getAllProviders(language, country)
+    }
+    
     val genres by viewModel.filtersGenre.collectAsState()
+    val providers by viewModel.providers.collectAsState()
     val contentTypes by viewModel.contentTypes.collectAsState()
 
     Column(
@@ -119,8 +130,8 @@ fun FiltersScreen() {
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 40.dp, bottom = 10.dp)
         )
 
-        HorizontalScrollGrid(streamingProviders) {
-            Toast.makeText(context, "Genre: $it", Toast.LENGTH_SHORT).show()
+        HorizontalScrollGrid(providers) {
+            viewModel.providerClicked(it)
         }
 
         Text(
