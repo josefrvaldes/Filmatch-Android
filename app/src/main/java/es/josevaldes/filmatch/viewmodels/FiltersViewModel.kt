@@ -56,7 +56,8 @@ class FiltersViewModel @Inject constructor(
                 if (result is ApiResult.Success) {
                     val providers = result.data.map { SelectableItem(it, false) }.toMutableList()
                     providers.add(0, SelectableItem(Provider(-1, "All", null, 0, emptyMap()), true))
-                    _providers.value = providers
+                    _providers.value =
+                        providers.sortedBy { it.item.displayPriority }.toMutableList()
                 } else {
                     // TODO: Handle error
                 }
@@ -216,14 +217,35 @@ class FiltersViewModel @Inject constructor(
 
     fun resetFilters() {
         deselectAllFiltersExceptForAllType()
+        deselectAllProvidersExceptForAllType()
         contentTypeClicked(_contentTypes.value.first())
     }
 
     fun providerClicked(provider: SelectableItem<Provider>) {
+        if (provider.item.id == -1) {
+            deselectAllProvidersExceptForAllType()
+            return
+        } else {
+            deselectProviderFilterTypeAll()
+        }
         val providers = _providers.value.toMutableList()
         val index = providers.indexOf(provider)
         providers[index] = provider.copy(isSelected = !provider.isSelected)
         _providers.value = providers
+    }
+
+    private fun deselectAllProvidersExceptForAllType() {
+        val providers = _providers.value.toMutableList()
+        providers.forEachIndexed { i, item ->
+            providers[i] = item.copy(isSelected = (i == 0))
+        }
+        _providers.value = providers
+    }
+
+    private fun deselectProviderFilterTypeAll() {
+        val providers = _providers.value.toMutableList()
+        providers[0] = providers[0].copy(isSelected = false)
+        _providers.value = providers.toMutableList()
     }
 
 
