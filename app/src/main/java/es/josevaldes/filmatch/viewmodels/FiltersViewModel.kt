@@ -232,6 +232,17 @@ class FiltersViewModel @Inject constructor(
         val index = providers.indexOf(provider)
         providers[index] = provider.copy(isSelected = !provider.isSelected)
         _providers.value = providers
+
+        val selectedCount = providers.count { it.isSelected }
+        if (selectedCount == 0) {
+            selectProviderFilterTypeAll()
+        }
+    }
+
+    private fun selectProviderFilterTypeAll() {
+        val providers = _providers.value.toMutableList()
+        providers[0] = providers[0].copy(isSelected = true)
+        _providers.value = providers.toMutableList()
     }
 
     private fun deselectAllProvidersExceptForAllType() {

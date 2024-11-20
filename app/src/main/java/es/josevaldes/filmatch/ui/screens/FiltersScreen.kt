@@ -48,12 +48,17 @@ import es.josevaldes.filmatch.viewmodels.FiltersViewModel
 
 
 val otherFilters = listOf(
-    SelectableItem("All", false),
-    SelectableItem("Year", false),
-    SelectableItem("Rating", false),
-    SelectableItem("Language", false),
-    SelectableItem("Country", false),
-    SelectableItem("Runtime", false)
+    SelectableItem("< 95 minutes", false),
+    SelectableItem("< 2 hours", false),
+    SelectableItem("Score > 50", false),
+    SelectableItem("Score > 75", false),
+    SelectableItem("2020s", false),
+    SelectableItem("2010s", false),
+    SelectableItem("2010s", false),
+    SelectableItem("2000s", false),
+    SelectableItem("1990s", false),
+    SelectableItem("1980s", false),
+    SelectableItem("1970s", false),
 )
 
 
