@@ -8,7 +8,10 @@ import es.josevaldes.data.model.Provider
 import es.josevaldes.data.repositories.GenreRepository
 import es.josevaldes.data.repositories.ProviderRepository
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.filmatch.model.SelectableItem
+import es.josevaldes.filmatch.model.Duration
+import es.josevaldes.filmatch.model.Filter
+import es.josevaldes.filmatch.model.OtherFilters
+import es.josevaldes.filmatch.model.Score
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -32,30 +35,39 @@ class FiltersViewModel @Inject constructor(
 
     private val _contentTypes = MutableStateFlow(
         listOf(
-            SelectableItem(ContentType.ALL, true),
-            SelectableItem(ContentType.MOVIES, false),
-            SelectableItem(ContentType.TV_SHOWS, false)
+            Filter(ContentType.ALL, true),
+            Filter(ContentType.MOVIES, false),
+            Filter(ContentType.TV_SHOWS, false)
         )
     )
     val contentTypes = _contentTypes.asStateFlow()
 
-    private val _filtersGenre = MutableStateFlow<List<SelectableItem<Genre>>>(listOf())
+    private val _filtersGenre = MutableStateFlow<List<Filter<Genre>>>(listOf())
     val filtersGenre = _filtersGenre.asStateFlow()
 
     private val _providers =
-        MutableStateFlow<MutableList<SelectableItem<Provider>>>(mutableListOf())
+        MutableStateFlow<MutableList<Filter<Provider>>>(mutableListOf())
     val providers = _providers.asStateFlow()
 
-    private val _tvGenres = mutableListOf<SelectableItem<Genre>>()
-    private val _movieGenres = mutableListOf<SelectableItem<Genre>>()
+    private val _tvGenres = mutableListOf<Filter<Genre>>()
+    private val _movieGenres = mutableListOf<Filter<Genre>>()
 
+    private var _fromYear = 0
+    private var _toYear = 0
+
+    private val _scoreFilters = MutableStateFlow(OtherFilters.scoreFilters)
+    val scoreFilters = _scoreFilters.asStateFlow()
+
+    private val _timeFilters = MutableStateFlow(OtherFilters.timeFilters)
+    val timeFilters = _timeFilters.asStateFlow()
 
     fun getAllProviders(language: String, region: String) {
         viewModelScope.launch {
             providersRepository.getMovieProviders(language, region).collect { result ->
                 if (result is ApiResult.Success) {
-                    val providers = result.data.map { SelectableItem(it, false) }.toMutableList()
-                    providers.add(0, SelectableItem(Provider(-1, "All", null, 0, emptyMap()), true))
+                    val providers = result.data.map { Filter(it, false, imageUrl = it.logoUrl) }
+                        .toMutableList()
+                    providers.add(0, Filter(Provider(-1, "All", null, 0, emptyMap()), true))
                     _providers.value =
                         providers.sortedBy { it.item.displayPriority }.toMutableList()
                 } else {
@@ -69,8 +81,8 @@ class FiltersViewModel @Inject constructor(
         viewModelScope.launch {
             genresRepository.getAllMovieGenres().collect { result ->
                 if (result is ApiResult.Success) {
-                    _movieGenres.add(SelectableItem(Genre(-1, "All"), true))
-                    _movieGenres.addAll(result.data.genres.map { SelectableItem(it, false) })
+                    _movieGenres.add(Filter(Genre(-1, "All"), true))
+                    _movieGenres.addAll(result.data.genres.map { Filter(it, false) })
                     _filtersGenre.value = mergeGenresList()
                 } else {
                     // TODO: Handle error
@@ -79,8 +91,8 @@ class FiltersViewModel @Inject constructor(
 
             genresRepository.getAllTvGenres().collect { result ->
                 if (result is ApiResult.Success) {
-                    _tvGenres.add(SelectableItem(Genre(-1, "All"), true))
-                    _tvGenres.addAll(result.data.genres.map { SelectableItem(it, false) })
+                    _tvGenres.add(Filter(Genre(-1, "All"), true))
+                    _tvGenres.addAll(result.data.genres.map { Filter(it, false) })
                     _filtersGenre.value = mergeGenresList()
                 } else {
                     // TODO: Handle error
@@ -89,8 +101,8 @@ class FiltersViewModel @Inject constructor(
         }
     }
 
-    private fun mergeGenresList(): List<SelectableItem<Genre>> {
-        val mergedGenres = mutableListOf<SelectableItem<Genre>>()
+    private fun mergeGenresList(): List<Filter<Genre>> {
+        val mergedGenres = mutableListOf<Filter<Genre>>()
         for (genre in _movieGenres) {
             if (mergedGenres.none { it.item.id == genre.item.id }) {
                 mergedGenres.add(genre)
@@ -110,7 +122,7 @@ class FiltersViewModel @Inject constructor(
         return mergedGenres.toList()
     }
 
-    fun contentTypeClicked(contentType: SelectableItem<ContentType>) {
+    fun contentTypeClicked(contentType: Filter<ContentType>) {
         val types = _contentTypes.value.toMutableList()
         val index = types.indexOf(contentType)
         types.forEachIndexed { i, item ->
@@ -183,7 +195,7 @@ class FiltersViewModel @Inject constructor(
         _filtersGenre.value = genres.toList()
     }
 
-    fun genreClicked(genreClicked: SelectableItem<Genre>) {
+    fun genreClicked(genreClicked: Filter<Genre>) {
         if (genreClicked.item.id == -1) {
             deselectAllFiltersExceptForAllType()
             return
@@ -221,7 +233,7 @@ class FiltersViewModel @Inject constructor(
         contentTypeClicked(_contentTypes.value.first())
     }
 
-    fun providerClicked(provider: SelectableItem<Provider>) {
+    fun providerClicked(provider: Filter<Provider>) {
         if (provider.item.id == -1) {
             deselectAllProvidersExceptForAllType()
             return
@@ -257,6 +269,39 @@ class FiltersViewModel @Inject constructor(
         val providers = _providers.value.toMutableList()
         providers[0] = providers[0].copy(isSelected = false)
         _providers.value = providers.toMutableList()
+    }
+
+    fun fromYearSelected(year: Int) {
+        _fromYear = year
+    }
+
+    fun toYearSelected(year: Int) {
+        _toYear = year
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun otherFilterClicked(filter: Filter<Any>) {
+        val listToProcess = if (filter.item is Duration) {
+            _timeFilters.value.toMutableList() as MutableList<Filter<Any>>
+        } else {
+            _scoreFilters.value.toMutableList() as MutableList<Filter<Any>>
+        }
+
+        val selectedStatus = filter.isSelected
+        val index = listToProcess.indexOf(filter)
+        listToProcess.forEachIndexed { i, item ->
+            if (i == index) {
+                listToProcess[i] = item.copy(isSelected = !selectedStatus)
+            } else {
+                listToProcess[i] = item.copy(isSelected = false)
+            }
+        }
+
+        if (filter.item is Duration) {
+            _timeFilters.value = listToProcess as List<Filter<Duration>>
+        } else {
+            _scoreFilters.value = listToProcess as List<Filter<Score>>
+        }
     }
 
 

@@ -111,4 +111,9 @@
     <string name="filters_screen_genre_title">Genres</string>
     <string name="filters_screen_provider_title">Streaming platforms</string>
     <string name="filters_screen_apply_filter_button_text">Let\'s go!</string>
+    <string name="filters_screen_date_title">Year</string>
+    <string name="year_range_selector_from_label">From</string>
+    <string name="year_range_selector_to_label">To</string>
+    <string name="filter_duration_string"><![CDATA[< %1$s min]]></string>
+    <string name="filter_score_string"><![CDATA[Score > %1$s]]></string>
 </resources>

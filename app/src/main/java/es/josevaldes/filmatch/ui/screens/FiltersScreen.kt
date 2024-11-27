@@ -1,7 +1,7 @@
 package es.josevaldes.filmatch.ui.screens
 
 import android.annotation.SuppressLint
-import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -18,17 +20,25 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,28 +49,13 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import es.josevaldes.core.utils.getDeviceCountry
 import es.josevaldes.core.utils.getDeviceLocale
-import es.josevaldes.data.model.ImageProvider
 import es.josevaldes.filmatch.R
-import es.josevaldes.filmatch.model.SelectableItem
+import es.josevaldes.filmatch.model.Duration
+import es.josevaldes.filmatch.model.Filter
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 import es.josevaldes.filmatch.viewmodels.FiltersViewModel
-
-
-val otherFilters = listOf(
-    SelectableItem("< 95 minutes", false),
-    SelectableItem("< 2 hours", false),
-    SelectableItem("Score > 50", false),
-    SelectableItem("Score > 75", false),
-    SelectableItem("2020s", false),
-    SelectableItem("2010s", false),
-    SelectableItem("2010s", false),
-    SelectableItem("2000s", false),
-    SelectableItem("1990s", false),
-    SelectableItem("1980s", false),
-    SelectableItem("1970s", false),
-)
-
+import java.time.LocalDate
 
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -79,6 +74,10 @@ fun FiltersScreen() {
     val genres by viewModel.filtersGenre.collectAsState()
     val providers by viewModel.providers.collectAsState()
     val contentTypes by viewModel.contentTypes.collectAsState()
+    val scoreFilters by viewModel.scoreFilters.collectAsState()
+    val timeFilters by viewModel.timeFilters.collectAsState()
+    @Suppress("UNCHECKED_CAST")
+    val otherFilters: List<Filter<Any>> = (scoreFilters + timeFilters).map { it as Filter<Any> }
 
     Column(
         modifier = Modifier
@@ -134,13 +133,32 @@ fun FiltersScreen() {
         }
 
         Text(
+            stringResource(R.string.filters_screen_date_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 40.dp, bottom = 10.dp)
+        )
+
+
+        YearRangeSelector(
+            onFromSelected = { viewModel.fromYearSelected(it) },
+            onToSelected = { viewModel.toYearSelected(it) }
+        )
+
+
+        Text(
             "and more...",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 40.dp, bottom = 10.dp)
         )
 
-        HorizontalScrollGrid(otherFilters) {
-            Toast.makeText(context, "Genre: $it", Toast.LENGTH_SHORT).show()
+        HorizontalScrollGrid(otherFilters, textFormatter = {
+            if (it.item is Duration) {
+                context.getString(R.string.filter_duration_string, it.item)
+            } else {
+                context.getString(R.string.filter_score_string, it.item)
+            }
+        }) {
+            viewModel.otherFilterClicked(it)
         }
 
         Box(modifier = Modifier.weight(1f))
@@ -157,14 +175,109 @@ fun FiltersScreen() {
             Text(stringResource(R.string.filters_screen_apply_filter_button_text))
         }
     }
+}
 
+@Preview
+@Composable
+fun YearRangeSelectorPreview() {
+    FilmatchTheme {
+        YearRangeSelector()
+    }
+}
 
+@Composable
+fun YearRangeSelector(
+    onFromSelected: (Int) -> Unit = {},
+    onToSelected: (Int) -> Unit = {}
+) {
+    val currentYear = LocalDate.now().year
+    val allYears = (1940..currentYear).toList()
+
+    var fromYear by remember { mutableIntStateOf(2000) }
+    var toYear by remember { mutableIntStateOf(2024) }
+
+    val fromOptions = allYears.filter { it <= toYear }
+    val toOptions = allYears.filter { it >= fromYear }
+
+    Row(
+        modifier = Modifier.padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        YearDropdown(
+            label = stringResource(R.string.year_range_selector_from_label),
+            years = fromOptions,
+            selectedYear = fromYear,
+            onYearSelected = { fromYear = it; onFromSelected(it) }
+        )
+
+        YearDropdown(
+            label = stringResource(R.string.year_range_selector_to_label),
+            years = toOptions,
+            selectedYear = toYear,
+            onYearSelected = { toYear = it; onToSelected(it) }
+        )
+    }
+}
+
+@Composable
+fun YearDropdown(
+    label: String,
+    years: List<Int>,
+    selectedYear: Int,
+    onYearSelected: (Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+    val menuItemHeight = 48.dp
+    val density = LocalDensity.current
+    val menuItemInPx = remember {
+        with(density) { menuItemHeight.toPx() }
+    }
+
+    // let's scroll to the selected item when the dropdown is expanded
+    LaunchedEffect(expanded) {
+        if (expanded) {
+            val index = years.indexOf(selectedYear)
+            if (index != -1) {
+                val pixelsToScrollTo = index * menuItemInPx.toInt()
+                scrollState.scrollTo(pixelsToScrollTo)
+            }
+        }
+    }
+
+    Box {
+        Text(
+            text = "$label: $selectedYear",
+            modifier = Modifier
+                .clickable { expanded = true }
+                .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(4.dp))
+                .padding(8.dp)
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            scrollState = scrollState,
+            modifier = Modifier.heightIn(max = 200.dp)
+        ) {
+            years.forEach {
+                DropdownMenuItem(
+                    text = { Text(it.toString()) },
+                    onClick = {
+                        onYearSelected(it)
+                        expanded = false
+                    },
+                    modifier = Modifier.height(menuItemHeight)
+                )
+            }
+        }
+    }
 }
 
 @Composable
 fun <T> HorizontalList(
-    elements: List<SelectableItem<T>>,
-    onItemClicked: (SelectableItem<T>) -> Unit = {}
+    elements: List<Filter<T>>,
+    onItemClicked: (Filter<T>) -> Unit = {}
 ) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
@@ -173,16 +286,17 @@ fun <T> HorizontalList(
     ) {
         items(elements.size) { index ->
             val currentElement = elements[index]
-            FilterListItem(currentElement, onItemClicked)
+            FilterListItem(item = currentElement, onItemClicked = onItemClicked)
         }
     }
 }
 
 @Composable
 fun <T> HorizontalScrollGrid(
-    elements: List<SelectableItem<T>>,
+    elements: List<Filter<T>>,
     displayIcon: Boolean = false,
-    onItemClicked: (SelectableItem<T>) -> Unit = {}
+    textFormatter: (Filter<T>) -> String = { it.item.toString() },
+    onItemClicked: (Filter<T>) -> Unit = {},
 ) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
@@ -201,11 +315,10 @@ fun <T> HorizontalScrollGrid(
             ) {
                 // let's create a box for each item in the chunk
                 columnItems.forEach { item ->
-                    if (displayIcon && item.item is ImageProvider) {
-                        val castedItem = item as SelectableItem<ImageProvider>
-                        FilterLogoListItem(castedItem, onItemClicked)
+                    if (displayIcon) {
+                        FilterLogoListItem(item, onItemClicked)
                     } else {
-                        FilterListItem(item, onItemClicked)
+                        FilterListItem(item, textFormatter, onItemClicked)
                     }
                 }
             }
@@ -215,8 +328,8 @@ fun <T> HorizontalScrollGrid(
 
 @Composable
 private fun <T> FilterLogoListItem(
-    item: SelectableItem<ImageProvider>,
-    onItemClicked: (SelectableItem<T>) -> Unit
+    item: Filter<T>,
+    onItemClicked: (Filter<T>) -> Unit
 ) {
     val color = if (item.isSelected) {
         MaterialTheme.colorScheme.secondary
@@ -224,7 +337,7 @@ private fun <T> FilterLogoListItem(
         MaterialTheme.colorScheme.outlineVariant
     }
 
-    val borderWidth = if (item.item.photoUrl.isEmpty() || item.isSelected) 1.5.dp else 0.dp
+    val borderWidth = if (item.imageUrl?.isEmpty() == true || item.isSelected) 1.5.dp else 0.dp
 
     Box(
         modifier = Modifier
@@ -235,15 +348,13 @@ private fun <T> FilterLogoListItem(
                 color,
                 RoundedCornerShape(4.dp)
             )
-            .clickable { onItemClicked(item as SelectableItem<T>) },
+            .clickable { onItemClicked(item) },
         contentAlignment = Alignment.Center
     ) {
-        if (item.item.photoUrl.isEmpty()) {
-            Text(text = item.item.toString(), overflow = TextOverflow.Ellipsis)
-        } else {
+        item.imageUrl?.let {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(item.item.photoUrl)
+                    .data(it)
                     .diskCachePolicy(CachePolicy.ENABLED)
                     .memoryCachePolicy(CachePolicy.ENABLED)
                     .diskCacheKey(item.item.toString())
@@ -256,6 +367,8 @@ private fun <T> FilterLogoListItem(
                     .height(66.dp)
                     .clip(RoundedCornerShape(4.dp))
             )
+        } ?: run {
+            Text(text = item.item.toString(), overflow = TextOverflow.Ellipsis)
         }
         if (item.isSelected) {
             Box(
@@ -271,8 +384,9 @@ private fun <T> FilterLogoListItem(
 
 @Composable
 private fun <T> FilterListItem(
-    item: SelectableItem<T>,
-    onItemClicked: (SelectableItem<T>) -> Unit
+    item: Filter<T>,
+    textFormatter: (Filter<T>) -> String = { it.item.toString() },
+    onItemClicked: (Filter<T>) -> Unit,
 ) {
     val color = if (item.isSelected) {
         MaterialTheme.colorScheme.secondary
@@ -292,7 +406,7 @@ private fun <T> FilterListItem(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = item.item.toString(),
+            text = textFormatter(item),
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp)
         )

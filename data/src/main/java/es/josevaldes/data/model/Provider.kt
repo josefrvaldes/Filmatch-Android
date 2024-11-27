@@ -10,12 +10,9 @@ data class Provider(
     val logoPath: String?,
     val displayPriority: Int,
     val displayPriorities: Map<String, Int>
-) : Parcelable, ImageProvider {
-    private val logoUrl: String
+) : Parcelable {
+    val logoUrl: String
         get() = logoPath?.let { "https://image.tmdb.org/t/p/original$it" } ?: ""
-
-    override val photoUrl: String
-        get() = logoUrl
 
     override fun toString(): String {
         return name
