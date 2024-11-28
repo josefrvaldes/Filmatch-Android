@@ -52,7 +52,6 @@ import androidx.navigation.NavBackStackEntry
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import es.josevaldes.core.utils.getDeviceLocale
 import es.josevaldes.data.model.CastMember
 import es.josevaldes.data.model.Credits
 import es.josevaldes.data.model.CrewMember
@@ -69,7 +68,6 @@ import es.josevaldes.filmatch.viewmodels.MovieDetailsViewModel
 @Composable
 fun MovieDetailsScreen(movie: Movie, backStackEntry: NavBackStackEntry) {
     val viewModel: MovieDetailsViewModel = hiltViewModel()
-    val deviceLanguage = getDeviceLocale()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(
         false,
         minActiveState = Lifecycle.State.STARTED
@@ -82,7 +80,7 @@ fun MovieDetailsScreen(movie: Movie, backStackEntry: NavBackStackEntry) {
     // on startup, we call the getMovieById method of the viewModel to get the full movie details
     LaunchedEffect(movie.id) {
         viewModel.setInitialMovie(movie)
-        viewModel.getMovieById(movie.id, deviceLanguage)
+        viewModel.getMovieById(movie.id)
     }
 
     // we collect the movie from the viewModel and update the fullMovieState.

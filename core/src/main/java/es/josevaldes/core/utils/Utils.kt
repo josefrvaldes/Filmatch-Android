@@ -14,6 +14,7 @@ import java.util.Locale
  *
  * @return A string representing the device's locale in the format "language-country".
  */
+// don't use this function directly in the ViewModels, use the DeviceLocaleProvider instead
 fun getDeviceLocale(): String {
     val locale: Locale = Locale.getDefault()
     return "${locale.language}-${locale.country}"
@@ -28,6 +29,7 @@ fun getDeviceLocale(): String {
  *
  * @return A string representing the device's country code in uppercase.
  */
+// don't use this function directly in the ViewModels, use the DeviceLocaleProvider instead
 fun getDeviceCountry(): String {
     return Locale.getDefault().country
 }

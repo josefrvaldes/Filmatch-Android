@@ -71,11 +71,11 @@ import coil.Coil
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import es.josevaldes.core.utils.getDeviceLocale
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.model.User
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.errors.ErrorMessageWrapper
+import es.josevaldes.filmatch.model.Filter
 import es.josevaldes.filmatch.model.MovieSwipedStatus
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.ui.theme.BackButtonBackground
@@ -99,7 +99,6 @@ import kotlin.math.roundToInt
 @Composable
 fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
     val viewModel: SlideMovieViewModel = hiltViewModel()
-    viewModel.setLanguage(getDeviceLocale())
     val context = LocalContext.current
     val vibrationManager = remember { VibrationUtils(context) }
     val likeButtonAction by viewModel.likeButtonAction.collectAsState()
@@ -109,7 +108,9 @@ fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
         modifier = Modifier
             .statusBarsPadding(),
         topBar = {
-            TopBar()
+            TopBar { filters ->
+                viewModel.onNewFiltersSelected(filters)
+            }
         },
         bottomBar = {
             LikeDislikeBottomSection(
@@ -139,7 +140,8 @@ fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FiltersBottomSheetDialog(
-    showFiltersBottomSheet: MutableState<Boolean>
+    showFiltersBottomSheet: MutableState<Boolean>,
+    onFiltersSelected: (List<Filter<Any>>) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -147,7 +149,10 @@ fun FiltersBottomSheetDialog(
         onDismissRequest = { showFiltersBottomSheet.value = false },
         sheetState = sheetState,
     ) {
-        FiltersScreen()
+        FiltersScreen {
+            onFiltersSelected(it)
+            showFiltersBottomSheet.value = false
+        }
     }
 }
 
@@ -572,8 +577,6 @@ private fun BackButtonRow(onBackClicked: () -> Unit = {}) {
 }
 
 
-
-
 @Composable
 private fun LikeDislikeBottomSection(
     onLikeClicked: () -> Unit,
@@ -609,7 +612,7 @@ private fun LikeDislikeBottomSection(
 }
 
 @Composable
-fun TopBar() {
+fun TopBar(onFiltersSelected: (List<Filter<Any>>) -> Unit = {}) {
 
     val showFiltersBottomSheet = remember { mutableStateOf(false) }
     Row(
@@ -640,7 +643,7 @@ fun TopBar() {
     }
 
     if (showFiltersBottomSheet.value) {
-        FiltersBottomSheetDialog(showFiltersBottomSheet)
+        FiltersBottomSheetDialog(showFiltersBottomSheet, onFiltersSelected)
     }
 }
 

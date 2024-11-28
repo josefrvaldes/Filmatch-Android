@@ -6,6 +6,7 @@ import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SwipeableMovie
+import es.josevaldes.filmatch.utils.DeviceLocaleProvider
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel.Companion.LOADING_THRESHOLD
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel.Companion.NUMBER_OF_VISIBLE_MOVIES
@@ -38,6 +39,7 @@ class SlideMovieResponseViewModelTest {
 
 
     private val movieRepository = mockk<MovieRepository>()
+    private val deviceLocaleProvider = mockk<DeviceLocaleProvider>()
     private lateinit var viewModel: SlideMovieViewModel
 
 
@@ -49,7 +51,9 @@ class SlideMovieResponseViewModelTest {
                 any()
             )
         } returns flowOf(ApiResult.Success(DiscoverMoviesData(listOf(), 1, 1, 1)))
-        viewModel = SlideMovieViewModel(movieRepository)
+        every { deviceLocaleProvider.getDeviceLocale() } returns "en-US"
+        every { deviceLocaleProvider.getDeviceCountry() } returns "US"
+        viewModel = SlideMovieViewModel(movieRepository, deviceLocaleProvider)
     }
 
 

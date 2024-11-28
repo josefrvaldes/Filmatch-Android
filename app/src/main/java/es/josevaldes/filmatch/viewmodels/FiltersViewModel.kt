@@ -8,38 +8,26 @@ import es.josevaldes.data.model.Provider
 import es.josevaldes.data.repositories.GenreRepository
 import es.josevaldes.data.repositories.ProviderRepository
 import es.josevaldes.data.results.ApiResult
+import es.josevaldes.filmatch.model.ContentType
 import es.josevaldes.filmatch.model.Duration
 import es.josevaldes.filmatch.model.Filter
 import es.josevaldes.filmatch.model.OtherFilters
 import es.josevaldes.filmatch.model.Score
+import es.josevaldes.filmatch.utils.DeviceLocaleProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 @HiltViewModel
 class FiltersViewModel @Inject constructor(
     private val genresRepository: GenreRepository,
-    private val providersRepository: ProviderRepository
+    private val providersRepository: ProviderRepository,
+    deviceLocaleProvider: DeviceLocaleProvider
 ) : ViewModel() {
 
-    enum class ContentType(private val displayName: String) {
-        ALL("All"),
-        MOVIES("Movies"),
-        TV_SHOWS("TV Shows");
-
-        override fun toString(): String {
-            return displayName
-        }
-    }
-
-    private val _contentTypes = MutableStateFlow(
-        listOf(
-            Filter(ContentType.ALL, true),
-            Filter(ContentType.MOVIES, false),
-            Filter(ContentType.TV_SHOWS, false)
-        )
-    )
+    private val _contentTypes = MutableStateFlow(OtherFilters.contentTypeFilters.toList())
     val contentTypes = _contentTypes.asStateFlow()
 
     private val _filtersGenre = MutableStateFlow<List<Filter<Genre>>>(listOf())
@@ -52,16 +40,25 @@ class FiltersViewModel @Inject constructor(
     private val _tvGenres = mutableListOf<Filter<Genre>>()
     private val _movieGenres = mutableListOf<Filter<Genre>>()
 
-    private var _fromYear = 0
-    private var _toYear = 0
+    private var _fromYear = MutableStateFlow(2000)
+    val fromYear = _fromYear.asStateFlow()
+    private var _toYear = MutableStateFlow(LocalDateTime.now().year)
+    val toYear = _toYear.asStateFlow()
 
-    private val _scoreFilters = MutableStateFlow(OtherFilters.scoreFilters)
+    private val _scoreFilters = MutableStateFlow(OtherFilters.scoreFilters.toList())
     val scoreFilters = _scoreFilters.asStateFlow()
 
-    private val _timeFilters = MutableStateFlow(OtherFilters.timeFilters)
+    private val _timeFilters = MutableStateFlow(OtherFilters.timeFilters.toList())
     val timeFilters = _timeFilters.asStateFlow()
 
-    fun getAllProviders(language: String, region: String) {
+    init {
+        val language = deviceLocaleProvider.getDeviceLocale()
+        val country = deviceLocaleProvider.getDeviceCountry()
+        getAllGenres()
+        getAllProviders(language, country)
+    }
+
+    private fun getAllProviders(language: String, region: String) {
         viewModelScope.launch {
             providersRepository.getMovieProviders(language, region).collect { result ->
                 if (result is ApiResult.Success) {
@@ -77,7 +74,7 @@ class FiltersViewModel @Inject constructor(
         }
     }
 
-    fun getAllGenres() {
+    private fun getAllGenres() {
         viewModelScope.launch {
             genresRepository.getAllMovieGenres().collect { result ->
                 if (result is ApiResult.Success) {
@@ -231,6 +228,8 @@ class FiltersViewModel @Inject constructor(
         deselectAllFiltersExceptForAllType()
         deselectAllProvidersExceptForAllType()
         contentTypeClicked(_contentTypes.value.first())
+        _toYear.value = LocalDateTime.now().year
+        _fromYear.value = 2000
     }
 
     fun providerClicked(provider: Filter<Provider>) {
@@ -272,11 +271,11 @@ class FiltersViewModel @Inject constructor(
     }
 
     fun fromYearSelected(year: Int) {
-        _fromYear = year
+        _fromYear.value = year
     }
 
     fun toYearSelected(year: Int) {
-        _toYear = year
+        _toYear.value = year
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -302,6 +301,29 @@ class FiltersViewModel @Inject constructor(
         } else {
             _scoreFilters.value = listToProcess as List<Filter<Score>>
         }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun getSelectedFilters(): List<Filter<Any>> {
+        val result = mutableListOf<Filter<Any>>()
+        _contentTypes.value.forEach {
+            if (it.isSelected) result.add(it as Filter<Any>)
+        }
+        _filtersGenre.value.forEach {
+            if (it.isSelected) result.add(it as Filter<Any>)
+        }
+        _providers.value.forEach {
+            if (it.isSelected) result.add(it as Filter<Any>)
+        }
+        _timeFilters.value.forEach {
+            if (it.isSelected) result.add(it as Filter<Any>)
+        }
+        _scoreFilters.value.forEach {
+            if (it.isSelected) result.add(it as Filter<Any>)
+        }
+        result.add(Filter(_fromYear.value, true))
+        result.add(Filter(_toYear.value, true))
+        return result
     }
 
 

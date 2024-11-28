@@ -28,7 +28,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,8 +46,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import es.josevaldes.core.utils.getDeviceCountry
-import es.josevaldes.core.utils.getDeviceLocale
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.model.Duration
 import es.josevaldes.filmatch.model.Filter
@@ -59,23 +56,19 @@ import java.time.LocalDate
 
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-fun FiltersScreen() {
+fun FiltersScreen(onFiltersSelected: (List<Filter<Any>>) -> Unit = {}) {
     val viewModel: FiltersViewModel = hiltViewModel()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
-
-    LaunchedEffect(Unit) {
-        val language = getDeviceLocale()
-        val country = getDeviceCountry()
-        viewModel.getAllGenres()
-        viewModel.getAllProviders(language, country)
-    }
 
     val genres by viewModel.filtersGenre.collectAsState()
     val providers by viewModel.providers.collectAsState()
     val contentTypes by viewModel.contentTypes.collectAsState()
     val scoreFilters by viewModel.scoreFilters.collectAsState()
     val timeFilters by viewModel.timeFilters.collectAsState()
+    val fromYear by viewModel.fromYear.collectAsState()
+    val toYear by viewModel.toYear.collectAsState()
+
     @Suppress("UNCHECKED_CAST")
     val otherFilters: List<Filter<Any>> = (scoreFilters + timeFilters).map { it as Filter<Any> }
 
@@ -140,6 +133,8 @@ fun FiltersScreen() {
 
 
         YearRangeSelector(
+            fromYear = fromYear,
+            toYear = toYear,
             onFromSelected = { viewModel.fromYearSelected(it) },
             onToSelected = { viewModel.toYearSelected(it) }
         )
@@ -165,6 +160,7 @@ fun FiltersScreen() {
 
         Button(
             onClick = {
+                onFiltersSelected(viewModel.getSelectedFilters())
             },
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
@@ -181,20 +177,19 @@ fun FiltersScreen() {
 @Composable
 fun YearRangeSelectorPreview() {
     FilmatchTheme {
-        YearRangeSelector()
+        YearRangeSelector(2000, 2024)
     }
 }
 
 @Composable
 fun YearRangeSelector(
+    fromYear: Int,
+    toYear: Int,
     onFromSelected: (Int) -> Unit = {},
     onToSelected: (Int) -> Unit = {}
 ) {
     val currentYear = LocalDate.now().year
     val allYears = (1940..currentYear).toList()
-
-    var fromYear by remember { mutableIntStateOf(2000) }
-    var toYear by remember { mutableIntStateOf(2024) }
 
     val fromOptions = allYears.filter { it <= toYear }
     val toOptions = allYears.filter { it >= fromYear }
@@ -207,14 +202,14 @@ fun YearRangeSelector(
             label = stringResource(R.string.year_range_selector_from_label),
             years = fromOptions,
             selectedYear = fromYear,
-            onYearSelected = { fromYear = it; onFromSelected(it) }
+            onYearSelected = { onFromSelected(it) }
         )
 
         YearDropdown(
             label = stringResource(R.string.year_range_selector_to_label),
             years = toOptions,
             selectedYear = toYear,
-            onYearSelected = { toYear = it; onToSelected(it) }
+            onYearSelected = { onToSelected(it) }
         )
     }
 }
