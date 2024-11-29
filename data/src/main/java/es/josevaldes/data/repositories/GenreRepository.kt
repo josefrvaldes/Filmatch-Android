@@ -12,12 +12,14 @@ import kotlinx.coroutines.flow.retryWhen
 import javax.inject.Inject
 
 class GenreRepository @Inject constructor(private val _genreService: GenreService) {
-    fun getAllMovieGenres(): Flow<ApiResult<GenresList>> = flow {
+    private fun getAllGenres(type: MovieType): Flow<ApiResult<GenresList>> = flow {
         try {
-            val result =
-                _genreService.getAllMovieGenres()
+            val result = when (type) {
+                MovieType.MOVIE -> _genreService.getAllMovieGenres()
+                MovieType.TVSHOW -> _genreService.getAllTvGenres()
+            }
             if (result is ApiResult.Success) {
-                emit(ApiResult.Success(result.data.toAppModel(MovieType.MOVIE)))
+                emit(ApiResult.Success(result.data.toAppModel(type)))
             } else {
                 emit(result as ApiResult.Error)
             }
@@ -28,18 +30,7 @@ class GenreRepository @Inject constructor(private val _genreService: GenreServic
         attempt < 3
     }
 
-    fun getAllTvGenres(): Flow<ApiResult<GenresList>> = flow {
-        try {
-            val result = _genreService.getAllTvGenres()
-            if (result is ApiResult.Success) {
-                emit(ApiResult.Success(result.data.toAppModel(MovieType.TVSHOW)))
-            } else {
-                emit(result as ApiResult.Error)
-            }
-        } catch (e: Exception) {
-            emit(ApiResult.Error(ApiError.Unknown))
-        }
-    }.retryWhen { _, attempt ->
-        attempt < 3
-    }
+    fun getAllMovieGenres(): Flow<ApiResult<GenresList>> = getAllGenres(MovieType.MOVIE)
+
+    fun getAllTvGenres(): Flow<ApiResult<GenresList>> = getAllGenres(MovieType.TVSHOW)
 }
