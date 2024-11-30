@@ -9,6 +9,8 @@ import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.ContentType
 import es.josevaldes.filmatch.model.Duration
 import es.josevaldes.filmatch.model.Filter
+import es.josevaldes.filmatch.model.OtherFilters
+import es.josevaldes.filmatch.model.Score
 import es.josevaldes.filmatch.utils.DeviceLocaleProvider
 import es.josevaldes.filmatch.viewmodels.FiltersViewModel
 import io.mockk.coEvery
@@ -111,15 +113,6 @@ class FiltersViewModelTest {
     }
 
     @Test
-    fun `contentTypeClicked should update genres based on content type`() {
-        val contentType = Filter(ContentType.TV_SHOWS, true)
-        viewModel.contentTypeClicked(contentType)
-        assertEquals(
-            viewModel.filtersGenre.value,
-            viewModel.filtersGenre.value.filter { it.item is Genre })
-    }
-
-    @Test
     fun `resetFilters should reset all filters to default values`() {
         // Simulate changes
         viewModel.fromYearSelected(2010)
@@ -134,7 +127,7 @@ class FiltersViewModelTest {
 
     @Test
     fun `genreClicked should toggle genre selection`() {
-        val genre = Filter(Genre(1, "Action"), false)
+        val genre = Filter(actionGenre, false)
         viewModel.genreClicked(genre)
 
         val toggledGenre = genre.copy(isSelected = true)
@@ -153,6 +146,7 @@ class FiltersViewModelTest {
     }
 
     @Test
+    @Suppress("UNCHECKED_CAST")
     fun `otherFilterClicked should toggle time filter`() {
         val timeFilter = Filter(Duration(120), false)
         viewModel.otherFilterClicked(timeFilter as Filter<Any>)
@@ -188,5 +182,191 @@ class FiltersViewModelTest {
 
         val selectedFilters = viewModel.getSelectedFilters()
         assertEquals(expectedFilters, selectedFilters)
+    }
+
+
+    @Test
+    fun `genres and providers should handle default, deselect all, and reselect all behaviors correctly`() {
+        // Verify that "All" is selected by default
+        assertTrue(viewModel.filtersGenre.value.first { it.item.id == -1 }.isSelected)
+        assertTrue(viewModel.providers.value.first { it.item.id == -1 }.isSelected)
+
+        // Select a genre (not "All") and verify that "All" gets deselected
+        viewModel.genreClicked(Filter(actionGenre, false))
+        assertFalse(viewModel.filtersGenre.value.first { it.item.id == -1 }.isSelected)
+        assertTrue(viewModel.filtersGenre.value.first { it.item.id == actionGenre.id }.isSelected)
+
+        // Select a provider (not "All") and verify that "All" gets deselected
+        viewModel.providerClicked(
+            Filter(
+                netflixProvider,
+                false,
+                imageUrl = netflixProvider.logoUrl
+            )
+        )
+        assertFalse(viewModel.providers.value.first { it.item.id == -1 }.isSelected)
+        assertTrue(viewModel.providers.value.first { it.item.id == netflixProvider.id }.isSelected)
+
+        // Deselect all genres and verify that "All" is automatically selected
+        viewModel.genreClicked(Filter(actionGenre, true)) // Deselect "Action"
+        assertTrue(viewModel.filtersGenre.value.first { it.item.id == -1 }.isSelected)
+        assertFalse(viewModel.filtersGenre.value.first { it.item.id == actionGenre.id }.isSelected)
+
+        // Deselect all providers and verify that "All" is automatically selected
+        viewModel.providerClicked(
+            Filter(
+                netflixProvider,
+                true,
+                imageUrl = netflixProvider.logoUrl
+            )
+        ) // Deselect "Netflix"
+        assertTrue(viewModel.providers.value.first { it.item.id == -1 }.isSelected)
+        assertFalse(viewModel.providers.value.first { it.item.id == netflixProvider.id }.isSelected)
+    }
+
+    @Test
+    fun `content types should behave like radio buttons`() {
+        // Verify that "All" is selected by default
+        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
+        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
+        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.TV_SHOWS }.isSelected)
+
+        // Select "Movies" and verify that it is selected and "All" is deselected
+        viewModel.contentTypeClicked(Filter(ContentType.MOVIES, false))
+        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
+        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
+        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.TV_SHOWS }.isSelected)
+
+        // Select "TV Shows" and verify that it is selected and "Movies" is deselected
+        viewModel.contentTypeClicked(Filter(ContentType.TV_SHOWS, false))
+        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.TV_SHOWS }.isSelected)
+        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
+        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
+
+        // Select "All" again and verify that it is selected and "TV Shows" is deselected
+        viewModel.contentTypeClicked(Filter(ContentType.ALL, false))
+        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
+        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.TV_SHOWS }.isSelected)
+        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
+
+        // Select "All" again and verify that it remains selected
+        viewModel.contentTypeClicked(
+            Filter(
+                ContentType.ALL,
+                true
+            )
+        ) // Clicking on the already selected item
+        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
+    }
+
+
+    @Test
+    fun `genres should update and retain selection states when switching between content types`() {
+        // Initial state: "All" is selected by default
+        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
+
+        // Verify merged genres (unique genres from both TV and Movies) when "All" is selected
+        val expectedAllGenres = listOf(
+            Filter(actionGenre, false),
+            Filter(comedyGenre, false),
+            Filter(dramaGenre, false),
+            Filter(tvOnlyGenre, false),
+            Filter(movieOnlyGenre, false)
+        ).sortedBy { it.item.name }
+            .toMutableList().apply { add(0, Filter(allGenre, true)) }
+        assertEquals(expectedAllGenres, viewModel.filtersGenre.value)
+
+        // Switch to "TV Shows" and verify only TV genres are displayed
+        viewModel.contentTypeClicked(Filter(ContentType.TV_SHOWS, false))
+        val expectedTvGenres = listOf(
+            Filter(actionGenre, false),
+            Filter(comedyGenre, false),
+            Filter(dramaGenre, false),
+            Filter(tvOnlyGenre, false)
+        ).sortedBy { it.item.name }
+            .toMutableList().apply { add(0, Filter(allGenre, true)) }
+        assertEquals(expectedTvGenres, viewModel.filtersGenre.value)
+
+        // Select a genre specific to TV (e.g., "TvOnlyGenre")
+        viewModel.genreClicked(Filter(tvOnlyGenre, false)) // Select "TvOnlyGenre"
+        assertTrue(viewModel.filtersGenre.value.first { it.item.id == tvOnlyGenre.id }.isSelected)
+
+        // Switch to "Movies" and verify only Movie genres are displayed
+        viewModel.contentTypeClicked(Filter(ContentType.MOVIES, false))
+        val expectedMovieGenres = listOf(
+            Filter(actionGenre, false),
+            Filter(comedyGenre, false),
+            Filter(dramaGenre, false),
+            Filter(movieOnlyGenre, false)
+        ).sortedBy { it.item.name }
+            .toMutableList().apply { add(0, Filter(allGenre, true)) }
+        assertEquals(expectedMovieGenres, viewModel.filtersGenre.value)
+
+        // Select a genre specific to Movies (e.g., "MovieOnlyGenre")
+        viewModel.genreClicked(Filter(movieOnlyGenre, false)) // Select "MovieOnlyGenre"
+        assertTrue(viewModel.filtersGenre.value.first { it.item.id == movieOnlyGenre.id }.isSelected)
+
+        // Switch back to "TV Shows" and verify "TvOnlyGenre" is still selected
+        viewModel.contentTypeClicked(Filter(ContentType.TV_SHOWS, false))
+        assertTrue(viewModel.filtersGenre.value.first { it.item.id == tvOnlyGenre.id }.isSelected)
+
+        // Switch back to "All" and verify merged genres retain their states
+        val expectedMergedGenresWithSelection = listOf(
+            Filter(actionGenre, false),
+            Filter(comedyGenre, false),
+            Filter(dramaGenre, false),
+            Filter(tvOnlyGenre, true), // Still selected
+            Filter(movieOnlyGenre, true) // Still selected
+        ).sortedBy { it.item.name }
+            .toMutableList().apply { add(0, Filter(allGenre, false)) }
+        viewModel.contentTypeClicked(Filter(ContentType.ALL, false))
+        assertEquals(expectedMergedGenresWithSelection, viewModel.filtersGenre.value)
+    }
+
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun `otherFilterClicked should allow only one filter per type to be selected at a time`() {
+        // Select a duration (95 minutes) and verify it's the only selected one
+        val duration95 = OtherFilters.timeFilters[0]
+        viewModel.otherFilterClicked(duration95 as Filter<Any>)
+        assertTrue(viewModel.timeFilters.value.first { it.item == Duration(95) }.isSelected)
+        assertFalse(viewModel.timeFilters.value.any { it.item != Duration(95) && it.isSelected })
+
+        // Select another duration (120 minutes) and verify the previous one is deselected
+        val duration120 = OtherFilters.timeFilters[1]
+        viewModel.otherFilterClicked(duration120 as Filter<Any>)
+        assertTrue(viewModel.timeFilters.value.first { it.item == Duration(120) }.isSelected)
+        assertFalse(viewModel.timeFilters.value.any { it.item == Duration(95) && it.isSelected })
+
+        // Deselect the current duration (120 minutes) and verify none are selected
+        viewModel.otherFilterClicked(duration120 as Filter<Any>)
+        assertFalse(viewModel.timeFilters.value.any { it.isSelected })
+
+        // Select a score (50%) and verify it's the only selected one
+        val score50 = OtherFilters.scoreFilters[0]
+        viewModel.otherFilterClicked(score50 as Filter<Any>)
+        assertTrue(viewModel.scoreFilters.value.first { it.item == Score(50) }.isSelected)
+        assertFalse(viewModel.scoreFilters.value.any { it.item != Score(50) && it.isSelected })
+
+        // Select another score (75%) and verify the previous one is deselected
+        val score75 = OtherFilters.scoreFilters[1]
+        viewModel.otherFilterClicked(score75 as Filter<Any>)
+        assertTrue(viewModel.scoreFilters.value.first { it.item == Score(75) }.isSelected)
+        assertFalse(viewModel.scoreFilters.value.any { it.item == Score(50) && it.isSelected })
+
+        // Deselect the current score (75%) and verify none are selected
+        viewModel.otherFilterClicked(score75 as Filter<Any>)
+        assertFalse(viewModel.scoreFilters.value.any { it.isSelected })
+
+        // Ensure that selecting a duration does not affect scores
+        viewModel.otherFilterClicked(duration95 as Filter<Any>)
+        assertTrue(viewModel.timeFilters.value.first { it.item == Duration(95) }.isSelected)
+        assertFalse(viewModel.scoreFilters.value.any { it.isSelected })
+
+        // Ensure that selecting a score does not affect durations
+        viewModel.otherFilterClicked(score50 as Filter<Any>)
+        assertTrue(viewModel.scoreFilters.value.first { it.item == Score(50) }.isSelected)
+        assertTrue(viewModel.timeFilters.value.first { it.item == Duration(95) }.isSelected)
     }
 }
