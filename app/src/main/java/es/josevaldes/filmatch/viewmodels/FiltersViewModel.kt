@@ -1,5 +1,6 @@
 package es.josevaldes.filmatch.viewmodels
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -58,7 +59,8 @@ class FiltersViewModel @Inject constructor(
         getAllProviders(language, country)
     }
 
-    private fun getAllProviders(language: String, region: String) {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun getAllProviders(language: String, region: String) {
         viewModelScope.launch {
             providersRepository.getMovieProviders(language, region).collect { result ->
                 if (result is ApiResult.Success) {
@@ -74,7 +76,8 @@ class FiltersViewModel @Inject constructor(
         }
     }
 
-    private fun getAllGenres() {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun getAllGenres() {
         viewModelScope.launch {
             genresRepository.getAllMovieGenres().collect { result ->
                 if (result is ApiResult.Success) {

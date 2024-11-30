@@ -35,7 +35,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], manifest = Config.NONE)
-class SlideMovieResponseViewModelTest {
+class SlideMovieViewModelTest {
 
 
     private val movieRepository = mockk<MovieRepository>()
