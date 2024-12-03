@@ -227,44 +227,32 @@ class FiltersViewModelTest {
 
     @Test
     fun `content types should behave like radio buttons`() {
-        // Verify that "All" is selected by default
-        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
-        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
-        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.TV_SHOWS }.isSelected)
-
-        // Select "Movies" and verify that it is selected and "All" is deselected
-        viewModel.contentTypeClicked(Filter(ContentType.MOVIES, false))
+        // Verify that "Movies" is selected by default
         assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
-        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
         assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.TV_SHOWS }.isSelected)
 
         // Select "TV Shows" and verify that it is selected and "Movies" is deselected
         viewModel.contentTypeClicked(Filter(ContentType.TV_SHOWS, false))
         assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.TV_SHOWS }.isSelected)
         assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
-        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
 
-        // Select "All" again and verify that it is selected and "TV Shows" is deselected
-        viewModel.contentTypeClicked(Filter(ContentType.ALL, false))
-        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
+        // Select "Movies" again and verify that it is selected and "TV Shows" is deselected
+        viewModel.contentTypeClicked(Filter(ContentType.MOVIES, false))
         assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.TV_SHOWS }.isSelected)
-        assertFalse(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
+        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
 
-        // Select "All" again and verify that it remains selected
-        viewModel.contentTypeClicked(
-            Filter(
-                ContentType.ALL,
-                true
-            )
-        ) // Clicking on the already selected item
-        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
+        // Select "Movies" again and verify that it remains selected
+        // Clicking on the already selected item
+        viewModel.contentTypeClicked(Filter(ContentType.MOVIES, true))
+
+        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
     }
 
 
     @Test
     fun `genres should update and retain selection states when switching between content types`() {
         // Initial state: "All" is selected by default
-        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.ALL }.isSelected)
+        assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
 
         // Verify merged genres (unique genres from both TV and Movies) when "All" is selected
         val expectedAllGenres = listOf(
@@ -316,11 +304,10 @@ class FiltersViewModelTest {
             Filter(actionGenre, false),
             Filter(comedyGenre, false),
             Filter(dramaGenre, false),
-            Filter(tvOnlyGenre, true), // Still selected
             Filter(movieOnlyGenre, true) // Still selected
         ).sortedBy { it.item.name }
             .toMutableList().apply { add(0, Filter(allGenre, false)) }
-        viewModel.contentTypeClicked(Filter(ContentType.ALL, false))
+        viewModel.contentTypeClicked(Filter(ContentType.MOVIES, false))
         assertEquals(expectedMergedGenresWithSelection, viewModel.filtersGenre.value)
     }
 

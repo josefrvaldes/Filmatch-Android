@@ -38,10 +38,12 @@ class MovieRepository @Inject constructor(
 
     fun getDiscoverMovies(
         page: Int,
-        language: String?,
+        language: String,
         filters: MovieFilters
     ): Flow<ApiResult<DiscoverMoviesData>> = flow {
+
         try {
+            val country = language.substring(language.indexOf("-") + 1)
             val result = when (filters.contentType) {
                 ContentType.MOVIES -> _movieService.getDiscoverMovies(
                     page = page,
@@ -49,6 +51,7 @@ class MovieRepository @Inject constructor(
                     sortBy = filters.sortBy,
                     withGenres = filters.genres?.joinToString(",") { it.id.toString() },
                     withProviders = filters.providers?.joinToString(",") { it.id.toString() },
+                    watchRegion = country,
                     withReleaseYearFrom = filters.yearFrom.toString(),
                     withReleaseYearTo = filters.yearTo.toString(),
                     withVoteAverageGte = filters.score?.score,
@@ -61,6 +64,7 @@ class MovieRepository @Inject constructor(
                     sortBy = filters.sortBy,
                     withGenres = filters.genres?.joinToString(",") { it.id.toString() },
                     withProviders = filters.providers?.joinToString(",") { it.id.toString() },
+                    watchRegion = country,
                     withReleaseYearFrom = filters.yearFrom.toString(),
                     withReleaseYearTo = filters.yearTo.toString(),
                     withVoteAverageGte = filters.score?.score,
