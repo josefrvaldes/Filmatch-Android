@@ -1,16 +1,17 @@
 package es.josevaldes.filmatch
 
+import es.josevaldes.data.model.ContentType
+import es.josevaldes.data.model.Duration
+import es.josevaldes.data.model.Filter
 import es.josevaldes.data.model.Genre
 import es.josevaldes.data.model.GenresList
+import es.josevaldes.data.model.MovieFilters
+import es.josevaldes.data.model.OtherFilters
 import es.josevaldes.data.model.Provider
+import es.josevaldes.data.model.Score
 import es.josevaldes.data.repositories.GenreRepository
 import es.josevaldes.data.repositories.ProviderRepository
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.filmatch.model.ContentType
-import es.josevaldes.filmatch.model.Duration
-import es.josevaldes.filmatch.model.Filter
-import es.josevaldes.filmatch.model.OtherFilters
-import es.josevaldes.filmatch.model.Score
 import es.josevaldes.filmatch.utils.DeviceLocaleProvider
 import es.josevaldes.filmatch.viewmodels.FiltersViewModel
 import io.mockk.coEvery
@@ -157,12 +158,12 @@ class FiltersViewModelTest {
 
     @Test
     fun `getSelectedFilters should return all selected filters`() {
-        val expectedFilters = listOf(
-            Filter(ContentType.MOVIES, true),
-            Filter(actionGenre, true),
-            Filter(netflixProvider, true, imageUrl = netflixProvider.logoUrl),
-            Filter(2000, true), // from
-            Filter(2020, true) // to
+        val expectedFilters = MovieFilters(
+            contentType = ContentType.MOVIES,
+            genres = listOf(actionGenre),
+            providers = listOf(netflixProvider),
+            yearFrom = 2000,
+            yearTo = 2020
         )
         // any whateverClicked is expecting to receive the value isSelected untouched, and
         // the method will toggle it. So for example, if the filter is selected, it will be
@@ -346,14 +347,14 @@ class FiltersViewModelTest {
         // Select a score (50%) and verify it's the only selected one
         val score50 = OtherFilters.scoreFilters[0]
         viewModel.otherFilterClicked(score50 as Filter<Any>)
-        assertTrue(viewModel.scoreFilters.value.first { it.item == Score(50) }.isSelected)
-        assertFalse(viewModel.scoreFilters.value.any { it.item != Score(50) && it.isSelected })
+        assertTrue(viewModel.scoreFilters.value.first { it.item == Score(5f) }.isSelected)
+        assertFalse(viewModel.scoreFilters.value.any { it.item != Score(5f) && it.isSelected })
 
         // Select another score (75%) and verify the previous one is deselected
         val score75 = OtherFilters.scoreFilters[1]
         viewModel.otherFilterClicked(score75 as Filter<Any>)
-        assertTrue(viewModel.scoreFilters.value.first { it.item == Score(75) }.isSelected)
-        assertFalse(viewModel.scoreFilters.value.any { it.item == Score(50) && it.isSelected })
+        assertTrue(viewModel.scoreFilters.value.first { it.item == Score(7.5f) }.isSelected)
+        assertFalse(viewModel.scoreFilters.value.any { it.item == Score(5f) && it.isSelected })
 
         // Deselect the current score (75%) and verify none are selected
         viewModel.otherFilterClicked(score75 as Filter<Any>)
@@ -366,7 +367,7 @@ class FiltersViewModelTest {
 
         // Ensure that selecting a score does not affect durations
         viewModel.otherFilterClicked(score50 as Filter<Any>)
-        assertTrue(viewModel.scoreFilters.value.first { it.item == Score(50) }.isSelected)
+        assertTrue(viewModel.scoreFilters.value.first { it.item == Score(5f) }.isSelected)
         assertTrue(viewModel.timeFilters.value.first { it.item == Duration(95) }.isSelected)
     }
 }

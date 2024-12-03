@@ -12,9 +12,14 @@ interface MovieService {
     suspend fun getDiscoverMovies(
         @Query("page") page: Int,
         @Query("language") language: String? = "en-US",
-        @Query("sort_by") sortBy: String? = "popularity.desc"
+        @Query("sort_by") sortBy: String? = "popularity.desc",
+        @Query("with_genres") withGenres: String? = null,
+        @Query("with_watch_providers") withProviders: String? = null,
+        @Query("primary_release_date.gte") withReleaseYearFrom: String? = null,
+        @Query("primary_release_date.lte") withReleaseYearTo: String? = null,
+        @Query("vote_average.gte") withVoteAverageGte: Float? = null,
+        @Query("with_runtime.lte") withDuration: Int? = null,
     ): ApiResult<DiscoverMoviesResponse>
-
 
     @GET("/3/movie/{id}?append_to_response=credits,videos")
     suspend fun findById(

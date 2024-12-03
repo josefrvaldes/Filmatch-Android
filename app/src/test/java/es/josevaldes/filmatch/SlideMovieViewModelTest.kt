@@ -48,6 +48,7 @@ class SlideMovieViewModelTest {
         coEvery {
             movieRepository.getDiscoverMovies(
                 any(),
+                any(),
                 any()
             )
         } returns flowOf(ApiResult.Success(DiscoverMoviesData(listOf(), 1, 1, 1)))
@@ -59,21 +60,21 @@ class SlideMovieViewModelTest {
 
     @Test
     fun `onLikeButtonClicked should modify swipeAction to LIKE`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any()) } returns mockk()
+        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
         viewModel.onLikeButtonClicked()
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
     }
 
     @Test
     fun `onDislikeButtonClicked should modify swipeAction to DISLIKE`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any()) } returns mockk()
+        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
         viewModel.onDislikeButtonClicked()
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
     }
 
     @Test
     fun `clearLikeButtonAction should modify likeButtonAction to null`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any()) } returns mockk()
+        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
         viewModel.clearLikeButtonAction()
         assert(viewModel.likeButtonAction.value == null)
     }
@@ -114,6 +115,7 @@ class SlideMovieViewModelTest {
             )
             coEvery {
                 movieRepository.getDiscoverMovies(
+                    any(),
                     any(),
                     any()
                 )
@@ -164,6 +166,7 @@ class SlideMovieViewModelTest {
             coEvery {
                 movieRepository.getDiscoverMovies(
                     any(),
+                    any(),
                     any()
                 )
             } returns flowOf(ApiResult.Error(ApiError.Unknown))
@@ -197,6 +200,7 @@ class SlideMovieViewModelTest {
             )
             coEvery {
                 movieRepository.getDiscoverMovies(
+                    any(),
                     any(),
                     any()
                 )

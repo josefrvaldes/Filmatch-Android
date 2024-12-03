@@ -1,4 +1,4 @@
-package es.josevaldes.filmatch.model
+package es.josevaldes.data.model
 
 data class Filter<T>(
     val item: T,

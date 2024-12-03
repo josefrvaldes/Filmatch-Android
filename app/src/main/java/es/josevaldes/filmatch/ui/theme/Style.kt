@@ -26,7 +26,7 @@ fun getWelcomeScreenInputFieldColors() = OutlinedTextFieldDefaults.colors(
 
 @Composable
 fun getDefaultAccentButtonColors() = ButtonDefaults.buttonColors(
-    contentColor = MaterialTheme.colorScheme.onSurface,
+    contentColor = MaterialTheme.colorScheme.onTertiary,
     disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
     disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)

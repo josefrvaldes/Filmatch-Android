@@ -4,14 +4,9 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import es.josevaldes.data.model.Genre
-import es.josevaldes.data.model.Provider
+import es.josevaldes.data.model.MovieFilters
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.filmatch.model.ContentType
-import es.josevaldes.filmatch.model.Duration
-import es.josevaldes.filmatch.model.Filter
-import es.josevaldes.filmatch.model.Score
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.utils.DeviceLocaleProvider
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -32,6 +27,9 @@ class SlideMovieViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
+
+    private var _movieFilters = MutableStateFlow(MovieFilters())
+
 
     private val _movieThatWillBeObservableNext = MutableStateFlow<SwipeableMovie?>(null)
     val movieThatWillBeObservableNext = _movieThatWillBeObservableNext.asStateFlow()
@@ -81,23 +79,24 @@ class SlideMovieViewModel @Inject constructor(
     internal fun loadCurrentPage() {
         viewModelScope.launch {
             _isLoading.value = true
-            movieRepository.getDiscoverMovies(currentPage, _language).collect { result ->
-                _isLoading.value = false
-                if (result is ApiResult.Success) {
-                    pages = result.data.totalPages
+            movieRepository.getDiscoverMovies(currentPage, _language, _movieFilters.value)
+                .collect { result ->
                     _isLoading.value = false
-                    val swipeableMovies = result.data.results.map { SwipeableMovie(it) }
-                    initializeMovies(swipeableMovies)
-                    _movieListFlow.value.addAll(swipeableMovies)
-                    if (_observableMovies.value.isEmpty()) {
-                        refillObservableList()
-                        getMovieThatWillBeObservableNext()
+                    if (result is ApiResult.Success) {
+                        pages = result.data.totalPages
+                        _isLoading.value = false
+                        val swipeableMovies = result.data.results.map { SwipeableMovie(it) }
+                        initializeMovies(swipeableMovies)
+                        _movieListFlow.value.addAll(swipeableMovies)
+                        if (_observableMovies.value.isEmpty()) {
+                            refillObservableList()
+                            getMovieThatWillBeObservableNext()
+                        }
+                        return@collect
+                    } else {
+                        _errorMessage.emit(result as ApiResult.Error)
                     }
-                    return@collect
-                } else {
-                    _errorMessage.emit(result as ApiResult.Error)
                 }
-            }
         }
     }
 
@@ -166,47 +165,12 @@ class SlideMovieViewModel @Inject constructor(
     fun clearLikeButtonAction() {
         _likeButtonAction.value = null
     }
-
-    private val _contentTypeFilters = mutableListOf<Filter<ContentType>>()
-    private val _genresFilters = mutableListOf<Filter<Genre>>()
-    private val _providersFilters = mutableListOf<Filter<Provider>>()
-    private var _yearFrom: Int? = null
-    private var _yearTo: Int? = null
-    private val _durationFilters = mutableListOf<Filter<Duration>>()
-    private val _scoreFilters = mutableListOf<Filter<Score>>()
-
-    private fun clearAllFilters() {
-        _contentTypeFilters.clear()
-        _genresFilters.clear()
-        _providersFilters.clear()
-        _yearFrom = null
-        _yearTo = null
-        _durationFilters.clear()
-        _scoreFilters.clear()
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun onNewFiltersSelected(filters: List<Filter<*>>) {
-        clearAllFilters()
-        filters.forEach {
-            when (it.item) {
-                is ContentType -> _contentTypeFilters.add(it as Filter<ContentType>)
-                is Genre -> _genresFilters.add(it as Filter<Genre>)
-                is Provider -> _providersFilters.add(it as Filter<Provider>)
-                is Duration -> _durationFilters.add(it as Filter<Duration>)
-                is Score -> _scoreFilters.add(it as Filter<Score>)
-                is Int -> {
-                    // these values come in this order: yearFrom, yearTo
-                    // so first, we will assign yearFrom, then yearTo.
-                    // If the code that sends these values changes, this code will need to be updated.
-                    if (_yearFrom == null) {
-                        _yearFrom = it.item
-                    } else {
-                        _yearTo = it.item
-                    }
-                }
-            }
-        }
-        print("")
+    
+    fun onNewFiltersSelected(movieFilters: MovieFilters) {
+        _movieFilters.value = movieFilters
+        currentPage = 1
+        _movieListFlow.value = mutableListOf()
+        _observableMovies.value = mutableListOf()
+        loadCurrentPage()
     }
 }

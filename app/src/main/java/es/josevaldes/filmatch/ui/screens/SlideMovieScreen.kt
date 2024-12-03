@@ -72,10 +72,10 @@ import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import es.josevaldes.data.model.Movie
+import es.josevaldes.data.model.MovieFilters
 import es.josevaldes.data.model.User
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.errors.ErrorMessageWrapper
-import es.josevaldes.filmatch.model.Filter
 import es.josevaldes.filmatch.model.MovieSwipedStatus
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.ui.theme.BackButtonBackground
@@ -141,7 +141,7 @@ fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
 @Composable
 fun FiltersBottomSheetDialog(
     showFiltersBottomSheet: MutableState<Boolean>,
-    onFiltersSelected: (List<Filter<Any>>) -> Unit = {}
+    onFiltersSelected: (MovieFilters) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -612,7 +612,7 @@ private fun LikeDislikeBottomSection(
 }
 
 @Composable
-fun TopBar(onFiltersSelected: (List<Filter<Any>>) -> Unit = {}) {
+fun TopBar(onFiltersSelected: (MovieFilters) -> Unit = {}) {
 
     val showFiltersBottomSheet = remember { mutableStateOf(false) }
     Row(

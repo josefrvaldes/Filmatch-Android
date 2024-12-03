@@ -46,9 +46,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import es.josevaldes.data.model.Duration
+import es.josevaldes.data.model.Filter
+import es.josevaldes.data.model.MovieFilters
+import es.josevaldes.data.model.Score
 import es.josevaldes.filmatch.R
-import es.josevaldes.filmatch.model.Duration
-import es.josevaldes.filmatch.model.Filter
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 import es.josevaldes.filmatch.viewmodels.FiltersViewModel
@@ -56,7 +58,7 @@ import java.time.LocalDate
 
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-fun FiltersScreen(onFiltersSelected: (List<Filter<Any>>) -> Unit = {}) {
+fun FiltersScreen(onFiltersSelected: (MovieFilters) -> Unit = {}) {
     val viewModel: FiltersViewModel = hiltViewModel()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -150,7 +152,8 @@ fun FiltersScreen(onFiltersSelected: (List<Filter<Any>>) -> Unit = {}) {
             if (it.item is Duration) {
                 context.getString(R.string.filter_duration_string, it.item)
             } else {
-                context.getString(R.string.filter_score_string, it.item)
+                val intScore = ((it.item as Score).score * 10).toInt().toString()
+                context.getString(R.string.filter_score_string, intScore)
             }
         }) {
             viewModel.otherFilterClicked(it)

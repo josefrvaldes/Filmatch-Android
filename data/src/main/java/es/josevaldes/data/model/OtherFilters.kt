@@ -1,4 +1,4 @@
-package es.josevaldes.filmatch.model
+package es.josevaldes.data.model
 
 
 enum class ContentType(private val displayName: String) {
@@ -12,7 +12,7 @@ enum class ContentType(private val displayName: String) {
 }
 
 data class Score(
-    val score: Int
+    val score: Float
 ) {
     override fun toString(): String {
         return score.toString()
@@ -38,8 +38,8 @@ class OtherFilters {
             get() = _timeFilters
 
         private val _scoreFilters = listOf(
-            Filter(Score(50), false),
-            Filter(Score(75), false),
+            Filter(Score(5f), false),
+            Filter(Score(7.5f), false),
         )
         val scoreFilters: List<Filter<Score>>
             get() = _scoreFilters

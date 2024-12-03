@@ -4,16 +4,17 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import es.josevaldes.data.model.ContentType
+import es.josevaldes.data.model.Duration
+import es.josevaldes.data.model.Filter
 import es.josevaldes.data.model.Genre
+import es.josevaldes.data.model.MovieFilters
+import es.josevaldes.data.model.OtherFilters
 import es.josevaldes.data.model.Provider
+import es.josevaldes.data.model.Score
 import es.josevaldes.data.repositories.GenreRepository
 import es.josevaldes.data.repositories.ProviderRepository
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.filmatch.model.ContentType
-import es.josevaldes.filmatch.model.Duration
-import es.josevaldes.filmatch.model.Filter
-import es.josevaldes.filmatch.model.OtherFilters
-import es.josevaldes.filmatch.model.Score
 import es.josevaldes.filmatch.utils.DeviceLocaleProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -306,27 +307,25 @@ class FiltersViewModel @Inject constructor(
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
-    fun getSelectedFilters(): List<Filter<Any>> {
-        val result = mutableListOf<Filter<Any>>()
-        _contentTypes.value.forEach {
-            if (it.isSelected) result.add(it as Filter<Any>)
-        }
-        _filtersGenre.value.forEach {
-            if (it.isSelected) result.add(it as Filter<Any>)
-        }
-        _providers.value.forEach {
-            if (it.isSelected) result.add(it as Filter<Any>)
-        }
-        _timeFilters.value.forEach {
-            if (it.isSelected) result.add(it as Filter<Any>)
-        }
-        _scoreFilters.value.forEach {
-            if (it.isSelected) result.add(it as Filter<Any>)
-        }
-        result.add(Filter(_fromYear.value, true))
-        result.add(Filter(_toYear.value, true))
-        return result
+    fun getSelectedFilters(): MovieFilters {
+        val selectedContentType = _contentTypes.value.firstOrNull { it.isSelected }?.item
+        val selectedGenres =
+            _filtersGenre.value.filter { it.isSelected && it.item.id >= 0 }.map { it.item }
+        val selectedProviders =
+            _providers.value.filter { it.isSelected && it.item.id >= 0 }.map { it.item }
+        val selectedDuration = _timeFilters.value.firstOrNull { it.isSelected }?.item
+        val selectedScore = _scoreFilters.value.firstOrNull { it.isSelected }?.item
+
+        return MovieFilters(
+            contentType = selectedContentType ?: ContentType.ALL,
+            genres = selectedGenres,
+            providers = selectedProviders,
+            duration = selectedDuration,
+            score = selectedScore,
+            yearFrom = _fromYear.value,
+            yearTo = _toYear.value,
+            sortBy = "popularity.desc"
+        )
     }
 
 
