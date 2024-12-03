@@ -1,7 +1,7 @@
 package es.josevaldes.data.model
 
 data class MovieFilters(
-    val contentType: ContentType = ContentType.ALL,
+    val contentType: ContentType = ContentType.MOVIES,
     val genres: List<Genre>? = null,
     val providers: List<Provider>? = null,
     val duration: Duration? = null,

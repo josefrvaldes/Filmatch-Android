@@ -2,6 +2,7 @@ package es.josevaldes.data.repositories
 
 import androidx.paging.Pager
 import es.josevaldes.data.extensions.mappers.toAppModel
+import es.josevaldes.data.model.ContentType
 import es.josevaldes.data.model.DiscoverMoviesData
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.model.MovieFilters
@@ -41,17 +42,31 @@ class MovieRepository @Inject constructor(
         filters: MovieFilters
     ): Flow<ApiResult<DiscoverMoviesData>> = flow {
         try {
-            val result = _movieService.getDiscoverMovies(
-                page = page,
-                language = language,
-                sortBy = filters.sortBy,
-                withGenres = filters.genres?.joinToString(",") { it.id.toString() },
-                withProviders = filters.providers?.joinToString(",") { it.id.toString() },
-                withReleaseYearFrom = filters.yearFrom.toString(),
-                withReleaseYearTo = filters.yearTo.toString(),
-                withVoteAverageGte = filters.score?.score,
-                withDuration = filters.duration?.duration
-            )
+            val result = when (filters.contentType) {
+                ContentType.MOVIES -> _movieService.getDiscoverMovies(
+                    page = page,
+                    language = language,
+                    sortBy = filters.sortBy,
+                    withGenres = filters.genres?.joinToString(",") { it.id.toString() },
+                    withProviders = filters.providers?.joinToString(",") { it.id.toString() },
+                    withReleaseYearFrom = filters.yearFrom.toString(),
+                    withReleaseYearTo = filters.yearTo.toString(),
+                    withVoteAverageGte = filters.score?.score,
+                    withDuration = filters.duration?.duration
+                )
+
+                ContentType.TV_SHOWS -> _movieService.getDiscoverTV(
+                    page = page,
+                    language = language,
+                    sortBy = filters.sortBy,
+                    withGenres = filters.genres?.joinToString(",") { it.id.toString() },
+                    withProviders = filters.providers?.joinToString(",") { it.id.toString() },
+                    withReleaseYearFrom = filters.yearFrom.toString(),
+                    withReleaseYearTo = filters.yearTo.toString(),
+                    withVoteAverageGte = filters.score?.score,
+                    withDuration = filters.duration?.duration
+                )
+            }
             if (result is ApiResult.Success) {
                 emit(ApiResult.Success(result.data.toAppModel(MovieType.MOVIE)))
             } else {

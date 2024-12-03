@@ -84,9 +84,8 @@ class FiltersViewModel @Inject constructor(
                 if (result is ApiResult.Success) {
                     _movieGenres.add(Filter(Genre(-1, "All"), true))
                     _movieGenres.addAll(result.data.genres.map { Filter(it, false) })
-                    _filtersGenre.value = mergeGenresList()
                 } else {
-                    // TODO: Handle error
+                    _movieGenres.clear()
                 }
             }
 
@@ -94,11 +93,12 @@ class FiltersViewModel @Inject constructor(
                 if (result is ApiResult.Success) {
                     _tvGenres.add(Filter(Genre(-1, "All"), true))
                     _tvGenres.addAll(result.data.genres.map { Filter(it, false) })
-                    _filtersGenre.value = mergeGenresList()
                 } else {
-                    // TODO: Handle error
+                    _tvGenres.clear()
                 }
             }
+            _filtersGenre.value = mergeGenresList()
+
         }
     }
 
@@ -132,10 +132,6 @@ class FiltersViewModel @Inject constructor(
         _contentTypes.value = types
 
         when (contentType.item) {
-            ContentType.ALL -> {
-                _filtersGenre.value = mergeGenresList()
-            }
-
             ContentType.MOVIES -> {
                 _filtersGenre.value = _movieGenres.toList()
             }
@@ -317,7 +313,7 @@ class FiltersViewModel @Inject constructor(
         val selectedScore = _scoreFilters.value.firstOrNull { it.isSelected }?.item
 
         return MovieFilters(
-            contentType = selectedContentType ?: ContentType.ALL,
+            contentType = selectedContentType ?: ContentType.MOVIES,
             genres = selectedGenres,
             providers = selectedProviders,
             duration = selectedDuration,

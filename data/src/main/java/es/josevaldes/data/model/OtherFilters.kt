@@ -2,7 +2,6 @@ package es.josevaldes.data.model
 
 
 enum class ContentType(private val displayName: String) {
-    ALL("All"),
     MOVIES("Movies"),
     TV_SHOWS("TV Shows");
 
@@ -45,8 +44,7 @@ class OtherFilters {
             get() = _scoreFilters
 
         private val _contentTypeFilters = listOf(
-            Filter(ContentType.ALL, true),
-            Filter(ContentType.MOVIES, false),
+            Filter(ContentType.MOVIES, true),
             Filter(ContentType.TV_SHOWS, false)
         )
         val contentTypeFilters: List<Filter<ContentType>>
