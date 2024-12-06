@@ -56,6 +56,20 @@ import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 import es.josevaldes.filmatch.viewmodels.FiltersViewModel
 import java.time.LocalDate
 
+private val itemWidth = 120.dp
+private val itemHeight = 50.dp
+
+@Composable
+fun Modifier.filterBoxStyle(color: Color = MaterialTheme.colorScheme.outlineVariant): Modifier {
+    return this
+        .width(itemWidth)
+        .height(itemHeight)
+        .border(
+            BorderStroke(1.5.dp, color),
+            RoundedCornerShape(4.dp)
+        )
+}
+
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 fun FiltersScreen(onFiltersSelected: (MovieFilters) -> Unit = {}) {
@@ -176,7 +190,27 @@ fun FiltersScreen(onFiltersSelected: (MovieFilters) -> Unit = {}) {
     }
 }
 
-@Preview
+@Preview(
+    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_NO,
+    showBackground = true,
+    name = "Light Mode",
+
+    )
+@Composable
+fun HorizontalScrollGridPreview() {
+    FilmatchTheme(darkTheme = true) {
+        HorizontalScrollGrid(
+            listOf(
+                Filter(Score(5f), false), Filter(Score(7.5f), false)
+            )
+        )
+    }
+}
+
+@Preview(
+    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_NO,
+    showBackground = true,
+)
 @Composable
 fun YearRangeSelectorPreview() {
     FilmatchTheme {
@@ -226,7 +260,7 @@ fun YearDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
-    val menuItemHeight = 48.dp
+    val menuItemHeight = itemHeight
     val density = LocalDensity.current
     val menuItemInPx = remember {
         with(density) { menuItemHeight.toPx() }
@@ -243,13 +277,14 @@ fun YearDropdown(
         }
     }
 
-    Box {
+    Box(
+        modifier = Modifier
+            .clickable { expanded = true }
+            .filterBoxStyle(),
+        contentAlignment = Alignment.Center
+    ) {
         Text(
-            text = "$label: $selectedYear",
-            modifier = Modifier
-                .clickable { expanded = true }
-                .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(4.dp))
-                .padding(8.dp)
+            text = "$label: $selectedYear"
         )
 
         DropdownMenu(
@@ -393,14 +428,8 @@ private fun <T> FilterListItem(
     }
     Box(
         modifier = Modifier
-            .width(100.dp)
-            .height(44.dp)
-            .border(
-                1.5.dp,
-                color,
-                RoundedCornerShape(4.dp)
-            )
-            .clickable { onItemClicked(item) },
+            .clickable { onItemClicked(item) }
+            .filterBoxStyle(color),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -421,10 +450,3 @@ private fun <T> FilterListItem(
 }
 
 
-@Preview
-@Composable
-fun FiltersScreenPreview() {
-    FilmatchTheme(darkTheme = true) {
-        FiltersScreen()
-    }
-}
