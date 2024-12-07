@@ -102,4 +102,18 @@
     <string name="error_couldn_t_fetch_token">Couldn\'t fetch token</string>
     <string name="error_cancelled_by_user">Cancelled by user</string>
     <string name="error_email_is_not_valid">Email is not valid</string>
+    <string name="error_no_credentials_available">No credentials available. Please sign in using a google account in your device.</string>
+    <string name="error_the_operation_was_interrupted">The operation was interrupted</string>
+    <string name="discover">Discover</string>
+    <string name="filters">Filters</string>
+    <string name="reset">reset</string>
+    <string name="filters_screen_content_type_title">What do you want to watch?</string>
+    <string name="filters_screen_genre_title">Genres</string>
+    <string name="filters_screen_provider_title">Streaming platforms</string>
+    <string name="filters_screen_apply_filter_button_text">Let\'s go!</string>
+    <string name="filters_screen_date_title">Year</string>
+    <string name="year_range_selector_from_label">From</string>
+    <string name="year_range_selector_to_label">To</string>
+    <string name="filter_duration_string"><![CDATA[< %1$s min]]></string>
+    <string name="filter_score_string"><![CDATA[Score > %1$s]]></string>
 </resources>

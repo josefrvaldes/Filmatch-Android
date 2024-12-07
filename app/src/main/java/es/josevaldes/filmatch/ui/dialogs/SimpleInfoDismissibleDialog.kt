@@ -5,32 +5,26 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import es.josevaldes.filmatch.R
+import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 
 @Composable
 fun SimpleInfoDismissibleDialog(
     title: String,
     body: String,
-    backgroundColor: Color = MaterialTheme.colorScheme.background,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
-        containerColor = backgroundColor,
+        containerColor = MaterialTheme.colorScheme.background,
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                text = title,
-                color = if (backgroundColor == MaterialTheme.colorScheme.onSurface) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface
-            )
+            Text(text = title)
         },
         text = {
-            Text(
-                text = body,
-                color = if (backgroundColor == MaterialTheme.colorScheme.onSurface) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface
-            )
+            Text(text = body)
         },
         confirmButton = {
             Button(
@@ -41,4 +35,28 @@ fun SimpleInfoDismissibleDialog(
             }
         }
     )
+}
+
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun SimpleInfoDismissibleDialogPreviewDark() {
+    FilmatchTheme(darkTheme = true) {
+        SimpleInfoDismissibleDialog(
+            title = "Title",
+            body = "Body",
+            onDismiss = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SimpleInfoDismissibleDialogPreviewLight() {
+    FilmatchTheme(darkTheme = false) {
+        SimpleInfoDismissibleDialog(
+            title = "Title",
+            body = "Body",
+            onDismiss = {}
+        )
+    }
 }

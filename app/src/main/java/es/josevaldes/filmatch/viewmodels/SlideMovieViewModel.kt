@@ -4,9 +4,11 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import es.josevaldes.data.model.MovieFilters
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SwipeableMovie
+import es.josevaldes.filmatch.utils.DeviceLocaleProvider
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -17,13 +19,17 @@ import kotlin.random.Random
 
 @HiltViewModel
 class SlideMovieViewModel @Inject constructor(
-    private val movieRepository: MovieRepository
+    private val movieRepository: MovieRepository,
+    deviceLocaleProvider: DeviceLocaleProvider
 ) : ViewModel() {
 
-    private val _language = MutableStateFlow("en-US")
+    private val _language = deviceLocaleProvider.getDeviceLocale()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
+
+    private var _movieFilters = MutableStateFlow(MovieFilters())
+
 
     private val _movieThatWillBeObservableNext = MutableStateFlow<SwipeableMovie?>(null)
     val movieThatWillBeObservableNext = _movieThatWillBeObservableNext.asStateFlow()
@@ -73,23 +79,24 @@ class SlideMovieViewModel @Inject constructor(
     internal fun loadCurrentPage() {
         viewModelScope.launch {
             _isLoading.value = true
-            movieRepository.getDiscoverMovies(currentPage, _language.value).collect { result ->
-                _isLoading.value = false
-                if (result is ApiResult.Success) {
-                    pages = result.data.totalPages
+            movieRepository.getDiscoverMovies(currentPage, _language, _movieFilters.value)
+                .collect { result ->
                     _isLoading.value = false
-                    val swipeableMovies = result.data.results.map { SwipeableMovie(it) }
-                    initializeMovies(swipeableMovies)
-                    _movieListFlow.value.addAll(swipeableMovies)
-                    if (_observableMovies.value.isEmpty()) {
-                        refillObservableList()
-                        getMovieThatWillBeObservableNext()
+                    if (result is ApiResult.Success) {
+                        pages = result.data.totalPages
+                        _isLoading.value = false
+                        val swipeableMovies = result.data.results.map { SwipeableMovie(it) }
+                        initializeMovies(swipeableMovies)
+                        _movieListFlow.value.addAll(swipeableMovies)
+                        if (_observableMovies.value.isEmpty()) {
+                            refillObservableList()
+                            getMovieThatWillBeObservableNext()
+                        }
+                        return@collect
+                    } else {
+                        _errorMessage.emit(result as ApiResult.Error)
                     }
-                    return@collect
-                } else {
-                    _errorMessage.emit(result as ApiResult.Error)
                 }
-            }
         }
     }
 
@@ -140,10 +147,6 @@ class SlideMovieViewModel @Inject constructor(
 
     }
 
-    fun setLanguage(language: String) {
-        _language.value = language
-    }
-
     enum class LikeButtonAction {
         LIKE, DISLIKE
     }
@@ -161,5 +164,13 @@ class SlideMovieViewModel @Inject constructor(
 
     fun clearLikeButtonAction() {
         _likeButtonAction.value = null
+    }
+    
+    fun onNewFiltersSelected(movieFilters: MovieFilters) {
+        _movieFilters.value = movieFilters
+        currentPage = 1
+        _movieListFlow.value = mutableListOf()
+        _observableMovies.value = mutableListOf()
+        loadCurrentPage()
     }
 }

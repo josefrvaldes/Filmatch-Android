@@ -1,10 +1,10 @@
 package es.josevaldes.data
 
 import androidx.paging.PagingSource
-import es.josevaldes.data.model.Movie
 import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.paging.MoviesPagingSource
 import es.josevaldes.data.responses.DiscoverMoviesResponse
+import es.josevaldes.data.responses.MovieResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
@@ -23,19 +23,19 @@ class MoviesPagingSourceUnitTest {
 
     @Test
     fun `MoviesPagingSource should load data successfully`() = runBlocking {
-        val mockedList1 = mutableListOf<Movie>()
+        val mockedList1 = mutableListOf<MovieResponse>()
         for (i in 1..20) {
-            mockedList1.add(Movie(id = i, title = "Movie $i"))
+            mockedList1.add(MovieResponse(id = i, title = "Movie $i"))
         }
 
-        val mockedList2 = mutableListOf<Movie>()
+        val mockedList2 = mutableListOf<MovieResponse>()
         for (i in 21..40) {
-            mockedList2.add(Movie(id = i, title = "Movie $i"))
+            mockedList2.add(MovieResponse(id = i, title = "Movie $i"))
         }
 
-        val mockedList3 = mutableListOf<Movie>()
+        val mockedList3 = mutableListOf<MovieResponse>()
         for (i in 41..50) {
-            mockedList3.add(Movie(id = i, title = "Movie $i"))
+            mockedList3.add(MovieResponse(id = i, title = "Movie $i"))
         }
 
 
@@ -223,9 +223,9 @@ class MoviesPagingSourceUnitTest {
 
     @Test
     fun `MoviesPagingSource should fetching invalid pages correctly`() = runBlocking {
-        val fakeMovies = mutableListOf<Movie>()
+        val fakeMovies = mutableListOf<MovieResponse>()
         for (i in 1..20) {
-            fakeMovies.add(Movie(id = i, title = "Movie $i"))
+            fakeMovies.add(MovieResponse(id = i, title = "Movie $i"))
         }
 
         val firstResponse = DiscoverMoviesResponse(

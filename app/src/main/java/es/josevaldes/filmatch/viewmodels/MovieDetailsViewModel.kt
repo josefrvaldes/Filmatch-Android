@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.results.ApiResult
+import es.josevaldes.filmatch.utils.DeviceLocaleProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.onCompletion
@@ -15,8 +16,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MovieDetailsViewModel @Inject constructor(
-    private val movieRepository: MovieRepository
+    private val movieRepository: MovieRepository,
+    localeProvider: DeviceLocaleProvider
 ) : ViewModel() {
+
+    private val _language = localeProvider.getDeviceLocale()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -24,10 +28,10 @@ class MovieDetailsViewModel @Inject constructor(
     private val _movie = MutableStateFlow<Movie?>(null)
     val movie = _movie.asStateFlow()
 
-    fun getMovieById(id: Int, language: String) {
+    fun getMovieById(id: Int) {
         viewModelScope.launch {
             _isLoading.value = true
-            movieRepository.findById(id, language).onStart {
+            movieRepository.findById(id, _language).onStart {
                 _isLoading.value = true
             }.onCompletion {
                 _isLoading.value = false

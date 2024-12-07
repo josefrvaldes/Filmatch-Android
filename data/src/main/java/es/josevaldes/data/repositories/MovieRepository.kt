@@ -1,10 +1,14 @@
 package es.josevaldes.data.repositories
 
 import androidx.paging.Pager
+import es.josevaldes.data.extensions.mappers.toAppModel
+import es.josevaldes.data.model.ContentType
+import es.josevaldes.data.model.DiscoverMoviesData
 import es.josevaldes.data.model.Movie
+import es.josevaldes.data.model.MovieFilters
+import es.josevaldes.data.model.MovieType
 import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.paging.MoviesPagingSource
-import es.josevaldes.data.responses.DiscoverMoviesResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MovieService
@@ -34,14 +38,43 @@ class MovieRepository @Inject constructor(
 
     fun getDiscoverMovies(
         page: Int,
-        language: String?
-    ): Flow<ApiResult<DiscoverMoviesResponse>> = flow {
+        language: String,
+        filters: MovieFilters
+    ): Flow<ApiResult<DiscoverMoviesData>> = flow {
+
         try {
-            val result = _movieService.getDiscoverMovies(page, language)
+            val country = language.substring(language.indexOf("-") + 1)
+            val result = when (filters.contentType) {
+                ContentType.MOVIES -> _movieService.getDiscoverMovies(
+                    page = page,
+                    language = language,
+                    sortBy = filters.sortBy,
+                    withGenres = filters.genres?.joinToString("|") { it.id.toString() },
+                    withProviders = filters.providers?.joinToString("|") { it.id.toString() },
+                    watchRegion = country,
+                    withReleaseYearFrom = filters.yearFrom.toString(),
+                    withReleaseYearTo = filters.yearTo.toString(),
+                    withVoteAverageGte = filters.score?.score,
+                    withDuration = filters.duration?.duration
+                )
+
+                ContentType.TV_SHOWS -> _movieService.getDiscoverTV(
+                    page = page,
+                    language = language,
+                    sortBy = filters.sortBy,
+                    withGenres = filters.genres?.joinToString("|") { it.id.toString() },
+                    withProviders = filters.providers?.joinToString("|") { it.id.toString() },
+                    watchRegion = country,
+                    withReleaseYearFrom = filters.yearFrom.toString(),
+                    withReleaseYearTo = filters.yearTo.toString(),
+                    withVoteAverageGte = filters.score?.score,
+                    withDuration = filters.duration?.duration
+                )
+            }
             if (result is ApiResult.Success) {
-                emit(ApiResult.Success(result.data))
+                emit(ApiResult.Success(result.data.toAppModel(MovieType.MOVIE)))
             } else {
-                emit(result)
+                emit(result as ApiResult.Error)
             }
         } catch (e: Exception) {
             emit(ApiResult.Error(ApiError.Unknown))
@@ -58,9 +91,9 @@ class MovieRepository @Inject constructor(
         try {
             val result = _movieService.findById(id, language)
             if (result is ApiResult.Success) {
-                emit(ApiResult.Success(result.data))
+                emit(ApiResult.Success(result.data.toAppModel()))
             } else {
-                emit(result)
+                emit(result as ApiResult.Error)
             }
         } catch (e: Exception) {
             emit(ApiResult.Error(ApiError.Unknown))

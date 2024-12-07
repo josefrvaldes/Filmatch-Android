@@ -59,7 +59,7 @@ fun EmailTextField(
                     modifier = Modifier.clickable {
                         email.value = ""
                     },
-                    tint = MaterialTheme.colorScheme.inverseOnSurface
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
         },
@@ -67,20 +67,38 @@ fun EmailTextField(
     )
 }
 
-@Preview
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
-fun EmailTextFieldPreview() {
+fun EmailTextFieldPreviewDark() {
     val email = remember { mutableStateOf("") }
     FilmatchTheme(darkTheme = true) {
         EmailTextField(email = email)
     }
 }
 
-@Preview
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
-fun EmailTextFieldFilledPreview() {
+fun EmailTextFieldFilledPreviewDark() {
     val email = remember { mutableStateOf("jose@gmail.com") }
     FilmatchTheme(darkTheme = true) {
+        EmailTextField(email = email)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EmailTextFieldPreviewLight() {
+    val email = remember { mutableStateOf("") }
+    FilmatchTheme(darkTheme = false) {
+        EmailTextField(email = email)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EmailTextFieldFilledPreviewLight() {
+    val email = remember { mutableStateOf("jose@gmail.com") }
+    FilmatchTheme(darkTheme = false) {
         EmailTextField(email = email)
     }
 }
