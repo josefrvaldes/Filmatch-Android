@@ -13,6 +13,7 @@ import java.lang.reflect.Type
 // https://gitlab.com/cp-hardik-p/error-handling
 class ApiResultCallAdapterFactory : CallAdapter.Factory() {
 
+    @Suppress("UNCHECKED_CAST")
     override fun get(
         returnType: Type,
         annotations: Array<out Annotation>,
