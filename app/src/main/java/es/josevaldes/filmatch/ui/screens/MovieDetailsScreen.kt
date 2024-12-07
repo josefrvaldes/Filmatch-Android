@@ -3,9 +3,11 @@ package es.josevaldes.filmatch.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -402,26 +404,34 @@ private fun DirectedBySection(movie: Movie?) {
 private fun PercentageTitleAndDurationSection(movie: Movie?) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
             .padding(top = 14.dp, start = 16.dp, end = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        val percentage = movie?.voteAverage?.times(10)?.toInt()
-        CircularProgressBar(
-            percentage = percentage ?: 0
-        )
-
-        val genresString = movie?.getGenresString(stringResource(R.string.and))
-        AnimatedVisibility(visible = !genresString.isNullOrEmpty()) {
-            Text(
-                "$genresString",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(start = 10.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 10.dp)
+        ) {
+            val percentage = movie?.voteAverage?.times(10)?.toInt()
+            CircularProgressBar(
+                percentage = percentage ?: 0
             )
+
+            val genresString = movie?.getGenresString(stringResource(R.string.and))
+            AnimatedVisibility(visible = !genresString.isNullOrEmpty()) {
+                Text(
+                    "$genresString",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(start = 10.dp),
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 2
+                )
+            }
         }
 
 
-        Box(modifier = Modifier.weight(1f))
 
         AnimatedVisibility(visible = (movie?.runtime ?: 0) > 0) {
             Row {
@@ -507,9 +517,9 @@ fun MovieDetailsScreenPreview() {
         voteAverage = 8.6,
         overview = "After a shipwreck, an intelligent robot called Roz is stranded on an uninhabited island. To survive the harsh environment, Roz bonds with the island's animals and cares for an orphaned baby goose.",
         genres = listOf(
-            Genre(id = 1, name = "Action"),
-            Genre(id = 2, name = "Adventure"),
-            Genre(id = 3, name = "Comedy"),
+            Genre(id = 1, name = "Action and Intense"),
+            Genre(id = 2, name = "Adventure super long"),
+            Genre(id = 3, name = "Comedy I want this text to overflow, we're almost there"),
         ),
         credits = Credits(
             crew = listOf(
@@ -517,6 +527,7 @@ fun MovieDetailsScreenPreview() {
                 CrewMember(id = 2, name = "Brenda Chapman", department = "Directing"),
             )
         ),
+        runtime = 149
     )
     val isLoading = false
 

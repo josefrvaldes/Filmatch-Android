@@ -70,12 +70,12 @@ fun WelcomeScreen(onNavigateToSlideMovieScreen: () -> Unit) {
             Text(
                 stringResource(R.string.welcome_screen_title),
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
             Text(
                 stringResource(R.string.welcome_screen_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
 
             ButtonRooms()
@@ -171,7 +171,7 @@ private fun LoginBottomSheetDialog(
     ModalBottomSheet(
         onDismissRequest = { showLoginBottomSheet.value = false },
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.onSurface
+        containerColor = MaterialTheme.colorScheme.background
     ) {
         LoginScreen(onNavigateToSlideMovieScreen) {
             showLoginBottomSheet.value = false
@@ -192,7 +192,7 @@ private fun RegisterBottomSheetDialog(
     ModalBottomSheet(
         onDismissRequest = { showRegisterBottomSheet.value = false },
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.onSurface
+        containerColor = MaterialTheme.colorScheme.background
     ) {
         RegisterScreen(onNavigateToSlideMovieScreen) {
             showRegisterBottomSheet.value = false
@@ -221,19 +221,19 @@ private fun ButtonRooms() {
             Text(
                 stringResource(R.string.welcome_screen_btn_room_title),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
             Text(
                 stringResource(R.string.welcome_screen_btn_room_subtitle),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
             Text(
                 stringResource(R.string.welcome_screen_btn_room_description),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 10.dp),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
         }
         Icon(
@@ -247,8 +247,16 @@ private fun ButtonRooms() {
 
 @Preview
 @Composable
-fun WelcomeScreenPreview() {
+fun WelcomeScreenPreviewDark() {
     FilmatchTheme(darkTheme = true) {
+        WelcomeScreen {}
+    }
+}
+
+@Preview
+@Composable
+fun WelcomeScreenPreviewLight() {
+    FilmatchTheme(darkTheme = false) {
         WelcomeScreen {}
     }
 }

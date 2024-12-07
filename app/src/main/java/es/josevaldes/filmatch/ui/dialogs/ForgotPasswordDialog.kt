@@ -15,7 +15,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,7 +28,7 @@ import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 import es.josevaldes.filmatch.viewmodels.AuthViewModel
 
 @Composable
-fun ForgotPasswordDialog(onSuccess: () -> Unit, onDismiss: () -> Unit, backgroundColor: Color) {
+fun ForgotPasswordDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
     val viewModel: AuthViewModel = hiltViewModel()
     val email = remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -46,15 +45,13 @@ fun ForgotPasswordDialog(onSuccess: () -> Unit, onDismiss: () -> Unit, backgroun
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = stringResource(R.string.forgot_you_password_dialog_title),
-                color = if (backgroundColor == MaterialTheme.colorScheme.onSurface) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface
+                text = stringResource(R.string.forgot_you_password_dialog_title)
             )
         },
         text = {
             Column {
                 Text(
-                    text = stringResource(R.string.forgot_your_password_dialog_text),
-                    color = if (backgroundColor == MaterialTheme.colorScheme.onSurface) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface
+                    text = stringResource(R.string.forgot_your_password_dialog_text)
                 )
                 EmailTextField(
                     email,
@@ -85,7 +82,7 @@ fun ForgotPasswordDialog(onSuccess: () -> Unit, onDismiss: () -> Unit, backgroun
                 }
             }
         },
-        containerColor = backgroundColor
+        containerColor = MaterialTheme.colorScheme.background
     )
 
     when (val result = forgetPasswordResult.value) {
