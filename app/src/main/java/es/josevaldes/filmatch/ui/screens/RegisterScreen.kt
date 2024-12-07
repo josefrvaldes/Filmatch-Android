@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -39,6 +40,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -53,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import es.josevaldes.core.utils.validateEmail
 import es.josevaldes.core.utils.validatePassword
+import es.josevaldes.data.results.AuthError
 import es.josevaldes.data.results.AuthResult
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.errors.ErrorMessageWrapper
@@ -131,7 +134,13 @@ fun RegisterScreen(onNavigateToSlideMovieScreen: () -> Unit, onGoToLoginClicked:
             onGoToLoginClicked()
         }
     } else if (errorMessage.isNotEmpty()) {
-        ErrorDialog(errorMessage) { errorMessage = "" }
+
+        ErrorDialog(errorMessage) {
+            if(errorMessage == ErrorMessageWrapper(context).getErrorMessage(AuthError.NoCredentialsAvailable)) {
+                openAccountSettingsScreen(context)
+            }
+            errorMessage = ""
+        }
     }
 }
 
@@ -244,7 +253,7 @@ fun RegisterScreenContent(
             Text(
                 "Register with",
                 modifier = Modifier.padding(horizontal = 10.dp),
-                color = MaterialTheme.colorScheme.inverseOnSurface
+                color = MaterialTheme.colorScheme.onBackground
             )
             Box(
                 Modifier
@@ -259,6 +268,8 @@ fun RegisterScreenContent(
             painter = painterResource(id = R.drawable.ic_google),
             contentDescription = stringResource(R.string.sign_in_with_google),
             modifier = Modifier
+                .width(80.dp)
+                .height(80.dp)
                 .clickable {
                     if (!isLoadingStatus.value) {
                         onLoginWithGoogleClicked()
@@ -314,7 +325,7 @@ fun ShakingCheckBox(
 
     val shouldWeDisplayColorRed = !tcAccepted.value && shouldDisplayErrors.value
     val colorToDisplay =
-        if (shouldWeDisplayColorRed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondary
+        if (shouldWeDisplayColorRed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
 
     Box(
         modifier = modifier
@@ -331,7 +342,7 @@ fun ShakingCheckBox(
             checked = tcAccepted.value,
             onCheckedChange = { tcAccepted.value = it },
             colors = CheckboxDefaults.colors(
-                checkmarkColor = MaterialTheme.colorScheme.onSurface,
+                checkmarkColor = Color.White,
                 checkedColor = colorToDisplay,
                 uncheckedColor = colorToDisplay
             )
@@ -353,7 +364,7 @@ fun TermsAndConditionsText(onTermsClick: () -> Unit) {
 
         addStyle(
             style = SpanStyle(
-                color = MaterialTheme.colorScheme.inverseOnSurface
+                color = MaterialTheme.colorScheme.onBackground
             ),
             start = 0,
             end = length
@@ -396,7 +407,7 @@ fun TermsAndConditionsText(onTermsClick: () -> Unit) {
 @Composable
 private fun SuccessDialog(onDismissRequest: () -> Unit) {
     AlertDialog(
-        containerColor = MaterialTheme.colorScheme.onSurface,
+        containerColor = MaterialTheme.colorScheme.background,
         onDismissRequest = {
             onDismissRequest()
         },
@@ -406,7 +417,8 @@ private fun SuccessDialog(onDismissRequest: () -> Unit) {
             Button(
                 onClick = {
                     onDismissRequest()
-                }
+                },
+                colors = getDefaultAccentButtonColors()
             ) {
                 Text(
                     text = stringResource(R.string.dismiss)
@@ -416,13 +428,50 @@ private fun SuccessDialog(onDismissRequest: () -> Unit) {
     )
 }
 
-
-@Preview
 @Composable
-fun RegisterScreenPreview() {
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+fun SuccessDialogPreviewDark() {
+    FilmatchTheme(darkTheme = true) {
+        SuccessDialog {}
+    }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun SuccessDialogPreviewLight() {
+    FilmatchTheme(darkTheme = false) {
+        SuccessDialog {}
+    }
+}
+
+
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun RegisterScreenPreviewDark() {
     val dummyText = remember { mutableStateOf("hola") }
     val dummyBoolean = remember { mutableStateOf(true) }
     FilmatchTheme(darkTheme = true) {
+        RegisterScreenContent(
+            onRegisterClicked = {},
+            onLoginWithGoogleClicked = {},
+            onGoToLoginClicked = {},
+            email = dummyText,
+            isLoadingStatus = dummyBoolean,
+            shouldDisplayErrors = dummyBoolean,
+            pass1 = dummyText,
+            pass2 = dummyText,
+            tcAccepted = dummyBoolean,
+            isValidForm = true
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RegisterScreenPreviewLight() {
+    val dummyText = remember { mutableStateOf("hola") }
+    val dummyBoolean = remember { mutableStateOf(true) }
+    FilmatchTheme(darkTheme = false) {
         RegisterScreenContent(
             onRegisterClicked = {},
             onLoginWithGoogleClicked = {},

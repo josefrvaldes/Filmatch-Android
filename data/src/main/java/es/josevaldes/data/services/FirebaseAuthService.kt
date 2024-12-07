@@ -84,11 +84,11 @@ class FirebaseAuthService(private val auth: FirebaseAuth) : AuthService {
                 )
 
                 android.credentials.GetCredentialException.TYPE_NO_CREDENTIAL -> AuthResult.Error(
-                    AuthError.CancelledByUser
+                    AuthError.NoCredentialsAvailable
                 )
 
                 android.credentials.GetCredentialException.TYPE_INTERRUPTED -> AuthResult.Error(
-                    AuthError.CancelledByUser
+                    AuthError.Interrupted
                 )
 
                 else -> AuthResult.Error(AuthError.Unknown)

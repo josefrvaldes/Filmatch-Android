@@ -73,6 +73,8 @@ class ErrorMessageWrapper(val context: Context) {
             AuthError.CancelledByUser -> context.getString(R.string.error_cancelled_by_user)
             AuthError.Unknown -> context.getString(R.string.error_unknown_error)
             AuthError.EmailIsNotValid -> context.getString(R.string.error_email_is_not_valid)
+            AuthError.Interrupted -> context.getString(R.string.error_the_operation_was_interrupted)
+            AuthError.NoCredentialsAvailable -> context.getString(R.string.error_no_credentials_available)
         }
     }
 

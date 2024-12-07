@@ -18,7 +18,6 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,10 +28,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -56,6 +60,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -66,8 +71,8 @@ import coil.Coil
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import es.josevaldes.core.utils.getDeviceLocale
 import es.josevaldes.data.model.Movie
+import es.josevaldes.data.model.MovieFilters
 import es.josevaldes.data.model.User
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.errors.ErrorMessageWrapper
@@ -77,6 +82,7 @@ import es.josevaldes.filmatch.ui.theme.BackButtonBackground
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.ui.theme.LikeButtonBackground
+import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 import es.josevaldes.filmatch.ui.theme.usernameTitleStyle
 import es.josevaldes.filmatch.utils.VibrationUtils
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel
@@ -90,23 +96,22 @@ import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
 
-val user = User(
-    id = "1",
-    username = "Joselete Valdés",
-    photoUrl = "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/6018d2fb-507f-4b50-af6a-b593b6c6eeb9/db1so0b-cd9d0be3-3691-4728-891b-f1505b7e1dc8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzYwMThkMmZiLTUwN2YtNGI1MC1hZjZhLWI1OTNiNmM2ZWViOVwvZGIxc28wYi1jZDlkMGJlMy0zNjkxLTQ3MjgtODkxYi1mMTUwNWI3ZTFkYzgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.9awWi0q7WpdwQDXG9quXvnDVo0NUDqF_S9ygzRxCbEM",
-    email = ""
-)
-
 @Composable
-fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit, onBackClicked: () -> Unit) {
+fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
     val viewModel: SlideMovieViewModel = hiltViewModel()
-    viewModel.setLanguage(getDeviceLocale())
     val context = LocalContext.current
     val vibrationManager = remember { VibrationUtils(context) }
     val likeButtonAction by viewModel.likeButtonAction.collectAsState()
 
+
     Scaffold(
-        topBar = { UserTopBar(user) },
+        modifier = Modifier
+            .statusBarsPadding(),
+        topBar = {
+            TopBar { filters ->
+                viewModel.onNewFiltersSelected(filters)
+            }
+        },
         bottomBar = {
             LikeDislikeBottomSection(
                 enabled = likeButtonAction == null,
@@ -121,20 +126,32 @@ fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit, onBackClic
             )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
+                .fillMaxWidth()
                 .padding(padding),
-            horizontalAlignment = Alignment.CenterHorizontally
+            contentAlignment = Alignment.Center
         ) {
-            BackButtonRow(onBackClicked)
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(20.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                SwipeableMoviesComponent(onNavigateToMovieDetailsScreen)
-            }
+            SwipeableMoviesComponent(onNavigateToMovieDetailsScreen)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FiltersBottomSheetDialog(
+    showFiltersBottomSheet: MutableState<Boolean>,
+    onFiltersSelected: (MovieFilters) -> Unit = {}
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = { showFiltersBottomSheet.value = false },
+        sheetState = sheetState,
+    ) {
+        FiltersScreen {
+            onFiltersSelected(it)
+            showFiltersBottomSheet.value = false
         }
     }
 }
@@ -526,6 +543,7 @@ private fun getProperBlurRadius(index: Int, listSize: Int): State<Dp> {
     )
 }
 
+@Deprecated("According to the new design, this is not used anymore")
 @Composable
 private fun BackButtonRow(onBackClicked: () -> Unit = {}) {
     Row(
@@ -555,14 +573,6 @@ private fun BackButtonRow(onBackClicked: () -> Unit = {}) {
             text = stringResource(R.string.back),
             style = usernameTitleStyle
         )
-    }
-}
-
-@Preview
-@Composable
-fun PreviewBackButtonRow() {
-    FilmatchTheme(darkTheme = true) {
-        BackButtonRow()
     }
 }
 
@@ -602,7 +612,58 @@ private fun LikeDislikeBottomSection(
 }
 
 @Composable
-fun UserTopBar(user: User) {
+fun TopBar(onFiltersSelected: (MovieFilters) -> Unit = {}) {
+
+    val showFiltersBottomSheet = remember { mutableStateOf(false) }
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+    ) {
+        Text(
+            stringResource(R.string.discover),
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+        )
+
+        Button(
+            onClick = {
+                showFiltersBottomSheet.value = true
+            },
+            modifier = Modifier
+                .padding(vertical = 20.dp),
+            colors = getDefaultAccentButtonColors()
+        ) {
+            Text(
+                stringResource(R.string.filters),
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+    }
+
+    if (showFiltersBottomSheet.value) {
+        FiltersBottomSheetDialog(showFiltersBottomSheet, onFiltersSelected)
+    }
+}
+
+@Preview
+@Composable
+fun TopBarPreview() {
+    FilmatchTheme(darkTheme = true) {
+        TopBar()
+    }
+}
+
+@Deprecated("Use UserTopBar instead")
+@Composable
+fun UserTopBar() {
+    val user = User(
+        id = "1",
+        username = "Joselete Valdés",
+        photoUrl = "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/6018d2fb-507f-4b50-af6a-b593b6c6eeb9/db1so0b-cd9d0be3-3691-4728-891b-f1505b7e1dc8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzYwMThkMmZiLTUwN2YtNGI1MC1hZjZhLWI1OTNiNmM2ZWViOVwvZGIxc28wYi1jZDlkMGJlMy0zNjkxLTQ3MjgtODkxYi1mMTUwNWI3ZTFkYzgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.9awWi0q7WpdwQDXG9quXvnDVo0NUDqF_S9ygzRxCbEM",
+        email = ""
+    )
     Row(
         modifier = Modifier
             .padding(20.dp)
@@ -615,16 +676,6 @@ fun UserTopBar(user: User) {
                 .size(50.dp)
                 .clip(shape = CircleShape)
         ) {
-//                    Canvas(modifier = Modifier.matchParentSize()) {
-//                        drawCircle(
-//                            brush = Brush.radialGradient(
-//                                colors = listOf(
-//                                    Color.Transparent,
-//                                    Color.Black
-//                                ),
-//                            ),
-//                        )
-//                    }
             AsyncImage(
                 modifier = Modifier.matchParentSize(),
                 model = ImageRequest.Builder(LocalContext.current)
@@ -646,6 +697,6 @@ fun UserTopBar(user: User) {
 @Composable
 fun SlideMovieScreenPreview() {
     FilmatchTheme(darkTheme = true) {
-        SlideMovieScreen({}) {}
+        SlideMovieScreen {}
     }
 }

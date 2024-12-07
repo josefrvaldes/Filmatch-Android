@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
 fun FilmatchApp(startDestination: Route) {
     val navController = rememberNavController()
     val animationDuration = 150
-    FilmatchTheme(darkTheme = true) {
+    FilmatchTheme {
         NavHost(
             navController = navController,
             startDestination = startDestination,
@@ -105,9 +105,7 @@ fun FilmatchApp(startDestination: Route) {
             composable<Route.SlideMovieRoute> {
                 SlideMovieScreen(onNavigateToMovieDetailsScreen = { movie ->
                     navController.navigate(Route.MovieDetailsRoute(movie))
-                }) {
-                    navController.popBackStack()
-                }
+                })
             }
             composable<Route.WelcomeRoute> {
                 WelcomeScreen(onNavigateToSlideMovieScreen = {

@@ -1,11 +1,12 @@
 package es.josevaldes.filmatch
 
+import es.josevaldes.data.model.DiscoverMoviesData
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.repositories.MovieRepository
-import es.josevaldes.data.responses.DiscoverMoviesResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SwipeableMovie
+import es.josevaldes.filmatch.utils.DeviceLocaleProvider
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel.Companion.LOADING_THRESHOLD
 import es.josevaldes.filmatch.viewmodels.SlideMovieViewModel.Companion.NUMBER_OF_VISIBLE_MOVIES
@@ -38,6 +39,7 @@ class SlideMovieViewModelTest {
 
 
     private val movieRepository = mockk<MovieRepository>()
+    private val deviceLocaleProvider = mockk<DeviceLocaleProvider>()
     private lateinit var viewModel: SlideMovieViewModel
 
 
@@ -46,30 +48,33 @@ class SlideMovieViewModelTest {
         coEvery {
             movieRepository.getDiscoverMovies(
                 any(),
+                any(),
                 any()
             )
-        } returns flowOf(ApiResult.Success(DiscoverMoviesResponse(listOf(), 1, 1, 1)))
-        viewModel = SlideMovieViewModel(movieRepository)
+        } returns flowOf(ApiResult.Success(DiscoverMoviesData(listOf(), 1, 1, 1)))
+        every { deviceLocaleProvider.getDeviceLocale() } returns "en-US"
+        every { deviceLocaleProvider.getDeviceCountry() } returns "US"
+        viewModel = SlideMovieViewModel(movieRepository, deviceLocaleProvider)
     }
 
 
     @Test
     fun `onLikeButtonClicked should modify swipeAction to LIKE`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any()) } returns mockk()
+        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
         viewModel.onLikeButtonClicked()
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
     }
 
     @Test
     fun `onDislikeButtonClicked should modify swipeAction to DISLIKE`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any()) } returns mockk()
+        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
         viewModel.onDislikeButtonClicked()
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
     }
 
     @Test
     fun `clearLikeButtonAction should modify likeButtonAction to null`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any()) } returns mockk()
+        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
         viewModel.clearLikeButtonAction()
         assert(viewModel.likeButtonAction.value == null)
     }
@@ -99,7 +104,7 @@ class SlideMovieViewModelTest {
     @Test
     fun `loadCurrentPage should return a list of movies in the flow and fill the observableMovies and load the next observable movie`() =
         runTest {
-            val discoverMoviesResponse = DiscoverMoviesResponse(
+            val discoverMoviesResponse = DiscoverMoviesData(
                 listOf(
                     Movie(id = 1),
                     Movie(id = 2),
@@ -110,6 +115,7 @@ class SlideMovieViewModelTest {
             )
             coEvery {
                 movieRepository.getDiscoverMovies(
+                    any(),
                     any(),
                     any()
                 )
@@ -160,6 +166,7 @@ class SlideMovieViewModelTest {
             coEvery {
                 movieRepository.getDiscoverMovies(
                     any(),
+                    any(),
                     any()
                 )
             } returns flowOf(ApiResult.Error(ApiError.Unknown))
@@ -188,11 +195,12 @@ class SlideMovieViewModelTest {
         runTest {
             val resultsPerPage = 10
             val movies = List(resultsPerPage) { index -> Movie(id = index) }
-            val discoverMoviesResponse = DiscoverMoviesResponse(
+            val discoverMoviesResponse = DiscoverMoviesData(
                 movies, 1, 20, 2
             )
             coEvery {
                 movieRepository.getDiscoverMovies(
+                    any(),
                     any(),
                     any()
                 )

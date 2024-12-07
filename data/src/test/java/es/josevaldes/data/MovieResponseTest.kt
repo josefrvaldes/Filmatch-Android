@@ -7,7 +7,7 @@ import es.josevaldes.data.model.Movie
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class MovieTest {
+class MovieResponseTest {
 
     @Test
     fun `getCategoriesString should return the right string`() {

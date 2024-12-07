@@ -1,5 +1,8 @@
 package es.josevaldes.filmatch.ui.screens
 
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,11 +16,14 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import es.josevaldes.core.utils.validateEmail
 import es.josevaldes.core.utils.validatePassword
+import es.josevaldes.data.results.AuthError
 import es.josevaldes.data.results.AuthResult
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.errors.ErrorMessageWrapper
@@ -49,6 +56,10 @@ import es.josevaldes.filmatch.ui.theme.getDefaultAccentButtonColors
 import es.josevaldes.filmatch.viewmodels.AuthViewModel
 
 
+private fun isValidForm(email: String, password: String): Boolean {
+    return validateEmail(email) && validatePassword(password)
+}
+
 @Composable
 fun LoginScreen(onGoToSlideMovieScreen: () -> Unit, onGoToRegisterClicked: () -> Unit) {
     val viewModel: AuthViewModel = hiltViewModel()
@@ -57,17 +68,76 @@ fun LoginScreen(onGoToSlideMovieScreen: () -> Unit, onGoToRegisterClicked: () ->
     val password = remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     val signInResult = viewModel.authResult.collectAsState(null)
-    var shouldDisplayForgotPasswordDialog by remember { mutableStateOf(false) }
+    val shouldDisplayForgotPasswordDialog = remember { mutableStateOf(false) }
     var shouldDisplaySuccessForgettingPasswordDialog by remember { mutableStateOf(false) }
     val isLoadingStatus = viewModel.isLoading.collectAsState(false)
-    var shouldDisplayErrors by remember { mutableStateOf(false) }
+    val shouldDisplayErrors = remember { mutableStateOf(false) }
 
 
-    fun isValidForm(): Boolean {
-        return validateEmail(email.value) && validatePassword(password.value)
+    LoginScreenContent(
+        email,
+        password,
+        isLoadingStatus,
+        shouldDisplayErrors,
+        shouldDisplayForgotPasswordDialog,
+        onLoginClicked = {
+            viewModel.login(email.value, password.value)
+        },
+        onSignInWithGoogleClicked = {
+            viewModel.signInWithGoogle(context)
+        },
+        onGoToRegisterClicked = onGoToRegisterClicked
+    )
+
+
+    when (val result = signInResult.value) {
+        is AuthResult.Success -> {
+            onGoToSlideMovieScreen()
+        }
+
+        is AuthResult.Error -> {
+            errorMessage =
+                ErrorMessageWrapper(LocalContext.current).getErrorMessage(result.authError)
+            viewModel.clearError()
+        }
+
+        null -> {} // do nothing
     }
 
+    if (errorMessage.isNotEmpty()) {
+        viewModel.clearError()
+        ErrorDialog(errorMessage) {
+            if (errorMessage == ErrorMessageWrapper(context).getErrorMessage(AuthError.NoCredentialsAvailable)) {
+                openAccountSettingsScreen(context)
+            }
+            errorMessage = ""
+        }
+    } else if (shouldDisplayForgotPasswordDialog.value) {
+        ForgotPasswordDialog(
+            onSuccess = {
+                shouldDisplayForgotPasswordDialog.value = false
+                shouldDisplaySuccessForgettingPasswordDialog = true
+            },
+            onDismiss = { shouldDisplayForgotPasswordDialog.value = false }
+        )
+    } else if (shouldDisplaySuccessForgettingPasswordDialog) {
+        SuccessSendingForgotPasswordDialog(backgroundColor = MaterialTheme.colorScheme.background) {
+            shouldDisplaySuccessForgettingPasswordDialog = false
+        }
+    }
+}
 
+@Composable
+private fun LoginScreenContent(
+    email: MutableState<String>,
+    password: MutableState<String>,
+    isLoadingStatus: State<Boolean>,
+    shouldDisplayErrors: MutableState<Boolean>,
+    shouldDisplayForgotPasswordDialog: MutableState<Boolean>,
+    onLoginClicked: () -> Unit = {},
+    onSignInWithGoogleClicked: () -> Unit = {},
+    onGoToRegisterClicked: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -86,21 +156,21 @@ fun LoginScreen(onGoToSlideMovieScreen: () -> Unit, onGoToRegisterClicked: () ->
         EmailTextField(
             email,
             isEnabled = !isLoadingStatus.value,
-            shouldDisplayErrors = shouldDisplayErrors
+            shouldDisplayErrors = shouldDisplayErrors.value
         )
         PasswordTextField(
             password,
             imeAction = ImeAction.Done,
             isEnabled = !isLoadingStatus.value,
-            shouldDisplayErrors = shouldDisplayErrors
+            shouldDisplayErrors = shouldDisplayErrors.value
         )
 
         Button(
             enabled = !isLoadingStatus.value,
             onClick = {
-                shouldDisplayErrors = true
-                if (isValidForm()) {
-                    viewModel.login(email.value, password.value)
+                shouldDisplayErrors.value = true
+                if (isValidForm(email.value, password.value)) {
+                    onLoginClicked()
                 }
             },
             modifier = Modifier
@@ -121,15 +191,17 @@ fun LoginScreen(onGoToSlideMovieScreen: () -> Unit, onGoToRegisterClicked: () ->
         }
 
 
-        Text(stringResource(R.string.forgot_your_password),
+        Text(
+            stringResource(R.string.forgot_your_password),
             Modifier
                 .clickable {
-                    shouldDisplayErrors = true
+                    shouldDisplayErrors.value = true
                     if (!isLoadingStatus.value) {
-                        shouldDisplayForgotPasswordDialog = true
+                        shouldDisplayForgotPasswordDialog.value = true
                     }
                 }
-                .padding(bottom = 20.dp))
+                .padding(bottom = 20.dp)
+        )
 
 
         Row(
@@ -159,9 +231,11 @@ fun LoginScreen(onGoToSlideMovieScreen: () -> Unit, onGoToRegisterClicked: () ->
             painter = painterResource(id = R.drawable.ic_google),
             contentDescription = stringResource(R.string.sign_in_with_google),
             modifier = Modifier
+                .width(80.dp)
+                .height(80.dp)
                 .clickable {
                     if (!isLoadingStatus.value) {
-                        viewModel.signInWithGoogle(context)
+                        onSignInWithGoogleClicked()
                     }
                 }
                 .padding(20.dp)
@@ -185,46 +259,39 @@ fun LoginScreen(onGoToSlideMovieScreen: () -> Unit, onGoToRegisterClicked: () ->
             )
         }
     }
+}
 
-
-    when (val result = signInResult.value) {
-        is AuthResult.Success -> {
-            onGoToSlideMovieScreen()
-        }
-
-        is AuthResult.Error -> {
-            errorMessage =
-                ErrorMessageWrapper(LocalContext.current).getErrorMessage(result.authError)
-            viewModel.clearError()
-        }
-
-        null -> {} // do nothing
+fun openAccountSettingsScreen(context: Context) {
+    val intent = Intent(Settings.ACTION_SYNC_SETTINGS).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
     }
+    context.startActivity(intent)
+}
 
-    if (errorMessage.isNotEmpty()) {
-        viewModel.clearError()
-        ErrorDialog(errorMessage, MaterialTheme.colorScheme.onSurface) { errorMessage = "" }
-    } else if (shouldDisplayForgotPasswordDialog) {
-        ForgotPasswordDialog(
-            backgroundColor = MaterialTheme.colorScheme.onSurface,
-            onSuccess = {
-                shouldDisplayForgotPasswordDialog = false
-                shouldDisplaySuccessForgettingPasswordDialog = true
-            },
-            onDismiss = { shouldDisplayForgotPasswordDialog = false }
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun LoginScreenContentPreviewDark() {
+    FilmatchTheme(darkTheme = true) {
+        LoginScreenContent(
+            remember { mutableStateOf("email") },
+            remember { mutableStateOf("password") },
+            remember { mutableStateOf(false) },
+            remember { mutableStateOf(false) },
+            remember { mutableStateOf(false) }
         )
-    } else if (shouldDisplaySuccessForgettingPasswordDialog) {
-        SuccessSendingForgotPasswordDialog(backgroundColor = MaterialTheme.colorScheme.onSurface) {
-            shouldDisplaySuccessForgettingPasswordDialog = false
-        }
     }
 }
 
-
-@Preview
+@Preview(showBackground = true)
 @Composable
-fun LoginScreenPreview() {
-    FilmatchTheme(darkTheme = true) {
-        LoginScreen({}, {})
+fun LoginScreenContentPreviewLight() {
+    FilmatchTheme(darkTheme = false) {
+        LoginScreenContent(
+            remember { mutableStateOf("email") },
+            remember { mutableStateOf("password") },
+            remember { mutableStateOf(false) },
+            remember { mutableStateOf(false) },
+            remember { mutableStateOf(false) }
+        )
     }
 }
