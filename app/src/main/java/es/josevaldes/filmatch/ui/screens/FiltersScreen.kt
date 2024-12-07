@@ -25,6 +25,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -72,10 +73,20 @@ fun Modifier.filterBoxStyle(color: Color = MaterialTheme.colorScheme.outlineVari
 
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-fun FiltersScreen(onFiltersSelected: (MovieFilters) -> Unit = {}) {
+fun FiltersScreen(selectedFilters: MovieFilters, onFiltersSelected: (MovieFilters) -> Unit = {}) {
     val viewModel: FiltersViewModel = hiltViewModel()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(Unit) {
+        viewModel.setSelectedFilters(selectedFilters)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.resetFilters()
+        }
+    }
 
     val genres by viewModel.filtersGenre.collectAsState()
     val providers by viewModel.providers.collectAsState()

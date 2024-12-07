@@ -29,6 +29,8 @@ class SlideMovieViewModel @Inject constructor(
     val isLoading = _isLoading.asStateFlow()
 
     private var _movieFilters = MutableStateFlow(MovieFilters())
+    val movieFilters: MovieFilters
+        get() = _movieFilters.value
 
 
     private val _movieThatWillBeObservableNext = MutableStateFlow<SwipeableMovie?>(null)
@@ -165,7 +167,7 @@ class SlideMovieViewModel @Inject constructor(
     fun clearLikeButtonAction() {
         _likeButtonAction.value = null
     }
-    
+
     fun onNewFiltersSelected(movieFilters: MovieFilters) {
         _movieFilters.value = movieFilters
         currentPage = 1
