@@ -141,6 +141,7 @@ fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
 @Composable
 fun FiltersBottomSheetDialog(
     showFiltersBottomSheet: MutableState<Boolean>,
+    selectedFilters: MovieFilters,
     onFiltersSelected: (MovieFilters) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -149,7 +150,7 @@ fun FiltersBottomSheetDialog(
         onDismissRequest = { showFiltersBottomSheet.value = false },
         sheetState = sheetState,
     ) {
-        FiltersScreen {
+        FiltersScreen(selectedFilters) {
             onFiltersSelected(it)
             showFiltersBottomSheet.value = false
         }
@@ -643,15 +644,17 @@ fun TopBar(onFiltersSelected: (MovieFilters) -> Unit = {}) {
     }
 
     if (showFiltersBottomSheet.value) {
-        FiltersBottomSheetDialog(showFiltersBottomSheet, onFiltersSelected)
+        val viewModel = hiltViewModel<SlideMovieViewModel>()
+        val selectedFilters = viewModel.movieFilters
+        FiltersBottomSheetDialog(showFiltersBottomSheet, selectedFilters, onFiltersSelected)
     }
 }
 
-@Preview
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun TopBarPreview() {
     FilmatchTheme(darkTheme = true) {
-        TopBar()
+        TopBar {}
     }
 }
 

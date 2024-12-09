@@ -76,14 +76,13 @@ class FiltersViewModelTest {
 
     @Test
     fun `getAllGenres should load genres into filtersGenre`() {
-        viewModel.getAllGenres()
+        viewModel.getAllGenres() // it should return movies genres by default
 
         // the result will be sorted by name except the all filter which will always be the first one
         val expectedFilters = listOf(
             Filter(actionGenre, false),
             Filter(comedyGenre, false),
             Filter(dramaGenre, false),
-            Filter(tvOnlyGenre, false),
             Filter(movieOnlyGenre, false),
         ).sortedBy { it.item.name }.toMutableList()
             .apply { add(0, Filter(allGenre, true)) }
@@ -254,12 +253,11 @@ class FiltersViewModelTest {
         // Initial state: "All" is selected by default
         assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
 
-        // Verify merged genres (unique genres from both TV and Movies) when "All" is selected
+        // Verify content type genres (in this case, Movies)
         val expectedAllGenres = listOf(
             Filter(actionGenre, false),
             Filter(comedyGenre, false),
             Filter(dramaGenre, false),
-            Filter(tvOnlyGenre, false),
             Filter(movieOnlyGenre, false)
         ).sortedBy { it.item.name }
             .toMutableList().apply { add(0, Filter(allGenre, true)) }

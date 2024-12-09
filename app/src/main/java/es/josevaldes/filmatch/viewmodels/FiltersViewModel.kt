@@ -82,8 +82,16 @@ class FiltersViewModel @Inject constructor(
         viewModelScope.launch {
             genresRepository.getAllMovieGenres().collect { result ->
                 if (result is ApiResult.Success) {
-                    _movieGenres.add(Filter(Genre(-1, "All"), true))
-                    _movieGenres.addAll(result.data.genres.map { Filter(it, false) })
+                    if (_movieGenres.any { it.item.id == -1 }.not()) {
+                        _movieGenres.add(Filter(Genre(-1, "All"), true))
+                    }
+                    // let's add without duplicates
+                    _movieGenres.addAll(
+                        result.data.genres.filterNot { genre ->
+                            _movieGenres.any { it.item.id == genre.id }
+                        }.map { Filter(it, false) }
+                    )
+                    _filtersGenre.value = _movieGenres.toList()
                 } else {
                     _movieGenres.clear()
                 }
@@ -91,38 +99,25 @@ class FiltersViewModel @Inject constructor(
 
             genresRepository.getAllTvGenres().collect { result ->
                 if (result is ApiResult.Success) {
-                    _tvGenres.add(Filter(Genre(-1, "All"), true))
-                    _tvGenres.addAll(result.data.genres.map { Filter(it, false) })
+                    if (_tvGenres.any { it.item.id == -1 }.not()) {
+                        _tvGenres.add(Filter(Genre(-1, "All"), true))
+                    }
+                    // let's add without duplicates
+                    _tvGenres.addAll(
+                        result.data.genres.filterNot { genre ->
+                            _tvGenres.any { it.item.id == genre.id }
+                        }.map { Filter(it, false) }
+                    )
+                    if (_filtersGenre.value.isEmpty()) {
+                        _filtersGenre.value = _tvGenres.toList()
+                    }
                 } else {
                     _tvGenres.clear()
                 }
             }
-            _filtersGenre.value = mergeGenresList()
-
         }
     }
-
-    private fun mergeGenresList(): List<Filter<Genre>> {
-        val mergedGenres = mutableListOf<Filter<Genre>>()
-        for (genre in _movieGenres) {
-            if (mergedGenres.none { it.item.id == genre.item.id }) {
-                mergedGenres.add(genre)
-            }
-        }
-
-        for (genre in _tvGenres) {
-            if (mergedGenres.none { it.item.id == genre.item.id }) {
-                mergedGenres.add(genre)
-            }
-        }
-
-        val allItem = mergedGenres.first { it.item.id == -1 }
-        mergedGenres.remove(allItem)
-        mergedGenres.sortBy { it.item.name }
-        mergedGenres.add(0, allItem)
-        return mergedGenres.toList()
-    }
-
+    
     fun contentTypeClicked(contentType: Filter<ContentType>) {
         val types = _contentTypes.value.toMutableList()
         val index = types.indexOf(contentType)
@@ -240,9 +235,11 @@ class FiltersViewModel @Inject constructor(
             deselectProviderFilterTypeAll()
         }
         val providers = _providers.value.toMutableList()
-        val index = providers.indexOf(provider)
-        providers[index] = provider.copy(isSelected = !provider.isSelected)
-        _providers.value = providers
+        val index = providers.indexOfFirst { it.item.id == provider.item.id }
+        if (index >= 0) {
+            providers[index] = provider.copy(isSelected = !provider.isSelected)
+            _providers.value = providers
+        }
 
         val selectedCount = providers.count { it.isSelected }
         if (selectedCount == 0) {
@@ -301,6 +298,45 @@ class FiltersViewModel @Inject constructor(
         } else {
             _scoreFilters.value = listToProcess as List<Filter<Score>>
         }
+    }
+
+    fun setSelectedFilters(filters: MovieFilters) {
+        val contentType = _contentTypes.value.firstOrNull { it.item == filters.contentType }
+        contentType?.let { contentTypeClicked(it) }
+
+        filters.genres?.forEach { genre ->
+            genreClicked(
+                Filter(
+                    genre,
+                    false
+                )
+            ) // the method genreClicked will toggle the status, since we want the genre to be selected, we have to mark it as non selected first
+        }
+
+        filters.providers?.forEach { provider ->
+            providerClicked(
+                Filter(
+                    provider,
+                    false,
+                    imageUrl = provider.logoUrl
+                )
+            ) // same logic as above
+        }
+
+        val duration = _timeFilters.value.firstOrNull { it.item == filters.duration }
+        duration?.let {
+            @Suppress("UNCHECKED_CAST")
+            otherFilterClicked(it as Filter<Any>)
+        }
+
+        val score = _scoreFilters.value.firstOrNull { it.item == filters.score }
+        score?.let {
+            @Suppress("UNCHECKED_CAST")
+            otherFilterClicked(it as Filter<Any>)
+        }
+
+        _fromYear.value = filters.yearFrom ?: 2000
+        _toYear.value = filters.yearTo ?: LocalDateTime.now().year
     }
 
     fun getSelectedFilters(): MovieFilters {
