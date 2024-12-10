@@ -6,7 +6,6 @@ import es.josevaldes.data.model.ContentType
 import es.josevaldes.data.model.DiscoverMoviesData
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.model.MovieFilters
-import es.josevaldes.data.model.MovieType
 import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.paging.MoviesPagingSource
 import es.josevaldes.data.results.ApiError
@@ -72,7 +71,7 @@ class MovieRepository @Inject constructor(
                 )
             }
             if (result is ApiResult.Success) {
-                emit(ApiResult.Success(result.data.toAppModel(MovieType.MOVIE)))
+                emit(ApiResult.Success(result.data.toAppModel()))
             } else {
                 emit(result as ApiResult.Error)
             }

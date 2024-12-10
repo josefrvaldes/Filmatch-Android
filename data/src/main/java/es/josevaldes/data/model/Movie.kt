@@ -106,8 +106,7 @@ data class Collection(
 @Parcelize
 data class Genre(
     val id: Int,
-    val name: String,
-    val type: MovieType? = null
+    val name: String
 ) : Parcelable {
     override fun toString(): String {
         return name

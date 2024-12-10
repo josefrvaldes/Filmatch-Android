@@ -5,7 +5,6 @@ import androidx.paging.PagingSource.LoadResult
 import androidx.paging.testing.TestPager
 import es.josevaldes.data.extensions.mappers.toAppModel
 import es.josevaldes.data.model.Movie
-import es.josevaldes.data.model.MovieType
 import es.josevaldes.data.paging.MoviesPagingSource
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.responses.DiscoverMoviesResponse
@@ -57,7 +56,7 @@ class MovieResponseRepositoryTest {
         )
         val testPager = TestPager(config, moviesPagingSource)
         val result = testPager.refresh() as LoadResult.Page<Int, Movie>
-        assertEquals(resultList.map { it.toAppModel(MovieType.MOVIE) }, result.data)
+        assertEquals(resultList.map { it.toAppModel() }, result.data)
     }
 
     @Test
@@ -85,7 +84,7 @@ class MovieResponseRepositoryTest {
             append()
             append()
         } as LoadResult.Page<Int, Movie>
-        assertEquals(currentSubList.map { it.toAppModel(MovieType.MOVIE) }, result.data)
+        assertEquals(currentSubList.map { it.toAppModel() }, result.data)
     }
 
 
@@ -119,7 +118,7 @@ class MovieResponseRepositoryTest {
         coEvery { movieService.findById(any(), any()) } returns ApiResult.Success(movie)
         val resultFlow = movieRepository.findById(movie.id, "")
         resultFlow.collect {
-            assertEquals(ApiResult.Success(movie.toAppModel(MovieType.MOVIE)), it)
+            assertEquals(ApiResult.Success(movie.toAppModel()), it)
         }
     }
 

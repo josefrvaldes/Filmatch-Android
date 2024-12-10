@@ -4,7 +4,6 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import es.josevaldes.data.extensions.mappers.toAppModel
 import es.josevaldes.data.model.Movie
-import es.josevaldes.data.model.MovieType
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MovieService
@@ -28,7 +27,7 @@ class MoviesPagingSource @Inject constructor(
                 val discoverMoviesResponse = result.data
                 totalPages = discoverMoviesResponse.totalPages
                 LoadResult.Page(
-                    data = discoverMoviesResponse.results.map { it.toAppModel(MovieType.MOVIE) },
+                    data = discoverMoviesResponse.results.map { it.toAppModel() },
                     prevKey = if (page == 1) null else page - 1,
                     nextKey = if (page < totalPages) {
                         page + 1

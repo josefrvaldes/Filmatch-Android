@@ -19,7 +19,7 @@ class GenreRepository @Inject constructor(private val _genreService: GenreServic
                 MovieType.TVSHOW -> _genreService.getAllTvGenres()
             }
             if (result is ApiResult.Success) {
-                emit(ApiResult.Success(result.data.toAppModel(type)))
+                emit(ApiResult.Success(result.data.toAppModel()))
             } else {
                 emit(result as ApiResult.Error)
             }

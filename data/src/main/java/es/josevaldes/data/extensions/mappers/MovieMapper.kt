@@ -8,7 +8,6 @@ import es.josevaldes.data.model.DiscoverMoviesData
 import es.josevaldes.data.model.Genre
 import es.josevaldes.data.model.GenresList
 import es.josevaldes.data.model.Movie
-import es.josevaldes.data.model.MovieType
 import es.josevaldes.data.model.ProductionCompany
 import es.josevaldes.data.model.ProductionCountry
 import es.josevaldes.data.model.SpokenLanguage
@@ -29,23 +28,23 @@ import es.josevaldes.data.responses.VideoResultResponse
 import es.josevaldes.data.responses.VideosResponse
 
 
-fun DiscoverMoviesResponse.toAppModel(movieType: MovieType? = null): DiscoverMoviesData {
+fun DiscoverMoviesResponse.toAppModel(): DiscoverMoviesData {
     return DiscoverMoviesData(
-        results = results.map { it.toAppModel(movieType) },
+        results = results.map { it.toAppModel() },
         page = page,
         totalResults = totalResults,
         totalPages = totalPages
     )
 }
 
-fun MovieResponse.toAppModel(movieType: MovieType? = null): Movie {
+fun MovieResponse.toAppModel(): Movie {
     return Movie(
         id = id,
         adult = adult,
         backdropPath = backdropPath,
         collection = belongsToCollection?.toAppModel(),
         budget = budget,
-        genres = genres.map { it.toAppModel(movieType) },
+        genres = genres.map { it.toAppModel() },
         homepage = homepage,
         imdbId = imdbId,
         originCountry = originCountry ?: emptyList(),
@@ -71,11 +70,10 @@ fun MovieResponse.toAppModel(movieType: MovieType? = null): Movie {
     )
 }
 
-fun GenreResponse.toAppModel(movieType: MovieType? = null): Genre {
+fun GenreResponse.toAppModel(): Genre {
     return Genre(
         id = id,
-        name = name,
-        type = movieType
+        name = name
     )
 }
 
@@ -159,9 +157,9 @@ fun VideosResponse.toAppModel(): Videos {
 
 // En el módulo data
 
-fun GenresListResponse.toAppModel(movieType: MovieType? = null): GenresList {
+fun GenresListResponse.toAppModel(): GenresList {
     return GenresList(
-        genres = genres.map { it.toAppModel(movieType) }
+        genres = genres.map { it.toAppModel() }
     )
 }
 

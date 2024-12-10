@@ -1,7 +1,6 @@
 package es.josevaldes.data
 
 import es.josevaldes.data.extensions.mappers.toAppModel
-import es.josevaldes.data.model.MovieType
 import es.josevaldes.data.repositories.GenreRepository
 import es.josevaldes.data.responses.GenreResponse
 import es.josevaldes.data.responses.GenresListResponse
@@ -43,7 +42,7 @@ class GenreRepositoryTest {
         resultFlow.collect { result ->
             assertTrue(result is ApiResult.Success)
             assertEquals(
-                movieGenresList.toAppModel(MovieType.MOVIE),
+                movieGenresList.toAppModel(),
                 (result as ApiResult.Success).data
             )
         }
@@ -71,7 +70,7 @@ class GenreRepositoryTest {
         resultFlow.collect { result ->
             assertTrue(result is ApiResult.Success)
             assertEquals(
-                tvGenresList.toAppModel(MovieType.TVSHOW),
+                tvGenresList.toAppModel(),
                 (result as ApiResult.Success).data
             )
         }
