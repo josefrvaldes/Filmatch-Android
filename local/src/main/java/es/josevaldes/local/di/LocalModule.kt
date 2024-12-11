@@ -8,14 +8,14 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import es.josevaldes.local.dao.LocalDatabase
-import es.josevaldes.local.dao.VisitedFiltersDao
 import es.josevaldes.local.dao.VisitedMoviesDao
+import es.josevaldes.local.datasources.MoviesLocalDataSource
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 class LocalModule {
-    
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): LocalDatabase {
@@ -32,7 +32,7 @@ class LocalModule {
     }
 
     @Provides
-    fun provideVisitedFiltersDao(database: LocalDatabase): VisitedFiltersDao {
-        return database.visitedFiltersDao()
+    fun provideMoviesLocalDataSource(visitedMoviesDao: VisitedMoviesDao): MoviesLocalDataSource {
+        return MoviesLocalDataSource(visitedMoviesDao)
     }
 }

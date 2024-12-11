@@ -13,6 +13,5 @@ import es.josevaldes.local.entities.VisitedMovieEntity
 )
 @Dao
 abstract class LocalDatabase : RoomDatabase() {
-    abstract fun visitedFiltersDao(): VisitedFiltersDao
     abstract fun visitedMoviesDao(): VisitedMoviesDao
 }
