@@ -37,8 +37,10 @@ dependencies {
 
     // room
     implementation(libs.room.runtime)
-    implementation(libs.room.compiler)
+    annotationProcessor(libs.room.compiler)
+    ksp(libs.room.compiler)
     implementation(libs.room.ktx)
+    testImplementation(libs.room.testing)
 
 
     // Hilt
@@ -46,6 +48,8 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
 
+
+    testImplementation(libs.coroutines.test)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
