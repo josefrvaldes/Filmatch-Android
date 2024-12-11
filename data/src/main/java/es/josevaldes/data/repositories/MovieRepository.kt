@@ -10,7 +10,8 @@ import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.paging.MoviesPagingSource
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.MovieRemoteDataSource
+import es.josevaldes.data.services.MoviesRemoteDataSource
+import es.josevaldes.local.datasources.MoviesLocalDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retryWhen
@@ -19,7 +20,8 @@ import javax.inject.Inject
 
 class MovieRepository @Inject constructor(
     private val _moviesPagingSource: MoviesPagingSource,
-    private val _movieRemoteDataSource: MovieRemoteDataSource,
+    private val _moviesRemoteDataSource: MoviesRemoteDataSource,
+    private val _moviesLocalDataSource: MoviesLocalDataSource
 ) {
     fun getDiscoverMovies(
         language: String?
@@ -44,7 +46,7 @@ class MovieRepository @Inject constructor(
         try {
             val country = language.substring(language.indexOf("-") + 1)
             val result = when (filters.contentType) {
-                ContentType.MOVIES -> _movieRemoteDataSource.getDiscoverMovies(
+                ContentType.MOVIES -> _moviesRemoteDataSource.getDiscoverMovies(
                     page = page,
                     language = language,
                     sortBy = filters.sortBy,
@@ -57,7 +59,7 @@ class MovieRepository @Inject constructor(
                     withDuration = filters.duration?.duration
                 )
 
-                ContentType.TV_SHOWS -> _movieRemoteDataSource.getDiscoverTV(
+                ContentType.TV_SHOWS -> _moviesRemoteDataSource.getDiscoverTV(
                     page = page,
                     language = language,
                     sortBy = filters.sortBy,
@@ -89,7 +91,7 @@ class MovieRepository @Inject constructor(
         language: String?
     ): Flow<ApiResult<Movie>> = flow {
         try {
-            val result = _movieRemoteDataSource.findById(id, language)
+            val result = _moviesRemoteDataSource.findById(id, language)
             if (result is ApiResult.Success) {
                 emit(ApiResult.Success(result.data.toAppModel()))
             } else {

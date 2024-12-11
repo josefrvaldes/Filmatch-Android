@@ -4,7 +4,7 @@ import es.josevaldes.core.utils.serialization.JsonMapper
 import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.MovieRemoteDataSource
+import es.josevaldes.data.services.MoviesRemoteDataSource
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -19,7 +19,7 @@ import retrofit2.converter.jackson.JacksonConverterFactory
 class ApiServiceTest {
 
     private lateinit var mockWebServer: MockWebServer
-    private lateinit var movieRemoteDataSource: MovieRemoteDataSource
+    private lateinit var moviesRemoteDataSource: MoviesRemoteDataSource
 
     @Before
     fun setUp() {
@@ -28,12 +28,12 @@ class ApiServiceTest {
         mockWebServer.start()
 
         // let's create the service
-        movieRemoteDataSource = Retrofit.Builder()
+        moviesRemoteDataSource = Retrofit.Builder()
             .baseUrl(mockWebServer.url("/"))
             .addConverterFactory(JacksonConverterFactory.create(JsonMapper.objectMapper))
             .addCallAdapterFactory(ApiResultCallAdapterFactory())
             .build()
-            .create(MovieRemoteDataSource::class.java)
+            .create(MoviesRemoteDataSource::class.java)
     }
 
     @After
@@ -57,7 +57,7 @@ class ApiServiceTest {
                 .setBody(errorJson)
         )
 
-        val response = movieRemoteDataSource.getDiscoverMovies(0, "en")
+        val response = moviesRemoteDataSource.getDiscoverMovies(0, "en")
 
         assertTrue(response is ApiResult.Error) // Let's make sure that we have an error
         val apiError = (response as ApiResult.Error).apiError
@@ -104,7 +104,7 @@ class ApiServiceTest {
                     .setBody(responseJson)
             )
 
-            val response = movieRemoteDataSource.getDiscoverMovies(0, "en")
+            val response = moviesRemoteDataSource.getDiscoverMovies(0, "en")
 
             assertTrue(response is ApiResult.Success) // Let's make sure that we have an error
             val discoverResult = (response as ApiResult.Success).data
@@ -137,7 +137,7 @@ class ApiServiceTest {
                     .setBody(responseJson)
             )
 
-            val response = movieRemoteDataSource.getDiscoverMovies(0, "en")
+            val response = moviesRemoteDataSource.getDiscoverMovies(0, "en")
 
             assertTrue(response is ApiResult.Error) // Let's make sure that we have an error
 
@@ -166,7 +166,7 @@ class ApiServiceTest {
                     .setBody(responseJson)
             )
 
-            val response = movieRemoteDataSource.getDiscoverMovies(0, "en")
+            val response = moviesRemoteDataSource.getDiscoverMovies(0, "en")
 
             assertTrue(response is ApiResult.Error) // Let's make sure that we have an error
             val apiError = (response as ApiResult.Error).apiError
@@ -188,7 +188,7 @@ class ApiServiceTest {
             )
         mockWebServer.enqueue(mockResponse)
 
-        val response = movieRemoteDataSource.getDiscoverMovies(1)
+        val response = moviesRemoteDataSource.getDiscoverMovies(1)
 
         assertTrue(response is ApiResult.Success)
         val discoverResult = (response as ApiResult.Success).data
@@ -211,7 +211,7 @@ class ApiServiceTest {
             )
         mockWebServer.enqueue(mockResponse)
 
-        val response = movieRemoteDataSource.getDiscoverMovies(1)
+        val response = moviesRemoteDataSource.getDiscoverMovies(1)
 
         assertTrue(response is ApiResult.Error)
         val apiError = (response as ApiResult.Error).apiError
@@ -224,7 +224,7 @@ class ApiServiceTest {
             .setResponseCode(500)
         mockWebServer.enqueue(mockResponse)
 
-        val response = runBlocking { movieRemoteDataSource.getDiscoverMovies(1) }
+        val response = runBlocking { moviesRemoteDataSource.getDiscoverMovies(1) }
         val apiError = (response as ApiResult.Error).apiError
         assertTrue(apiError is ApiError.InternalError)
     }
@@ -236,7 +236,7 @@ class ApiServiceTest {
             .setBody("{ broken_json")
         mockWebServer.enqueue(mockResponse)
 
-        val response = runBlocking { movieRemoteDataSource.getDiscoverMovies(1) }
+        val response = runBlocking { moviesRemoteDataSource.getDiscoverMovies(1) }
         val apiError = (response as ApiResult.Error).apiError
         assertTrue(apiError is ApiError.Unknown)
     }
@@ -248,7 +248,7 @@ class ApiServiceTest {
             .setBody("<html><body>Error</body></html>")
         mockWebServer.enqueue(mockResponse)
 
-        val response = movieRemoteDataSource.getDiscoverMovies(1)
+        val response = moviesRemoteDataSource.getDiscoverMovies(1)
         val apiError = (response as ApiResult.Error).apiError
         assertTrue(apiError is ApiError.Unknown)
     }

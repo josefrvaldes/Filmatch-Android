@@ -8,7 +8,7 @@ import es.josevaldes.core.utils.serialization.JsonMapper
 import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
 import es.josevaldes.data.network.HttpClient
 import es.josevaldes.data.services.GenreRemoteDataSource
-import es.josevaldes.data.services.MovieRemoteDataSource
+import es.josevaldes.data.services.MoviesRemoteDataSource
 import es.josevaldes.data.services.ProviderRemoteDataSource
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -43,8 +43,8 @@ class NetworkModule {
 
     @Provides
     @Singleton
-    fun provideMoviesService(retrofit: Retrofit): MovieRemoteDataSource {
-        return retrofit.create(MovieRemoteDataSource::class.java)
+    fun provideMoviesService(retrofit: Retrofit): MoviesRemoteDataSource {
+        return retrofit.create(MoviesRemoteDataSource::class.java)
     }
 
     @Provides
