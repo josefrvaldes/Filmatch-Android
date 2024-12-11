@@ -5,7 +5,7 @@ import es.josevaldes.data.results.ApiResult
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-interface ProviderService {
+interface ProviderRemoteDataSource {
 
     @GET("/3/watch/providers/movie")
     suspend fun getMovieProviders(

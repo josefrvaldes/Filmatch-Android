@@ -20,4 +20,8 @@ interface VisitedMoviesDao {
     @Transaction
     @Query("SELECT * FROM visited_movies")
     suspend fun getVisitedMovies(): List<VisitedMovieEntity>
+
+
+    @Query("SELECT EXISTS(SELECT * FROM visited_movies WHERE id = :movieId)")
+    suspend fun isMovieVisited(movieId: String): Boolean
 }

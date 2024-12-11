@@ -7,9 +7,9 @@ import dagger.hilt.components.SingletonComponent
 import es.josevaldes.core.utils.serialization.JsonMapper
 import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
 import es.josevaldes.data.network.HttpClient
-import es.josevaldes.data.services.GenreService
-import es.josevaldes.data.services.MovieService
-import es.josevaldes.data.services.ProviderService
+import es.josevaldes.data.services.GenreRemoteDataSource
+import es.josevaldes.data.services.MovieRemoteDataSource
+import es.josevaldes.data.services.ProviderRemoteDataSource
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
@@ -43,19 +43,19 @@ class NetworkModule {
 
     @Provides
     @Singleton
-    fun provideMoviesService(retrofit: Retrofit): MovieService {
-        return retrofit.create(MovieService::class.java)
+    fun provideMoviesService(retrofit: Retrofit): MovieRemoteDataSource {
+        return retrofit.create(MovieRemoteDataSource::class.java)
     }
 
     @Provides
     @Singleton
-    fun provideGenresService(retrofit: Retrofit): GenreService {
-        return retrofit.create(GenreService::class.java)
+    fun provideGenresService(retrofit: Retrofit): GenreRemoteDataSource {
+        return retrofit.create(GenreRemoteDataSource::class.java)
     }
 
     @Provides
     @Singleton
-    fun provideProvidersService(retrofit: Retrofit): ProviderService {
-        return retrofit.create(ProviderService::class.java)
+    fun provideProvidersService(retrofit: Retrofit): ProviderRemoteDataSource {
+        return retrofit.create(ProviderRemoteDataSource::class.java)
     }
 }

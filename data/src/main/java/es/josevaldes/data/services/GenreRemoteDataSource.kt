@@ -4,7 +4,7 @@ import es.josevaldes.data.responses.GenresListResponse
 import es.josevaldes.data.results.ApiResult
 import retrofit2.http.GET
 
-interface GenreService {
+interface GenreRemoteDataSource {
     @GET("/3/genre/movie/list")
     suspend fun getAllMovieGenres(): ApiResult<GenresListResponse>
 

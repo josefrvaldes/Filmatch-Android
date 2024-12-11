@@ -5,18 +5,18 @@ import es.josevaldes.data.model.GenresList
 import es.josevaldes.data.model.MovieType
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.GenreService
+import es.josevaldes.data.services.GenreRemoteDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retryWhen
 import javax.inject.Inject
 
-class GenreRepository @Inject constructor(private val _genreService: GenreService) {
+class GenreRepository @Inject constructor(private val _genreRemoteDataSource: GenreRemoteDataSource) {
     private fun getAllGenres(type: MovieType): Flow<ApiResult<GenresList>> = flow {
         try {
             val result = when (type) {
-                MovieType.MOVIE -> _genreService.getAllMovieGenres()
-                MovieType.TVSHOW -> _genreService.getAllTvGenres()
+                MovieType.MOVIE -> _genreRemoteDataSource.getAllMovieGenres()
+                MovieType.TVSHOW -> _genreRemoteDataSource.getAllTvGenres()
             }
             if (result is ApiResult.Success) {
                 emit(ApiResult.Success(result.data.toAppModel()))

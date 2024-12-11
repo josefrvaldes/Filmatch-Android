@@ -6,11 +6,11 @@ import es.josevaldes.data.extensions.mappers.toAppModel
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.MovieService
+import es.josevaldes.data.services.MovieRemoteDataSource
 import javax.inject.Inject
 
 class MoviesPagingSource @Inject constructor(
-    private val movieService: MovieService,
+    private val movieRemoteDataSource: MovieRemoteDataSource,
     internal var language: String? = null,
 ) : PagingSource<Int, Movie>() {
 
@@ -22,7 +22,7 @@ class MoviesPagingSource @Inject constructor(
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Movie> {
         val page = params.key ?: 1
-        return when (val result = movieService.getDiscoverMovies(page, language)) {
+        return when (val result = movieRemoteDataSource.getDiscoverMovies(page, language)) {
             is ApiResult.Success -> {
                 val discoverMoviesResponse = result.data
                 totalPages = discoverMoviesResponse.totalPages

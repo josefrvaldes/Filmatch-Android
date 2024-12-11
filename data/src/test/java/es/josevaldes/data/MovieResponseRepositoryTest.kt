@@ -12,7 +12,7 @@ import es.josevaldes.data.responses.MovieResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.MovieService
+import es.josevaldes.data.services.MovieRemoteDataSource
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -29,15 +29,15 @@ class MovieResponseRepositoryTest {
 
     private lateinit var movieRepository: MovieRepository
     private lateinit var moviesPagingSource: MoviesPagingSource
-    private lateinit var movieService: MovieService
+    private lateinit var movieRemoteDataSource: MovieRemoteDataSource
     private var listOfMovies = mutableListOf<MovieResponse>()
     private val config = PagingConfig(pageSize = 5, enablePlaceholders = false)
 
     @Before
     fun setUp() {
-        movieService = mockk()
-        moviesPagingSource = MoviesPagingSource(movieService, "en")
-        movieRepository = MovieRepository(moviesPagingSource, movieService)
+        movieRemoteDataSource = mockk()
+        moviesPagingSource = MoviesPagingSource(movieRemoteDataSource, "en")
+        movieRepository = MovieRepository(moviesPagingSource, movieRemoteDataSource)
         for (i in 1..20) {
             listOfMovies.add(MovieResponse(id = i, title = "Movie $i"))
         }
@@ -46,7 +46,13 @@ class MovieResponseRepositoryTest {
     @Test
     fun `getDiscoverMovies should return success on valid result`() = runTest {
         val resultList = listOfMovies.subList(0, config.pageSize)
-        coEvery { movieService.getDiscoverMovies(any(), any(), any()) } returns ApiResult.Success(
+        coEvery {
+            movieRemoteDataSource.getDiscoverMovies(
+                any(),
+                any(),
+                any()
+            )
+        } returns ApiResult.Success(
             DiscoverMoviesResponse(
                 results = resultList,
                 page = 1,
@@ -63,7 +69,7 @@ class MovieResponseRepositoryTest {
     fun `getDiscoverMovies should return success after appending data`() = runTest {
         var counter = 0
         var currentSubList = mutableListOf<MovieResponse>()
-        coEvery { movieService.getDiscoverMovies(any(), any(), any()) } answers {
+        coEvery { movieRemoteDataSource.getDiscoverMovies(any(), any(), any()) } answers {
             currentSubList = listOfMovies.subList(
                 counter * config.pageSize,
                 counter * config.pageSize + config.pageSize
@@ -90,7 +96,13 @@ class MovieResponseRepositoryTest {
 
     @Test
     fun `getDiscoverMovies should handle Unknown errors correctly`() = runTest {
-        coEvery { movieService.getDiscoverMovies(any(), any(), any()) } returns ApiResult.Error(
+        coEvery {
+            movieRemoteDataSource.getDiscoverMovies(
+                any(),
+                any(),
+                any()
+            )
+        } returns ApiResult.Error(
             ApiError.Unknown
         )
         val testPager = TestPager(config, moviesPagingSource)
@@ -101,7 +113,13 @@ class MovieResponseRepositoryTest {
 
     @Test
     fun `getDiscoverMovies should handle ResourceNotFound errors correctly`() = runTest {
-        coEvery { movieService.getDiscoverMovies(any(), any(), any()) } returns ApiResult.Error(
+        coEvery {
+            movieRemoteDataSource.getDiscoverMovies(
+                any(),
+                any(),
+                any()
+            )
+        } returns ApiResult.Error(
             ApiError.ResourceNotFound
         )
         val testPager = TestPager(config, moviesPagingSource)
@@ -115,7 +133,7 @@ class MovieResponseRepositoryTest {
     @Test
     fun `findById should return success on valid result`() = runTest {
         val movie = listOfMovies[0]
-        coEvery { movieService.findById(any(), any()) } returns ApiResult.Success(movie)
+        coEvery { movieRemoteDataSource.findById(any(), any()) } returns ApiResult.Success(movie)
         val resultFlow = movieRepository.findById(movie.id, "")
         resultFlow.collect {
             assertEquals(ApiResult.Success(movie.toAppModel()), it)
@@ -124,7 +142,12 @@ class MovieResponseRepositoryTest {
 
     @Test
     fun `findById should return error on invalid result`() = runTest {
-        coEvery { movieService.findById(any(), any()) } returns ApiResult.Error(ApiError.Unknown)
+        coEvery {
+            movieRemoteDataSource.findById(
+                any(),
+                any()
+            )
+        } returns ApiResult.Error(ApiError.Unknown)
         val resultFlow = movieRepository.findById(1, "")
         resultFlow.collect {
             assertEquals(ApiResult.Error(ApiError.Unknown), it)
@@ -134,7 +157,7 @@ class MovieResponseRepositoryTest {
     @Test
     fun `findById should return error on resource not found`() = runTest {
         coEvery {
-            movieService.findById(
+            movieRemoteDataSource.findById(
                 any(),
                 any()
             )

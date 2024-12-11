@@ -4,7 +4,7 @@ import es.josevaldes.data.extensions.mappers.toProvidersList
 import es.josevaldes.data.model.Provider
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.ProviderService
+import es.josevaldes.data.services.ProviderRemoteDataSource
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -12,16 +12,16 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retryWhen
 import javax.inject.Inject
 
-class ProviderRepository @Inject constructor(private val _providerService: ProviderService) {
+class ProviderRepository @Inject constructor(private val _providerRemoteDataSource: ProviderRemoteDataSource) {
     fun getMovieProviders(language: String, region: String): Flow<ApiResult<List<Provider>>> =
         flow {
             try {
                 coroutineScope {
                     // let's make two requests in parallel
                     val movieProvidersResult =
-                        async { _providerService.getMovieProviders(language, region) }
+                        async { _providerRemoteDataSource.getMovieProviders(language, region) }
                     val tvProvidersResult =
-                        async { _providerService.getTvProviders(language, region) }
+                        async { _providerRemoteDataSource.getTvProviders(language, region) }
 
                     val movieProviders = movieProvidersResult.await()
                     val tvProviders = tvProvidersResult.await()

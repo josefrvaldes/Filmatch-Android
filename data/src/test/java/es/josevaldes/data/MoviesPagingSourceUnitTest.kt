@@ -8,7 +8,7 @@ import es.josevaldes.data.responses.MovieResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.MovieService
+import es.josevaldes.data.services.MovieRemoteDataSource
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
@@ -18,7 +18,7 @@ import org.junit.Test
 
 class MoviesPagingSourceUnitTest {
 
-    private val movieService: MovieService = mockk()
+    private val movieRemoteDataSource: MovieRemoteDataSource = mockk()
 
 
     @Test
@@ -64,18 +64,36 @@ class MoviesPagingSourceUnitTest {
         )
 
         // let's mock a successful response for each page
-        coEvery { movieService.getDiscoverMovies(1, any(), any()) } returns ApiResult.Success(
+        coEvery {
+            movieRemoteDataSource.getDiscoverMovies(
+                1,
+                any(),
+                any()
+            )
+        } returns ApiResult.Success(
             mockedResponse1
         )
-        coEvery { movieService.getDiscoverMovies(2, any(), any()) } returns ApiResult.Success(
+        coEvery {
+            movieRemoteDataSource.getDiscoverMovies(
+                2,
+                any(),
+                any()
+            )
+        } returns ApiResult.Success(
             mockedResponse2
         )
-        coEvery { movieService.getDiscoverMovies(3, any(), any()) } returns ApiResult.Success(
+        coEvery {
+            movieRemoteDataSource.getDiscoverMovies(
+                3,
+                any(),
+                any()
+            )
+        } returns ApiResult.Success(
             mockedResponse3
         )
 
         // let's init the paging source
-        val pagingSource = MoviesPagingSource(movieService, "en")
+        val pagingSource = MoviesPagingSource(movieRemoteDataSource, "en")
         val pageSize = MovieDBPagingConfig.pagingConfig.pageSize
         val enablePlaceholders = MovieDBPagingConfig.pagingConfig.enablePlaceholders
 
@@ -141,14 +159,14 @@ class MoviesPagingSourceUnitTest {
     @Test
     fun `MoviesPagingSource should handle server exception properly`() = runBlocking {
         coEvery {
-            movieService.getDiscoverMovies(
+            movieRemoteDataSource.getDiscoverMovies(
                 1,
                 any(),
                 any()
             )
         } returns ApiResult.Error(ApiError.Unknown)
 
-        val pagingSource = MoviesPagingSource(movieService, "en")
+        val pagingSource = MoviesPagingSource(movieRemoteDataSource, "en")
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(
@@ -167,14 +185,14 @@ class MoviesPagingSourceUnitTest {
     @Test
     fun `MoviesPagingSource should handle 404 error properly`() = runBlocking {
         coEvery {
-            movieService.getDiscoverMovies(
+            movieRemoteDataSource.getDiscoverMovies(
                 1,
                 any(),
                 any()
             )
         } returns ApiResult.Error(ApiError.ResourceNotFound)
 
-        val pagingSource = MoviesPagingSource(movieService, "en")
+        val pagingSource = MoviesPagingSource(movieRemoteDataSource, "en")
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(
@@ -201,11 +219,17 @@ class MoviesPagingSourceUnitTest {
             totalPages = 1
         )
 
-        coEvery { movieService.getDiscoverMovies(1, any(), any()) } returns ApiResult.Success(
+        coEvery {
+            movieRemoteDataSource.getDiscoverMovies(
+                1,
+                any(),
+                any()
+            )
+        } returns ApiResult.Success(
             emptyResponse
         )
 
-        val pagingSource = MoviesPagingSource(movieService, "en")
+        val pagingSource = MoviesPagingSource(movieRemoteDataSource, "en")
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(
@@ -235,11 +259,17 @@ class MoviesPagingSourceUnitTest {
             totalPages = 3
         )
 
-        coEvery { movieService.getDiscoverMovies(1, any(), any()) } returns ApiResult.Success(
+        coEvery {
+            movieRemoteDataSource.getDiscoverMovies(
+                1,
+                any(),
+                any()
+            )
+        } returns ApiResult.Success(
             firstResponse
         )
 
-        val pagingSource = MoviesPagingSource(movieService, "en")
+        val pagingSource = MoviesPagingSource(movieRemoteDataSource, "en")
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(

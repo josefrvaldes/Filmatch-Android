@@ -6,7 +6,7 @@ import es.josevaldes.data.responses.GenreResponse
 import es.josevaldes.data.responses.GenresListResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.GenreService
+import es.josevaldes.data.services.GenreRemoteDataSource
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,7 +20,7 @@ import org.junit.Test
 class GenreRepositoryTest {
 
     private lateinit var genreRepository: GenreRepository
-    private val genreService: GenreService = mockk()
+    private val genreRemoteDataSource: GenreRemoteDataSource = mockk()
 
     // Sample data
     private val movieGenresList =
@@ -30,13 +30,15 @@ class GenreRepositoryTest {
 
     @Before
     fun setUp() {
-        genreRepository = GenreRepository(genreService)
+        genreRepository = GenreRepository(genreRemoteDataSource)
     }
 
     @Test
     fun `getAllMovieGenres should return success on valid result`() = runTest {
         // Mock service response
-        coEvery { genreService.getAllMovieGenres() } returns ApiResult.Success(movieGenresList)
+        coEvery { genreRemoteDataSource.getAllMovieGenres() } returns ApiResult.Success(
+            movieGenresList
+        )
 
         val resultFlow = genreRepository.getAllMovieGenres()
         resultFlow.collect { result ->
@@ -52,7 +54,7 @@ class GenreRepositoryTest {
     fun `getAllMovieGenres should return error on service error`() = runTest {
         // Mock service response
         val error = ApiResult.Error(ApiError.ResourceNotFound)
-        coEvery { genreService.getAllMovieGenres() } returns error
+        coEvery { genreRemoteDataSource.getAllMovieGenres() } returns error
 
         val resultFlow = genreRepository.getAllMovieGenres()
         resultFlow.collect { result ->
@@ -64,7 +66,7 @@ class GenreRepositoryTest {
     @Test
     fun `getAllTvGenres should return success on valid result`() = runTest {
         // Mock service response
-        coEvery { genreService.getAllTvGenres() } returns ApiResult.Success(tvGenresList)
+        coEvery { genreRemoteDataSource.getAllTvGenres() } returns ApiResult.Success(tvGenresList)
 
         val resultFlow = genreRepository.getAllTvGenres()
         resultFlow.collect { result ->
@@ -80,7 +82,7 @@ class GenreRepositoryTest {
     fun `getAllTvGenres should return error on service error`() = runTest {
         // Mock service response
         val error = ApiResult.Error(ApiError.Unknown)
-        coEvery { genreService.getAllTvGenres() } returns error
+        coEvery { genreRemoteDataSource.getAllTvGenres() } returns error
 
         val resultFlow = genreRepository.getAllTvGenres()
         resultFlow.collect { result ->
@@ -92,7 +94,7 @@ class GenreRepositoryTest {
     @Test
     fun `getAllMovieGenres should handle exceptions`() = runTest {
         // Mock service to throw exception
-        coEvery { genreService.getAllMovieGenres() } throws Exception("Unexpected error")
+        coEvery { genreRemoteDataSource.getAllMovieGenres() } throws Exception("Unexpected error")
 
         val resultFlow = genreRepository.getAllMovieGenres()
         resultFlow.collect { result ->

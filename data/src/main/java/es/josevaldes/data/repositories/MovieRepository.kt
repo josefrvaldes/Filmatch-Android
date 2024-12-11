@@ -10,7 +10,7 @@ import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.paging.MoviesPagingSource
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.MovieService
+import es.josevaldes.data.services.MovieRemoteDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retryWhen
@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 class MovieRepository @Inject constructor(
     private val _moviesPagingSource: MoviesPagingSource,
-    private val _movieService: MovieService
+    private val _movieRemoteDataSource: MovieRemoteDataSource,
 ) {
     fun getDiscoverMovies(
         language: String?
@@ -44,7 +44,7 @@ class MovieRepository @Inject constructor(
         try {
             val country = language.substring(language.indexOf("-") + 1)
             val result = when (filters.contentType) {
-                ContentType.MOVIES -> _movieService.getDiscoverMovies(
+                ContentType.MOVIES -> _movieRemoteDataSource.getDiscoverMovies(
                     page = page,
                     language = language,
                     sortBy = filters.sortBy,
@@ -57,7 +57,7 @@ class MovieRepository @Inject constructor(
                     withDuration = filters.duration?.duration
                 )
 
-                ContentType.TV_SHOWS -> _movieService.getDiscoverTV(
+                ContentType.TV_SHOWS -> _movieRemoteDataSource.getDiscoverTV(
                     page = page,
                     language = language,
                     sortBy = filters.sortBy,
@@ -71,6 +71,7 @@ class MovieRepository @Inject constructor(
                 )
             }
             if (result is ApiResult.Success) {
+
                 emit(ApiResult.Success(result.data.toAppModel()))
             } else {
                 emit(result as ApiResult.Error)
@@ -88,7 +89,7 @@ class MovieRepository @Inject constructor(
         language: String?
     ): Flow<ApiResult<Movie>> = flow {
         try {
-            val result = _movieService.findById(id, language)
+            val result = _movieRemoteDataSource.findById(id, language)
             if (result is ApiResult.Success) {
                 emit(ApiResult.Success(result.data.toAppModel()))
             } else {
@@ -97,5 +98,9 @@ class MovieRepository @Inject constructor(
         } catch (e: Exception) {
             emit(ApiResult.Error(ApiError.Unknown))
         }
+    }
+
+    fun markedMovieAsVisited(movie: Movie) {
+//        _moviesPagingSource.markedMovieAsVisited(movie)
     }
 }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -77,5 +78,30 @@ class VisitedMoviesDaoTest {
         val visitedMovies = visitedMoviesDao.getVisitedMovies()
 
         assertTrue(visitedMovies.isEmpty())
+    }
+
+
+    @Test
+    fun isMovieVisited_whenMovieExists_shouldReturnTrue() = runBlocking {
+        val movie = VisitedMovieEntity(id = "1")
+        visitedMoviesDao.insertVisitedMovie(movie)
+
+        val result = visitedMoviesDao.isMovieVisited("1")
+        assertTrue(result)
+    }
+
+    @Test
+    fun isMovieVisited_whenMovieDoesNotExist_shouldReturnFalse() = runBlocking {
+        val result = visitedMoviesDao.isMovieVisited("1")
+        assertFalse(result)
+    }
+
+    @Test
+    fun isMovieVisited_whenDifferentMovieExists_shouldReturnFalse() = runBlocking {
+        val movie = VisitedMovieEntity(id = "2")
+        visitedMoviesDao.insertVisitedMovie(movie)
+
+        val result = visitedMoviesDao.isMovieVisited("1")
+        assertFalse(result)
     }
 }
