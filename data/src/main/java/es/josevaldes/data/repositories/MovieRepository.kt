@@ -12,6 +12,8 @@ import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MoviesRemoteDataSource
 import es.josevaldes.local.datasources.MoviesLocalDataSource
+import es.josevaldes.local.entities.VisitedFiltersEntity
+import es.josevaldes.local.entities.VisitedMovieEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retryWhen
@@ -42,7 +44,6 @@ class MovieRepository @Inject constructor(
         language: String,
         filters: MovieFilters
     ): Flow<ApiResult<DiscoverMoviesData>> = flow {
-
         try {
             val country = language.substring(language.indexOf("-") + 1)
             val result = when (filters.contentType) {
@@ -73,7 +74,11 @@ class MovieRepository @Inject constructor(
                 )
             }
             if (result is ApiResult.Success) {
-
+                val visitedFiltersEntity = VisitedFiltersEntity(
+                    filtersHash = filters.filtersHash,
+                    maxPage = page
+                )
+                _moviesLocalDataSource.insertVisitedFiltersIfMaxPageIsHigher(visitedFiltersEntity)
                 emit(ApiResult.Success(result.data.toAppModel()))
             } else {
                 emit(result as ApiResult.Error)
@@ -102,7 +107,19 @@ class MovieRepository @Inject constructor(
         }
     }
 
-    fun markedMovieAsVisited(movie: Movie) {
-//        _moviesPagingSource.markedMovieAsVisited(movie)
+    suspend fun markedMovieAsVisited(movie: Movie) {
+        val visitedMovieEntity = VisitedMovieEntity(
+            id = movie.id.toString()
+        )
+        _moviesLocalDataSource.insertVisitedMovie(visitedMovieEntity)
+    }
+
+    suspend fun isMovieVisited(movieId: String): Boolean {
+        return _moviesLocalDataSource.isMovieVisited(movieId)
+    }
+
+    suspend fun getMaxPage(filters: MovieFilters): Int? {
+        val hash = filters.filtersHash
+        return _moviesLocalDataSource.getMaxPage(hash)
     }
 }

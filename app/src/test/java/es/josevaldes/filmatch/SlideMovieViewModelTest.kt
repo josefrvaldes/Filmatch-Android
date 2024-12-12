@@ -210,12 +210,12 @@ class SlideMovieViewModelTest {
 
             // let's swipe all the movies right before reaching the threshold
             for (i in 0 until LOADING_THRESHOLD) {
-                viewModel.onSwipe()
+                viewModel.onSwipe(movie)
                 assertEquals(resultsPerPage - i - 1, viewModel.movieListFlow.value.size)
             }
 
             // let's swipe one more time we will reach the threshold and the next page will be loaded
-            viewModel.onSwipe()
+            viewModel.onSwipe(movie)
             assertEquals(resultsPerPage + LOADING_THRESHOLD - 1, viewModel.movieListFlow.value.size)
         }
 

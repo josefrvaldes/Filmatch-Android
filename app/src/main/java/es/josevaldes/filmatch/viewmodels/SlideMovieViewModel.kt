@@ -4,16 +4,20 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import es.josevaldes.data.model.Movie
 import es.josevaldes.data.model.MovieFilters
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.utils.DeviceLocaleProvider
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 import javax.inject.Inject
 import kotlin.random.Random
 
@@ -71,8 +75,20 @@ class SlideMovieViewModel @Inject constructor(
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal fun loadNextPage() {
         if (currentPage < pages) {
+//            currentPage = checkWhatShouldBeTheNextPage()
             currentPage++
             loadCurrentPage()
+        }
+    }
+
+    private suspend fun cleanVisitedMovies(movies: List<Movie>): List<Movie> {
+        return withContext(Dispatchers.IO) {
+            movies.filter { movie ->
+                Timber.tag("local_cache_debug").d("Checking if movie ${movie.id} has been visited")
+                val isVisited = movieRepository.isMovieVisited(movie.id.toString())
+                Timber.tag("local_cache_debug").d("Movie ${movie.id} has been visited: $isVisited")
+                !isVisited
+            }
         }
     }
 
@@ -86,8 +102,44 @@ class SlideMovieViewModel @Inject constructor(
                     _isLoading.value = false
                     if (result is ApiResult.Success) {
                         pages = result.data.totalPages
+                        var movies = result.data.results
+
+                        // we have received one page, if we are in the first three pages, we will have to
+                        // check if the user has already visited it completely
+                        if (currentPage <= 3) {
+                            val receivedMovies = result.data.results
+                            val cleanedMovies = cleanVisitedMovies(receivedMovies)
+                            if (cleanedMovies.isEmpty()) {
+                                // we will visit always the first 3 pages just in case there are
+                                // new movies in any of them
+                                if (currentPage <= 3) {
+                                    loadNextPage()
+                                } else {
+                                    // otherwise we will just skip to the max page visited
+                                    val maxPage = movieRepository.getMaxPage(_movieFilters.value)
+                                    maxPage?.let {
+                                        currentPage = it
+                                        loadCurrentPage()
+                                    }
+                                }
+                                return@collect
+
+
+                                // we have received a page and we have filtered some movies, that means
+                                // that the user already visited this page in the past. Since we are not
+                                // sure how many movies has the user visited in the past, let's check if
+                                // we should load the next page just in case.
+                                // In this case, we won't force the next page to be loaded now, we will
+                                // do this check instead
+                            } else if (cleanedMovies.size < receivedMovies.size) {
+                                checkIfWeShouldLoadNextPage()
+                            }
+
+                            movies = cleanedMovies
+                        }
+
                         _isLoading.value = false
-                        val swipeableMovies = result.data.results.map { SwipeableMovie(it) }
+                        val swipeableMovies = movies.map { SwipeableMovie(it) }
                         initializeMovies(swipeableMovies)
                         _movieListFlow.value.addAll(swipeableMovies)
                         if (_observableMovies.value.isEmpty()) {
@@ -125,12 +177,20 @@ class SlideMovieViewModel @Inject constructor(
         }
     }
 
-    fun onSwipe() {
+    private fun checkIfWeShouldLoadNextPage() {
+        if (_movieListFlow.value.size < LOADING_THRESHOLD && currentPage < pages) {
+            loadNextPage()
+        }
+    }
+
+    fun onSwipe(movie: SwipeableMovie) {
+        viewModelScope.launch {
+            movieRepository.markedMovieAsVisited(movie.movie)
+        }
+
         if (_movieListFlow.value.isNotEmpty()) {
             _movieListFlow.value.removeAt(0)
-            if (_movieListFlow.value.size < LOADING_THRESHOLD && currentPage < pages) {
-                loadNextPage()
-            }
+            checkIfWeShouldLoadNextPage()
             refillObservableList()
             getMovieThatWillBeObservableNext()
         }

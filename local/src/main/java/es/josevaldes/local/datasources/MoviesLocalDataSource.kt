@@ -28,8 +28,11 @@ class MoviesLocalDataSource @Inject constructor(
         moviesDao.insertVisitedMovies(visitedMovies)
     }
 
-    suspend fun insertVisitedFilters(visitedFilters: VisitedFiltersEntity) {
-        moviesDao.insertVisitedFilters(visitedFilters)
+    suspend fun insertVisitedFiltersIfMaxPageIsHigher(visitedFilters: VisitedFiltersEntity) {
+        val maxPage = moviesDao.getMaxPage(visitedFilters.filtersHash)
+        if (maxPage == null || visitedFilters.maxPage > maxPage) {
+            moviesDao.insertVisitedFilters(visitedFilters)
+        }
     }
 
     suspend fun updateMaxPage(filtersHash: String, maxPage: Int) {

@@ -203,8 +203,8 @@ private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (Movie) -> 
                         observableMoviesCount = observableMovies.value.size,
                         movie = movie,
                         index = index,
-                        onSwipeCompleted = {
-                            viewModel.onSwipe()
+                        onSwipeCompleted = { movie ->
+                            viewModel.onSwipe(movie)
                         },
                         onMovieClicked = { movie ->
                             onNavigateToMovieDetailsScreen(movie)
@@ -238,7 +238,7 @@ private fun SwipeableMovieView(
     observableMoviesCount: Int,
     movie: SwipeableMovie,
     index: Int,
-    onSwipeCompleted: () -> Unit,
+    onSwipeCompleted: (SwipeableMovie) -> Unit,
     onMovieClicked: (Movie) -> Unit,
 ) {
     val translationOffset = remember { Animatable(0f) }
@@ -258,7 +258,8 @@ private fun SwipeableMovieView(
             observableMoviesCount,
             rotationOffset,
             translationOffset,
-            onSwipeCompleted
+            onSwipeCompleted,
+            movie
         )
     }
 
@@ -292,7 +293,8 @@ private suspend fun performAnimationAccordingToLikeButtonAction(
     observableMoviesCount: Int,
     rotationOffset: Animatable<Float, AnimationVector1D>,
     translationOffset: Animatable<Float, AnimationVector1D>,
-    onSwipeCompleted: () -> Unit
+    onSwipeCompleted: (SwipeableMovie) -> Unit,
+    movie: SwipeableMovie
 ) {
     if (index == observableMoviesCount - 1 && likeButtonAction != null) {
         val targetTranslationOffset = when (likeButtonAction) {
@@ -321,7 +323,7 @@ private suspend fun performAnimationAccordingToLikeButtonAction(
             awaitAll(rotationJob, translationJob)
         }
 
-        onSwipeCompleted()
+        onSwipeCompleted(movie)
     }
 }
 
@@ -387,14 +389,11 @@ private suspend fun handleSwipeRelease(
     movie: SwipeableMovie,
     currentSwipedStatus: MutableState<MovieSwipedStatus>,
     screenWidth: Int,
-    onSwipeCompleted: () -> Unit
+    onSwipeCompleted: (SwipeableMovie) -> Unit
 ) {
     if (translationOffset.value.absoluteValue > swipedMaxOffset) {
         Timber.tag("SlideMovieScreen").d("Swiped confirmed")
 
-        Timber.tag("SlideMovieScreen").d("Removing tint")
-        movie.swipedStatus = MovieSwipedStatus.NONE
-        currentSwipedStatus.value = movie.swipedStatus
 
         // animating outside the screen
         val result = translationOffset.animateTo(
@@ -405,9 +404,14 @@ private suspend fun handleSwipeRelease(
         if (result.endReason == AnimationEndReason.Finished) {
             // let's remove the last movie
             Timber.tag("SlideMovieScreen").d("Removing movie: ${movie.movie.title}")
-            onSwipeCompleted()
+            onSwipeCompleted(movie)
             translationOffset.snapTo(0f)
         }
+
+
+        Timber.tag("SlideMovieScreen").d("Removing tint")
+        movie.swipedStatus = MovieSwipedStatus.NONE
+        currentSwipedStatus.value = movie.swipedStatus
     } else {
         coroutineScope {
             val rotationJob = async {
@@ -470,7 +474,7 @@ private fun Modifier.swipeHandler(
     rotationOffset: Animatable<Float, AnimationVector1D>,
     movie: SwipeableMovie,
     currentSwipedStatus: MutableState<MovieSwipedStatus>,
-    onSwipeCompleted: () -> Unit
+    onSwipeCompleted: (SwipeableMovie) -> Unit
 ): Modifier {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
