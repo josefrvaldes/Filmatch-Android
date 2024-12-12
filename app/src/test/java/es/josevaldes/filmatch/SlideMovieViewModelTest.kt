@@ -194,9 +194,10 @@ class SlideMovieViewModelTest {
     fun `onSwipe should remove the first movie from the list and load the next page if the list is below the threshold`() =
         runTest {
             val resultsPerPage = 10
-            val movies = List(resultsPerPage) { index -> Movie(id = index) }
+            val movies =
+                List(resultsPerPage) { index -> Movie(id = index) }.map { SwipeableMovie(it) }
             val discoverMoviesResponse = DiscoverMoviesData(
-                movies, 1, 20, 2
+                movies.map { it.movie }, 1, 20, 2
             )
             coEvery {
                 movieRepository.getDiscoverMovies(
@@ -210,12 +211,12 @@ class SlideMovieViewModelTest {
 
             // let's swipe all the movies right before reaching the threshold
             for (i in 0 until LOADING_THRESHOLD) {
-                viewModel.onSwipe(movie)
+                viewModel.onSwipe(movies.first())
                 assertEquals(resultsPerPage - i - 1, viewModel.movieListFlow.value.size)
             }
 
             // let's swipe one more time we will reach the threshold and the next page will be loaded
-            viewModel.onSwipe(movie)
+            viewModel.onSwipe(movies.first())
             assertEquals(resultsPerPage + LOADING_THRESHOLD - 1, viewModel.movieListFlow.value.size)
         }
 

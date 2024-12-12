@@ -1,15 +1,16 @@
 package es.josevaldes.data.model
 
 import es.josevaldes.core.utils.md5
+import java.time.LocalDateTime
 
 data class MovieFilters(
     val contentType: ContentType = ContentType.MOVIES,
-    val genres: List<Genre>? = null,
-    val providers: List<Provider>? = null,
+    val genres: List<Genre>? = listOf(),
+    val providers: List<Provider>? = listOf(),
     val duration: Duration? = null,
     val score: Score? = null,
-    val yearFrom: Int? = null,
-    val yearTo: Int? = null,
+    val yearFrom: Int? = 2000,
+    val yearTo: Int? = LocalDateTime.now().year,
     val sortBy: String = "popularity.desc",
 ) {
     val filtersHash: String
