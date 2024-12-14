@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -155,7 +154,7 @@ private fun CastSection(
             LazyRow(modifier = Modifier.padding(top = 16.dp, bottom = 32.dp)) {
                 items(
                     count = displayableCast.size,
-                    key = { index -> displayableCast[index].id.toString() },
+                    key = { index -> displayableCast[index].id.toString() + index },
                     contentType = { index -> displayableCast[index] },
                 ) {
                     val currentPerson = displayableCast[it]
@@ -251,7 +250,7 @@ private fun VideosSection(
             LazyRow(modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)) {
                 items(
                     count = videos.size,
-                    key = { index -> videos[index].id.toString() },
+                    key = { index -> videos[index].id.toString() + index },
                     contentType = { index -> videos[index] },
                 ) { index ->
                     val currentVideo = videos[index]

@@ -149,7 +149,7 @@ class FiltersViewModelTest {
     @Suppress("UNCHECKED_CAST")
     fun `otherFilterClicked should toggle time filter`() {
         val timeFilter = Filter(Duration(120), false)
-        viewModel.otherFilterClicked(timeFilter as Filter<Any>)
+        viewModel.otherFilterClicked(timeFilter as Filter<Any>, true)
 
         val toggledFilter = timeFilter.copy(isSelected = true)
         assertTrue(viewModel.timeFilters.value.contains(toggledFilter as Filter<Duration>))
@@ -315,43 +315,43 @@ class FiltersViewModelTest {
     fun `otherFilterClicked should allow only one filter per type to be selected at a time`() {
         // Select a duration (95 minutes) and verify it's the only selected one
         val duration95 = OtherFilters.timeFilters[0]
-        viewModel.otherFilterClicked(duration95 as Filter<Any>)
+        viewModel.otherFilterClicked(duration95 as Filter<Any>, true)
         assertTrue(viewModel.timeFilters.value.first { it.item == Duration(95) }.isSelected)
         assertFalse(viewModel.timeFilters.value.any { it.item != Duration(95) && it.isSelected })
 
         // Select another duration (120 minutes) and verify the previous one is deselected
         val duration120 = OtherFilters.timeFilters[1]
-        viewModel.otherFilterClicked(duration120 as Filter<Any>)
+        viewModel.otherFilterClicked(duration120 as Filter<Any>, true)
         assertTrue(viewModel.timeFilters.value.first { it.item == Duration(120) }.isSelected)
         assertFalse(viewModel.timeFilters.value.any { it.item == Duration(95) && it.isSelected })
 
         // Deselect the current duration (120 minutes) and verify none are selected
-        viewModel.otherFilterClicked(duration120 as Filter<Any>)
+        viewModel.otherFilterClicked(duration120 as Filter<Any>, true)
         assertFalse(viewModel.timeFilters.value.any { it.isSelected })
 
         // Select a score (50%) and verify it's the only selected one
         val score50 = OtherFilters.scoreFilters[0]
-        viewModel.otherFilterClicked(score50 as Filter<Any>)
+        viewModel.otherFilterClicked(score50 as Filter<Any>, true)
         assertTrue(viewModel.scoreFilters.value.first { it.item == Score(5f) }.isSelected)
         assertFalse(viewModel.scoreFilters.value.any { it.item != Score(5f) && it.isSelected })
 
         // Select another score (75%) and verify the previous one is deselected
         val score75 = OtherFilters.scoreFilters[1]
-        viewModel.otherFilterClicked(score75 as Filter<Any>)
+        viewModel.otherFilterClicked(score75 as Filter<Any>, true)
         assertTrue(viewModel.scoreFilters.value.first { it.item == Score(7.5f) }.isSelected)
         assertFalse(viewModel.scoreFilters.value.any { it.item == Score(5f) && it.isSelected })
 
         // Deselect the current score (75%) and verify none are selected
-        viewModel.otherFilterClicked(score75 as Filter<Any>)
+        viewModel.otherFilterClicked(score75 as Filter<Any>, true)
         assertFalse(viewModel.scoreFilters.value.any { it.isSelected })
 
         // Ensure that selecting a duration does not affect scores
-        viewModel.otherFilterClicked(duration95 as Filter<Any>)
+        viewModel.otherFilterClicked(duration95 as Filter<Any>, true)
         assertTrue(viewModel.timeFilters.value.first { it.item == Duration(95) }.isSelected)
         assertFalse(viewModel.scoreFilters.value.any { it.isSelected })
 
         // Ensure that selecting a score does not affect durations
-        viewModel.otherFilterClicked(score50 as Filter<Any>)
+        viewModel.otherFilterClicked(score50 as Filter<Any>, true)
         assertTrue(viewModel.scoreFilters.value.first { it.item == Score(5f) }.isSelected)
         assertTrue(viewModel.timeFilters.value.first { it.item == Duration(95) }.isSelected)
     }

@@ -26,7 +26,7 @@ import javax.inject.Inject
 class FiltersViewModel @Inject constructor(
     private val genresRepository: GenreRepository,
     private val providersRepository: ProviderRepository,
-    deviceLocaleProvider: DeviceLocaleProvider
+    private val deviceLocaleProvider: DeviceLocaleProvider
 ) : ViewModel() {
 
     private val _contentTypes = MutableStateFlow(OtherFilters.contentTypeFilters.toList())
@@ -117,7 +117,7 @@ class FiltersViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun contentTypeClicked(contentType: Filter<ContentType>) {
         val types = _contentTypes.value.toMutableList()
         val index = types.indexOf(contentType)
@@ -275,8 +275,24 @@ class FiltersViewModel @Inject constructor(
         _toYear.value = year
     }
 
+    /**
+     * Handles the logic for toggling the selected state of a filter and deselecting all others in the same group.
+     *
+     * Depending on the type of the provided filter (`Duration` or another type), the method processes the corresponding
+     * list of filters (`_timeFilters` or `_scoreFilters`) to toggle the selected state of the specified filter.
+     * - If the filter is toggled, its selection state will be inverted.
+     * - All other filters in the list will be deselected.
+     *
+     * @param filter The filter to toggle. It can contain any item type, such as `Duration` or `Score`.
+     * @param toggleState A flag indicating whether to toggle the selection state of the filter. If `true`,
+     * the filter's state will be inverted; if `false`, the filter's current state will be preserved.
+     *
+     * Example:
+     * If the user clicks on a filter in a group, this method ensures that only the clicked filter is selected,
+     * and all others are deselected.
+     */
     @Suppress("UNCHECKED_CAST")
-    fun otherFilterClicked(filter: Filter<Any>) {
+    fun otherFilterClicked(filter: Filter<Any>, toggleState: Boolean) {
         val listToProcess = if (filter.item is Duration) {
             _timeFilters.value.toMutableList() as MutableList<Filter<Any>>
         } else {
@@ -287,7 +303,8 @@ class FiltersViewModel @Inject constructor(
         val index = listToProcess.indexOf(filter)
         listToProcess.forEachIndexed { i, item ->
             if (i == index) {
-                listToProcess[i] = item.copy(isSelected = !selectedStatus)
+                listToProcess[i] =
+                    item.copy(isSelected = if (toggleState) !selectedStatus else selectedStatus)
             } else {
                 listToProcess[i] = item.copy(isSelected = false)
             }
@@ -323,16 +340,12 @@ class FiltersViewModel @Inject constructor(
             ) // same logic as above
         }
 
-        val duration = _timeFilters.value.firstOrNull { it.item == filters.duration }
-        duration?.let {
-            @Suppress("UNCHECKED_CAST")
-            otherFilterClicked(it as Filter<Any>)
+        filters.duration?.let {
+            otherFilterClicked(Filter(it, true), false)
         }
 
-        val score = _scoreFilters.value.firstOrNull { it.item == filters.score }
-        score?.let {
-            @Suppress("UNCHECKED_CAST")
-            otherFilterClicked(it as Filter<Any>)
+        filters.score?.let {
+            otherFilterClicked(Filter(it, true), false)
         }
 
         _fromYear.value = filters.yearFrom ?: 2000

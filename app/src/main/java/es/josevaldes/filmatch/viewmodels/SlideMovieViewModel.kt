@@ -23,10 +23,8 @@ import kotlin.random.Random
 @HiltViewModel
 class SlideMovieViewModel @Inject constructor(
     private val movieRepository: MovieRepository,
-    deviceLocaleProvider: DeviceLocaleProvider
+    private val deviceLocaleProvider: DeviceLocaleProvider
 ) : ViewModel() {
-
-    private val _language = deviceLocaleProvider.getDeviceLocale()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -91,9 +89,10 @@ class SlideMovieViewModel @Inject constructor(
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal fun loadCurrentPage() {
+        val language = deviceLocaleProvider.getDeviceLocale()
         viewModelScope.launch {
             _isLoading.value = true
-            movieRepository.getDiscoverMovies(currentPage, _language, _movieFilters.value)
+            movieRepository.getDiscoverMovies(currentPage, language, _movieFilters.value)
                 .collect { result ->
                     if (result is ApiResult.Success) {
                         pages = result.data.totalPages
@@ -102,6 +101,13 @@ class SlideMovieViewModel @Inject constructor(
                         // we have received one page, if we are in the first three pages, we will have to
                         // check if the user has already visited it completely
                         val receivedMovies = result.data.results
+
+                        // todo: this means that there are no more results to show
+                        if (receivedMovies.isEmpty()) {
+                            _isLoading.value = false //
+                            return@collect
+                        }
+
                         val cleanedMovies = cleanVisitedMovies(receivedMovies)
                         if (cleanedMovies.isEmpty()) {
                             // we will visit always the first 3 pages just in case there are
