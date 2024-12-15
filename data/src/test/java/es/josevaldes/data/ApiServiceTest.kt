@@ -2,6 +2,7 @@ package es.josevaldes.data
 
 import es.josevaldes.core.utils.serialization.JsonMapper
 import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
+import es.josevaldes.data.responses.DiscoverMovie
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MoviesRemoteDataSource
@@ -121,7 +122,7 @@ class ApiServiceTest {
             assertTrue(discoverResult.totalResults == 1)
             assertTrue(discoverResult.page == 1)
             assertTrue(discoverResult.results.size == 1)
-            assertTrue(discoverResult.results.first().originalLanguage == "The Crow")
+            assertTrue((discoverResult.results.first() as DiscoverMovie).originalTitle == "The Crow")
         }
 
 

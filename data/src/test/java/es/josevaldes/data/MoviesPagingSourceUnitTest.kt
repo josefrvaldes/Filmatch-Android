@@ -27,26 +27,17 @@ class MoviesPagingSourceUnitTest {
     fun `MoviesPagingSource should load data successfully`() = runBlocking {
         val mockedList1 = mutableListOf<DiscoverItem>()
         for (i in 1..20) {
-            mockedList1.add(DiscoverMovie().apply {
-                id = i
-                title = "Movie $i"
-            })
+            mockedList1.add(DiscoverMovie(id = i, title = "Movie $i"))
         }
 
         val mockedList2 = mutableListOf<DiscoverItem>()
         for (i in 21..40) {
-            mockedList2.add(DiscoverMovie().apply {
-                id = i
-                title = "Movie $i"
-            })
+            mockedList2.add(DiscoverMovie(id = i, title = "Movie $i"))
         }
 
         val mockedList3 = mutableListOf<DiscoverItem>()
         for (i in 41..50) {
-            mockedList3.add(DiscoverMovie().apply {
-                id = i
-                title = "Movie $i"
-            })
+            mockedList3.add(DiscoverMovie(id = i, title = "Movie $i"))
         }
 
 
@@ -266,10 +257,7 @@ class MoviesPagingSourceUnitTest {
     fun `MoviesPagingSource should fetching invalid pages correctly`() = runBlocking {
         val fakeMovies = mutableListOf<DiscoverItem>()
         for (i in 1..20) {
-            fakeMovies.add(DiscoverMovie().apply {
-                id = i
-                title = "Movie $i"
-            })
+            fakeMovies.add(DiscoverMovie(id = i, title = "Movie $i"))
         }
 
         val firstResponse = DiscoverResponse(

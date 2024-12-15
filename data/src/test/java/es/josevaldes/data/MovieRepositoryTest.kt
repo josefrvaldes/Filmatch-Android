@@ -46,10 +46,7 @@ class MovieRepositoryTest {
             MovieRepository(moviesPagingSource, moviesRemoteDataSource, moviesLocalDataSource)
         for (i in 1..20) {
             listOfMovies.add(
-                DiscoverMovie().apply {
-                    id = i
-                    title = "Movie $i"
-                }
+                DiscoverMovie(id = i, title = "Movie $i")
             )
         }
     }

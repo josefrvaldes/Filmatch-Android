@@ -13,65 +13,116 @@ data class DiscoverResponse(
     @JsonProperty("total_pages") val totalPages: Int
 )
 
+
 @JsonIgnoreProperties(ignoreUnknown = true)
-open class DiscoverItem {
+open class DiscoverItem(
     @JsonProperty("id")
-    var id: Int = 0
-
+    open val id: Int = 0,
     @JsonProperty("adult")
-    var adult: Boolean? = null
-
+    open val adult: Boolean? = null,
     @JsonProperty("backdrop_path")
-    var backdropPath: String? = null
-
+    open val backdropPath: String? = null,
     @JsonProperty("genre_ids")
-    var genreIds: List<Int> = emptyList()
-
+    open val genreIds: List<Int> = emptyList(),
     @JsonProperty("original_language")
-    var originalLanguage: String? = null
-
+    open val originalLanguage: String? = null,
     @JsonProperty("poster_path")
-    var posterPath: String? = null
-
+    open val posterPath: String? = null,
     @JsonProperty("overview")
-    var overview: String? = null
-
+    open val overview: String? = null,
     @JsonProperty("vote_average")
-    var voteAverage: Double? = null
-
+    open val voteAverage: Double? = null,
     @JsonProperty("vote_count")
-    var voteCount: Int? = null
-
+    open val voteCount: Int? = null,
     @JsonProperty("popularity")
-    var popularity: Double? = null
-}
+    open val popularity: Double? = null,
+)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class DiscoverMovie : DiscoverItem() {
+class DiscoverMovie(
     @JsonProperty("original_title")
-    var originalTitle: String? = null
-
+    var originalTitle: String? = null,
     @JsonProperty("title")
-    var title: String? = null
-
+    var title: String? = null,
     @JsonProperty("release_date")
-    var releaseDate: String? = null
-
+    var releaseDate: String? = null,
     @JsonProperty("video")
-    var video: Boolean? = null
-}
+    var video: Boolean? = null,
+
+
+    @JsonProperty("id")
+    id: Int = 0,
+    @JsonProperty("adult")
+    adult: Boolean? = null,
+    @JsonProperty("backdrop_path")
+    backdropPath: String? = null,
+    @JsonProperty("genre_ids")
+    genreIds: List<Int> = emptyList(),
+    @JsonProperty("original_language")
+    originalLanguage: String? = null,
+    @JsonProperty("poster_path")
+    posterPath: String? = null,
+    @JsonProperty("overview")
+    overview: String? = null,
+    @JsonProperty("vote_average")
+    voteAverage: Double? = null,
+    @JsonProperty("vote_count")
+    voteCount: Int? = null,
+    @JsonProperty("popularity")
+    popularity: Double? = null,
+) : DiscoverItem(
+    id = id,
+    adult = adult,
+    backdropPath = backdropPath,
+    genreIds = genreIds,
+    originalLanguage = originalLanguage,
+    posterPath = posterPath,
+    overview = overview,
+    voteAverage = voteAverage,
+    voteCount = voteCount,
+    popularity = popularity
+)
+
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class DiscoverTV : DiscoverItem() {
+class DiscoverTV(
     @JsonProperty("original_name")
-    var originalName: String? = null
-
+    var originalName: String? = null,
     @JsonProperty("name")
-    var name: String? = null
-
+    var name: String? = null,
     @JsonProperty("first_air_date")
-    var firstAirDate: String? = null
-
+    var firstAirDate: String? = null,
     @JsonProperty("origin_country")
-    var originCountry: List<String>? = emptyList()
-}
+    var originCountry: List<String>? = emptyList(),
+    @JsonProperty("id")
+    id: Int = 0,
+    @JsonProperty("adult")
+    adult: Boolean? = null,
+    @JsonProperty("backdrop_path")
+    backdropPath: String? = null,
+    @JsonProperty("genre_ids")
+    genreIds: List<Int> = emptyList(),
+    @JsonProperty("original_language")
+    originalLanguage: String? = null,
+    @JsonProperty("poster_path")
+    posterPath: String? = null,
+    @JsonProperty("overview")
+    overview: String? = null,
+    @JsonProperty("vote_average")
+    voteAverage: Double? = null,
+    @JsonProperty("vote_count")
+    voteCount: Int? = null,
+    @JsonProperty("popularity")
+    popularity: Double? = null,
+) : DiscoverItem(
+    id = id,
+    adult = adult,
+    backdropPath = backdropPath,
+    genreIds = genreIds,
+    originalLanguage = originalLanguage,
+    posterPath = posterPath,
+    overview = overview,
+    voteAverage = voteAverage,
+    voteCount = voteCount,
+    popularity = popularity
+)
