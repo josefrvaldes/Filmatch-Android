@@ -1,7 +1,7 @@
 package es.josevaldes.filmatch
 
+import es.josevaldes.data.model.DiscoverMovieData
 import es.josevaldes.data.model.DiscoverMoviesData
-import es.josevaldes.data.model.Movie
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
@@ -106,11 +106,11 @@ class SlideMovieViewModelTest {
         runTest {
             val discoverMoviesResponse = DiscoverMoviesData(
                 listOf(
-                    Movie(id = 1),
-                    Movie(id = 2),
-                    Movie(id = 3),
-                    Movie(id = 4),
-                    Movie(id = 5),
+                    DiscoverMovieData(id = 1),
+                    DiscoverMovieData(id = 2),
+                    DiscoverMovieData(id = 3),
+                    DiscoverMovieData(id = 4),
+                    DiscoverMovieData(id = 5),
                 ), 1, 5, 1
             )
             coEvery {
@@ -195,7 +195,11 @@ class SlideMovieViewModelTest {
         runTest {
             val resultsPerPage = 10
             val movies =
-                List(resultsPerPage) { index -> Movie(id = index) }.map { SwipeableMovie(it) }
+                List(resultsPerPage) { index -> DiscoverMovieData(id = index) }.map {
+                    SwipeableMovie(
+                        it
+                    )
+                }
             val discoverMoviesResponse = DiscoverMoviesData(
                 movies.map { it.movie }, 1, 20, 2
             )
@@ -222,7 +226,7 @@ class SlideMovieViewModelTest {
 
     @Test
     fun `getMovieThatWillBeObservableNext should chose the proper movie all the time`() = run {
-        val movies = List(5) { index -> SwipeableMovie(Movie(id = index)) }
+        val movies = List(5) { index -> SwipeableMovie(DiscoverMovieData(id = index)) }
         viewModel.movieListFlow.value.addAll(movies)
 
         viewModel.getMovieThatWillBeObservableNext()

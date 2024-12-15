@@ -57,7 +57,11 @@ class ApiServiceTest {
                 .setBody(errorJson)
         )
 
-        val response = moviesRemoteDataSource.getDiscoverMovies(0, "en")
+        val response = moviesRemoteDataSource.getDiscoverItems(
+            MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+            0,
+            "en"
+        )
 
         assertTrue(response is ApiResult.Error) // Let's make sure that we have an error
         val apiError = (response as ApiResult.Error).apiError
@@ -104,7 +108,12 @@ class ApiServiceTest {
                     .setBody(responseJson)
             )
 
-            val response = moviesRemoteDataSource.getDiscoverMovies(0, "en")
+            val response = moviesRemoteDataSource.getDiscoverItems(
+                MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+                0, "en"
+            )
+
+
 
             assertTrue(response is ApiResult.Success) // Let's make sure that we have an error
             val discoverResult = (response as ApiResult.Success).data
@@ -112,7 +121,7 @@ class ApiServiceTest {
             assertTrue(discoverResult.totalResults == 1)
             assertTrue(discoverResult.page == 1)
             assertTrue(discoverResult.results.size == 1)
-            assertTrue(discoverResult.results.first().originalTitle == "The Crow")
+            assertTrue(discoverResult.results.first().originalLanguage == "The Crow")
         }
 
 
@@ -137,7 +146,11 @@ class ApiServiceTest {
                     .setBody(responseJson)
             )
 
-            val response = moviesRemoteDataSource.getDiscoverMovies(0, "en")
+            val response = moviesRemoteDataSource.getDiscoverItems(
+                MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+                0,
+                "en",
+            )
 
             assertTrue(response is ApiResult.Error) // Let's make sure that we have an error
 
@@ -166,7 +179,11 @@ class ApiServiceTest {
                     .setBody(responseJson)
             )
 
-            val response = moviesRemoteDataSource.getDiscoverMovies(0, "en")
+            val response = moviesRemoteDataSource.getDiscoverItems(
+                MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+                0,
+                "en",
+            )
 
             assertTrue(response is ApiResult.Error) // Let's make sure that we have an error
             val apiError = (response as ApiResult.Error).apiError
@@ -188,7 +205,10 @@ class ApiServiceTest {
             )
         mockWebServer.enqueue(mockResponse)
 
-        val response = moviesRemoteDataSource.getDiscoverMovies(1)
+        val response = moviesRemoteDataSource.getDiscoverItems(
+            MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+            1
+        )
 
         assertTrue(response is ApiResult.Success)
         val discoverResult = (response as ApiResult.Success).data
@@ -211,7 +231,10 @@ class ApiServiceTest {
             )
         mockWebServer.enqueue(mockResponse)
 
-        val response = moviesRemoteDataSource.getDiscoverMovies(1)
+        val response = moviesRemoteDataSource.getDiscoverItems(
+            MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+            1,
+        )
 
         assertTrue(response is ApiResult.Error)
         val apiError = (response as ApiResult.Error).apiError
@@ -224,7 +247,12 @@ class ApiServiceTest {
             .setResponseCode(500)
         mockWebServer.enqueue(mockResponse)
 
-        val response = runBlocking { moviesRemoteDataSource.getDiscoverMovies(1) }
+        val response = runBlocking {
+            moviesRemoteDataSource.getDiscoverItems(
+                MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+                1
+            )
+        }
         val apiError = (response as ApiResult.Error).apiError
         assertTrue(apiError is ApiError.InternalError)
     }
@@ -236,7 +264,12 @@ class ApiServiceTest {
             .setBody("{ broken_json")
         mockWebServer.enqueue(mockResponse)
 
-        val response = runBlocking { moviesRemoteDataSource.getDiscoverMovies(1) }
+        val response = runBlocking {
+            moviesRemoteDataSource.getDiscoverItems(
+                MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+                1
+            )
+        }
         val apiError = (response as ApiResult.Error).apiError
         assertTrue(apiError is ApiError.Unknown)
     }
@@ -248,7 +281,10 @@ class ApiServiceTest {
             .setBody("<html><body>Error</body></html>")
         mockWebServer.enqueue(mockResponse)
 
-        val response = moviesRemoteDataSource.getDiscoverMovies(1)
+        val response = moviesRemoteDataSource.getDiscoverItems(
+            MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+            1
+        )
         val apiError = (response as ApiResult.Error).apiError
         assertTrue(apiError is ApiError.Unknown)
     }

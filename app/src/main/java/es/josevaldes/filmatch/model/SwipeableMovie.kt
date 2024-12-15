@@ -1,6 +1,6 @@
 package es.josevaldes.filmatch.model
 
-import es.josevaldes.data.model.Movie
+import es.josevaldes.data.model.DiscoverItemData
 
 enum class MovieSwipedStatus {
     LIKED,
@@ -9,7 +9,7 @@ enum class MovieSwipedStatus {
 }
 
 data class SwipeableMovie(
-    val movie: Movie,
+    val movie: DiscoverItemData,
     var isLiked: Boolean? = null,
     var rotation: Float? = null,
     var translationX: Float? = null,

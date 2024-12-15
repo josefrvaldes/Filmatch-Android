@@ -5,20 +5,6 @@ import es.josevaldes.core.utils.joinWithSeparatorAndFinalSeparator
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
-enum class MovieType {
-    MOVIE,
-    TVSHOW
-}
-
-
-@Serializable
-@Parcelize
-data class DiscoverMoviesData(
-    val results: List<Movie>,
-    val page: Int,
-    val totalResults: Int,
-    val totalPages: Int
-) : Parcelable
 
 @Serializable
 @Parcelize

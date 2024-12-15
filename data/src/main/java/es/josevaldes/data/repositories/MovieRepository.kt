@@ -3,6 +3,7 @@ package es.josevaldes.data.repositories
 import androidx.paging.Pager
 import es.josevaldes.data.extensions.mappers.toAppModel
 import es.josevaldes.data.model.ContentType
+import es.josevaldes.data.model.DiscoverItemData
 import es.josevaldes.data.model.DiscoverMoviesData
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.model.MovieFilters
@@ -26,8 +27,8 @@ class MovieRepository @Inject constructor(
     private val _moviesLocalDataSource: MoviesLocalDataSource
 ) {
     fun getDiscoverMovies(
-        language: String?
-    ): Pager<Int, Movie> {
+        language: String?,
+    ): Pager<Int, DiscoverItemData> {
         return Pager(
             config = MovieDBPagingConfig.pagingConfig,
             pagingSourceFactory = {
@@ -46,33 +47,23 @@ class MovieRepository @Inject constructor(
     ): Flow<ApiResult<DiscoverMoviesData>> = flow {
         try {
             val country = language.substring(language.indexOf("-") + 1)
-            val result = when (filters.contentType) {
-                ContentType.MOVIES -> _moviesRemoteDataSource.getDiscoverMovies(
-                    page = page,
-                    language = language,
-                    sortBy = filters.sortBy,
-                    withGenres = filters.genres?.joinToString("|") { it.id.toString() },
-                    withProviders = filters.providers?.joinToString("|") { it.id.toString() },
-                    watchRegion = country,
-                    withReleaseYearFrom = filters.yearFrom.toString(),
-                    withReleaseYearTo = filters.yearTo.toString(),
-                    withVoteAverageGte = filters.score?.score,
-                    withDuration = filters.duration?.duration
-                )
-
-                ContentType.TV_SHOWS -> _moviesRemoteDataSource.getDiscoverTV(
-                    page = page,
-                    language = language,
-                    sortBy = filters.sortBy,
-                    withGenres = filters.genres?.joinToString("|") { it.id.toString() },
-                    withProviders = filters.providers?.joinToString("|") { it.id.toString() },
-                    watchRegion = country,
-                    withReleaseYearFrom = filters.yearFrom.toString(),
-                    withReleaseYearTo = filters.yearTo.toString(),
-                    withVoteAverageGte = filters.score?.score,
-                    withDuration = filters.duration?.duration
-                )
+            val type = when (filters.contentType) {
+                ContentType.MOVIES -> MoviesRemoteDataSource.DiscoverType.MOVIE.path
+                ContentType.TV_SHOWS -> MoviesRemoteDataSource.DiscoverType.TV.path
             }
+            val result = _moviesRemoteDataSource.getDiscoverItems(
+                type = type,
+                page = page,
+                language = language,
+                sortBy = filters.sortBy,
+                withGenres = filters.genres?.joinToString("|") { it.id.toString() },
+                withProviders = filters.providers?.joinToString("|") { it.id.toString() },
+                watchRegion = country,
+                withReleaseYearFrom = filters.yearFrom.toString(),
+                withReleaseYearTo = filters.yearTo.toString(),
+                withVoteAverageGte = filters.score?.score,
+                withDuration = filters.duration?.duration
+            )
             if (result is ApiResult.Success) {
                 val visitedFiltersEntity = VisitedFiltersEntity(
                     filtersHash = filters.filtersHash,
@@ -107,7 +98,7 @@ class MovieRepository @Inject constructor(
         }
     }
 
-    suspend fun markedMovieAsVisited(movie: Movie) {
+    suspend fun markedMovieAsVisited(movie: DiscoverItemData) {
         val visitedMovieEntity = VisitedMovieEntity(
             id = movie.id.toString()
         )

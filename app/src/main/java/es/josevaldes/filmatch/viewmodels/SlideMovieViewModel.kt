@@ -4,7 +4,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import es.josevaldes.data.model.Movie
+import es.josevaldes.data.model.DiscoverItemData
 import es.josevaldes.data.model.MovieFilters
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.results.ApiResult
@@ -72,13 +72,12 @@ class SlideMovieViewModel @Inject constructor(
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal fun loadNextPage() {
         if (currentPage < pages) {
-//            currentPage = checkWhatShouldBeTheNextPage()
             currentPage++
             loadCurrentPage()
         }
     }
 
-    private suspend fun cleanVisitedMovies(movies: List<Movie>): List<Movie> {
+    private suspend fun cleanVisitedItems(movies: List<DiscoverItemData>): List<DiscoverItemData> {
         return withContext(Dispatchers.IO) {
             movies.filter { movie ->
                 !movieRepository.isMovieVisited(movie.id.toString())
@@ -100,15 +99,15 @@ class SlideMovieViewModel @Inject constructor(
 
                         // we have received one page, if we are in the first three pages, we will have to
                         // check if the user has already visited it completely
-                        val receivedMovies = result.data.results
+                        val receivedItems = result.data.results
 
                         // todo: this means that there are no more results to show
-                        if (receivedMovies.isEmpty()) {
+                        if (receivedItems.isEmpty()) {
                             _isLoading.value = false //
                             return@collect
                         }
 
-                        val cleanedMovies = cleanVisitedMovies(receivedMovies)
+                        val cleanedMovies = cleanVisitedItems(receivedItems)
                         if (cleanedMovies.isEmpty()) {
                             // we will visit always the first 3 pages just in case there are
                             // new movies in any of them
@@ -137,7 +136,7 @@ class SlideMovieViewModel @Inject constructor(
                             // we should load the next page just in case.
                             // In this case, we won't force the next page to be loaded now, we will
                             // do this check instead
-                        } else if (cleanedMovies.size < receivedMovies.size) {
+                        } else if (cleanedMovies.size < receivedItems.size) {
                             checkIfWeShouldLoadNextPage()
                         }
 

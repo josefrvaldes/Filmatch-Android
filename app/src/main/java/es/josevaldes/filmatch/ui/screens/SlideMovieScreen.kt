@@ -71,7 +71,7 @@ import coil.Coil
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import es.josevaldes.data.model.Movie
+import es.josevaldes.data.model.DiscoverItemData
 import es.josevaldes.data.model.MovieFilters
 import es.josevaldes.data.model.User
 import es.josevaldes.filmatch.R
@@ -97,7 +97,7 @@ import kotlin.math.roundToInt
 
 
 @Composable
-fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
+fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (DiscoverItemData) -> Unit) {
     val viewModel: SlideMovieViewModel = hiltViewModel()
     val context = LocalContext.current
     val vibrationManager = remember { VibrationUtils(context) }
@@ -171,7 +171,7 @@ fun PreviewBottomLikeDislike() {
 }
 
 @Composable
-private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
+private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (DiscoverItemData) -> Unit) {
     val viewModel = hiltViewModel<SlideMovieViewModel>()
     val context = LocalContext.current
 
@@ -219,7 +219,7 @@ private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (Movie) -> 
 
 private fun preloadMoviePoster(
     context: Context,
-    movie: Movie?,
+    movie: DiscoverItemData?,
 ) {
     movie?.let {
         Coil.imageLoader(context).enqueue(
@@ -239,7 +239,7 @@ private fun SwipeableMovieView(
     movie: SwipeableMovie,
     index: Int,
     onSwipeCompleted: (SwipeableMovie) -> Unit,
-    onMovieClicked: (Movie) -> Unit,
+    onMovieClicked: (DiscoverItemData) -> Unit,
 ) {
     val translationOffset = remember { Animatable(0f) }
     val rotationOffset = getProperRotation(movie, index, observableMoviesCount)
@@ -347,7 +347,7 @@ private fun PosterImageView(
     movie: SwipeableMovie,
     blurRadius: State<Dp>,
     tint: State<Color>,
-    onMovieClicked: (Movie) -> Unit
+    onMovieClicked: (DiscoverItemData) -> Unit
 ) {
     AsyncImage(
         filterQuality = FilterQuality.Medium,
@@ -377,7 +377,7 @@ private fun PosterImageView(
             .build(),
         contentScale = ContentScale.FillHeight,
         alignment = Alignment.Center,
-        contentDescription = movie.movie.title,
+        contentDescription = movie.movie.displayTitle,
     )
 }
 
@@ -403,7 +403,7 @@ private suspend fun handleSwipeRelease(
 
         if (result.endReason == AnimationEndReason.Finished) {
             // let's remove the last movie
-            Timber.tag("SlideMovieScreen").d("Removing movie: ${movie.movie.title}")
+            Timber.tag("SlideMovieScreen").d("Removing movie: ${movie.movie.displayTitle}")
             onSwipeCompleted(movie)
             translationOffset.snapTo(0f)
         }

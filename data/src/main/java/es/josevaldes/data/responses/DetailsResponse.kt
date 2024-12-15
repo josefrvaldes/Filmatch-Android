@@ -3,16 +3,8 @@ package es.josevaldes.data.responses
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class DiscoverMoviesResponse(
-    @JsonProperty("results") val results: List<MovieResponse>,
-    @JsonProperty("page") val page: Int,
-    @JsonProperty("total_results") val totalResults: Int,
-    @JsonProperty("total_pages") val totalPages: Int
-)
-
-
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class MovieResponse(
+data class DetailMovieResponse(
     @JsonProperty("id") val id: Int,
     @JsonProperty("adult") val adult: Boolean? = null,
     @JsonProperty("backdrop_path") val backdropPath: String? = null,
@@ -133,4 +125,4 @@ data class VideoResultResponse(
     @JsonProperty("official") val official: Boolean? = null,
     @JsonProperty("published_at") val publishedAt: String? = null,
     @JsonProperty("id") val id: String? = null
-) 
+)

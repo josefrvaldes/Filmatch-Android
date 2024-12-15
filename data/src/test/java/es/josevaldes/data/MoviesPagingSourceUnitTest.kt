@@ -1,10 +1,12 @@
 package es.josevaldes.data
 
 import androidx.paging.PagingSource
+import es.josevaldes.data.model.DiscoverMovieData
 import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.paging.MoviesPagingSource
-import es.josevaldes.data.responses.DiscoverMoviesResponse
-import es.josevaldes.data.responses.MovieResponse
+import es.josevaldes.data.responses.DiscoverItem
+import es.josevaldes.data.responses.DiscoverMovie
+import es.josevaldes.data.responses.DiscoverResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
@@ -23,24 +25,33 @@ class MoviesPagingSourceUnitTest {
 
     @Test
     fun `MoviesPagingSource should load data successfully`() = runBlocking {
-        val mockedList1 = mutableListOf<MovieResponse>()
+        val mockedList1 = mutableListOf<DiscoverItem>()
         for (i in 1..20) {
-            mockedList1.add(MovieResponse(id = i, title = "Movie $i"))
+            mockedList1.add(DiscoverMovie().apply {
+                id = i
+                title = "Movie $i"
+            })
         }
 
-        val mockedList2 = mutableListOf<MovieResponse>()
+        val mockedList2 = mutableListOf<DiscoverItem>()
         for (i in 21..40) {
-            mockedList2.add(MovieResponse(id = i, title = "Movie $i"))
+            mockedList2.add(DiscoverMovie().apply {
+                id = i
+                title = "Movie $i"
+            })
         }
 
-        val mockedList3 = mutableListOf<MovieResponse>()
+        val mockedList3 = mutableListOf<DiscoverItem>()
         for (i in 41..50) {
-            mockedList3.add(MovieResponse(id = i, title = "Movie $i"))
+            mockedList3.add(DiscoverMovie().apply {
+                id = i
+                title = "Movie $i"
+            })
         }
 
 
         // let's mock the response for the first page
-        val mockedResponse1 = DiscoverMoviesResponse(
+        val mockedResponse1 = DiscoverResponse(
             results = mockedList1,
             page = 1,
             totalResults = 50,
@@ -48,7 +59,7 @@ class MoviesPagingSourceUnitTest {
         )
 
         // let's mock the response for the second page
-        val mockedResponse2 = DiscoverMoviesResponse(
+        val mockedResponse2 = DiscoverResponse(
             results = mockedList2,
             page = 2,
             totalResults = 50,
@@ -56,7 +67,7 @@ class MoviesPagingSourceUnitTest {
         )
 
         // let's mock the response for the third page
-        val mockedResponse3 = DiscoverMoviesResponse(
+        val mockedResponse3 = DiscoverResponse(
             results = mockedList3,
             page = 3,
             totalResults = 50,
@@ -65,7 +76,8 @@ class MoviesPagingSourceUnitTest {
 
         // let's mock a successful response for each page
         coEvery {
-            moviesRemoteDataSource.getDiscoverMovies(
+            moviesRemoteDataSource.getDiscoverItems(
+                "movie",
                 1,
                 any(),
                 any()
@@ -74,7 +86,8 @@ class MoviesPagingSourceUnitTest {
             mockedResponse1
         )
         coEvery {
-            moviesRemoteDataSource.getDiscoverMovies(
+            moviesRemoteDataSource.getDiscoverItems(
+                "movie",
                 2,
                 any(),
                 any()
@@ -83,7 +96,8 @@ class MoviesPagingSourceUnitTest {
             mockedResponse2
         )
         coEvery {
-            moviesRemoteDataSource.getDiscoverMovies(
+            moviesRemoteDataSource.getDiscoverItems(
+                "movie",
                 3,
                 any(),
                 any()
@@ -109,8 +123,8 @@ class MoviesPagingSourceUnitTest {
         assert(resultPage1 is PagingSource.LoadResult.Page)
         val page1 = resultPage1 as PagingSource.LoadResult.Page
         assertEquals(20, page1.data.size)
-        assertEquals("Movie 1", page1.data[0].title)
-        assertEquals("Movie 20", page1.data[19].title)
+        assertEquals("Movie 1", (page1.data[0] as DiscoverMovieData).title)
+        assertEquals("Movie 20", (page1.data[19] as DiscoverMovieData).title)
 
 
         // 2. let's load the second page
@@ -126,8 +140,8 @@ class MoviesPagingSourceUnitTest {
         assert(resultPage2 is PagingSource.LoadResult.Page)
         val page2 = resultPage2 as PagingSource.LoadResult.Page
         assertEquals(20, page2.data.size)
-        assertEquals("Movie 21", page2.data[0].title)
-        assertEquals("Movie 40", page2.data[19].title)
+        assertEquals("Movie 21", (page2.data[0] as DiscoverMovieData).title)
+        assertEquals("Movie 40", (page2.data[19] as DiscoverMovieData).title)
 
 
         // 3. let's load the third page
@@ -143,8 +157,8 @@ class MoviesPagingSourceUnitTest {
         assert(resultPage3 is PagingSource.LoadResult.Page)
         val page3 = resultPage3 as PagingSource.LoadResult.Page
         assertEquals(10, page3.data.size)
-        assertEquals("Movie 41", page3.data[0].title)
-        assertEquals("Movie 50", page3.data[9].title)
+        assertEquals("Movie 41", (page3.data[0] as DiscoverMovieData).title)
+        assertEquals("Movie 50", (page3.data[9] as DiscoverMovieData).title)
 
         assertEquals(null, page1.prevKey) // there shouldn't be a previous page
         assertEquals(2, page1.nextKey)    // next page should be 2
@@ -159,7 +173,8 @@ class MoviesPagingSourceUnitTest {
     @Test
     fun `MoviesPagingSource should handle server exception properly`() = runBlocking {
         coEvery {
-            moviesRemoteDataSource.getDiscoverMovies(
+            moviesRemoteDataSource.getDiscoverItems(
+                "movie",
                 1,
                 any(),
                 any()
@@ -185,7 +200,8 @@ class MoviesPagingSourceUnitTest {
     @Test
     fun `MoviesPagingSource should handle 404 error properly`() = runBlocking {
         coEvery {
-            moviesRemoteDataSource.getDiscoverMovies(
+            moviesRemoteDataSource.getDiscoverItems(
+                "movie",
                 1,
                 any(),
                 any()
@@ -212,7 +228,7 @@ class MoviesPagingSourceUnitTest {
 
     @Test
     fun `MoviesPagingSource should handle empty response properly`() = runBlocking {
-        val emptyResponse = DiscoverMoviesResponse(
+        val emptyResponse = DiscoverResponse(
             results = emptyList(),
             page = 1,
             totalResults = 0,
@@ -220,7 +236,8 @@ class MoviesPagingSourceUnitTest {
         )
 
         coEvery {
-            moviesRemoteDataSource.getDiscoverMovies(
+            moviesRemoteDataSource.getDiscoverItems(
+                "movie",
                 1,
                 any(),
                 any()
@@ -247,12 +264,15 @@ class MoviesPagingSourceUnitTest {
 
     @Test
     fun `MoviesPagingSource should fetching invalid pages correctly`() = runBlocking {
-        val fakeMovies = mutableListOf<MovieResponse>()
+        val fakeMovies = mutableListOf<DiscoverItem>()
         for (i in 1..20) {
-            fakeMovies.add(MovieResponse(id = i, title = "Movie $i"))
+            fakeMovies.add(DiscoverMovie().apply {
+                id = i
+                title = "Movie $i"
+            })
         }
 
-        val firstResponse = DiscoverMoviesResponse(
+        val firstResponse = DiscoverResponse(
             results = fakeMovies,
             page = 1,
             totalResults = 50,
@@ -260,7 +280,8 @@ class MoviesPagingSourceUnitTest {
         )
 
         coEvery {
-            moviesRemoteDataSource.getDiscoverMovies(
+            moviesRemoteDataSource.getDiscoverItems(
+                "movie",
                 1,
                 any(),
                 any()

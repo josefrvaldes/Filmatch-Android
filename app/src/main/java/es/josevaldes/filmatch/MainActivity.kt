@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dagger.hilt.android.AndroidEntryPoint
+import es.josevaldes.data.extensions.mappers.toMovie
 import es.josevaldes.data.model.Movie
 import es.josevaldes.data.services.AuthService
 import es.josevaldes.filmatch.navigation.MovieParameterType
@@ -103,8 +104,8 @@ fun FilmatchApp(startDestination: Route) {
                 })
             }
             composable<Route.SlideMovieRoute> {
-                SlideMovieScreen(onNavigateToMovieDetailsScreen = { movie ->
-                    navController.navigate(Route.MovieDetailsRoute(movie))
+                SlideMovieScreen(onNavigateToMovieDetailsScreen = { discoverItem ->
+                    navController.navigate(Route.MovieDetailsRoute(discoverItem.toMovie()))
                 })
             }
             composable<Route.WelcomeRoute> {
