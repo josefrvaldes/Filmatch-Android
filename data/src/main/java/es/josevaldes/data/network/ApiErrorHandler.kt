@@ -1,6 +1,6 @@
 package es.josevaldes.data.network
 
-import es.josevaldes.core.utils.serialization.JsonMapper
+import es.josevaldes.data.di.JsonMapper
 import es.josevaldes.data.responses.ApiErrorResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
@@ -9,6 +9,7 @@ import es.josevaldes.data.results.mapHttpCodeToApiError
 import retrofit2.Response
 
 object ApiResponseHandler {
+
 
     fun <T> handleApiResponse(response: Response<T>): ApiResult<T> {
         return if (response.isSuccessful) {

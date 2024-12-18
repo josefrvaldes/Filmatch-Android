@@ -1,5 +1,8 @@
 package es.josevaldes.data.extensions.mappers
 
+import es.josevaldes.data.model.DetailsItemData
+import es.josevaldes.data.model.DetailsMovieData
+import es.josevaldes.data.model.DetailsTvData
 import es.josevaldes.data.model.DiscoverItemData
 import es.josevaldes.data.model.DiscoverMovieData
 import es.josevaldes.data.model.DiscoverMoviesData
@@ -54,6 +57,47 @@ fun DiscoverItem.toAppModel(): DiscoverItemData {
             voteAverage = this.voteAverage,
             voteCount = this.voteCount,
             popularity = this.popularity
+        )
+
+        else -> throw IllegalArgumentException("Unknown type")
+    }
+}
+
+
+fun DiscoverItemData.toDetailsItemData(): DetailsItemData {
+    return when (this) {
+        is DiscoverMovieData -> DetailsMovieData(
+            baseId = id,
+            baseAdult = adult,
+            baseBackdropPath = backdropPath,
+            baseGenres = emptyList(),
+            baseOriginalLanguage = originalLanguage,
+            originalTitle = originalTitle,
+            baseOverview = overview,
+            basePopularity = popularity,
+            basePosterPath = posterPath,
+            releaseDate = releaseDate,
+            title = title,
+            video = video,
+            baseVoteAverage = voteAverage,
+            baseVoteCount = voteCount,
+        )
+
+        is DiscoverTvData -> DetailsTvData(
+            originalName = originalName,
+            baseOverview = overview,
+            basePopularity = popularity,
+            basePosterPath = posterPath,
+            firstAirDate = firstAirDate,
+            baseId = id,
+            name = name,
+            originCountry = originCountry ?: emptyList(),
+            baseVoteAverage = voteAverage,
+            baseVoteCount = voteCount,
+            baseAdult = adult,
+            baseBackdropPath = backdropPath,
+            baseGenres = emptyList(),
+            baseOriginalLanguage = originalLanguage,
         )
 
         else -> throw IllegalArgumentException("Unknown type")

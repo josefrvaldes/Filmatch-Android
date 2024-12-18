@@ -1,72 +1,155 @@
 package es.josevaldes.data.extensions.mappers
 
-import es.josevaldes.data.model.CastMember
-import es.josevaldes.data.model.Collection
-import es.josevaldes.data.model.Credits
-import es.josevaldes.data.model.CrewMember
-import es.josevaldes.data.model.Genre
-import es.josevaldes.data.model.GenresList
-import es.josevaldes.data.model.Movie
-import es.josevaldes.data.model.ProductionCompany
-import es.josevaldes.data.model.ProductionCountry
-import es.josevaldes.data.model.SpokenLanguage
-import es.josevaldes.data.model.VideoResult
-import es.josevaldes.data.model.Videos
+import es.josevaldes.data.model.CastMemberData
+import es.josevaldes.data.model.CollectionData
+import es.josevaldes.data.model.CreditsData
+import es.josevaldes.data.model.CrewMemberData
+import es.josevaldes.data.model.DetailsItemData
+import es.josevaldes.data.model.DetailsMovieData
+import es.josevaldes.data.model.DetailsTvData
+import es.josevaldes.data.model.EpisodeData
+import es.josevaldes.data.model.GenreData
+import es.josevaldes.data.model.NetworkData
+import es.josevaldes.data.model.ProductionCompanyData
+import es.josevaldes.data.model.ProductionCountryData
+import es.josevaldes.data.model.SeasonData
+import es.josevaldes.data.model.SpokenLanguageData
+import es.josevaldes.data.model.VideoResultData
+import es.josevaldes.data.model.VideosData
 import es.josevaldes.data.responses.CastMemberResponse
 import es.josevaldes.data.responses.CollectionResponse
 import es.josevaldes.data.responses.CreditsResponse
 import es.josevaldes.data.responses.CrewMemberResponse
-import es.josevaldes.data.responses.DetailMovieResponse
+import es.josevaldes.data.responses.DetailsItemResponse
+import es.josevaldes.data.responses.DetailsMovieResponse
+import es.josevaldes.data.responses.DetailsTvResponse
+import es.josevaldes.data.responses.EpisodeResponse
 import es.josevaldes.data.responses.GenreResponse
-import es.josevaldes.data.responses.GenresListResponse
+import es.josevaldes.data.responses.NetworkResponse
 import es.josevaldes.data.responses.ProductionCompanyResponse
 import es.josevaldes.data.responses.ProductionCountryResponse
+import es.josevaldes.data.responses.SeasonResponse
 import es.josevaldes.data.responses.SpokenLanguageResponse
 import es.josevaldes.data.responses.VideoResultResponse
 import es.josevaldes.data.responses.VideosResponse
 
-fun DetailMovieResponse.toAppModel(): Movie {
-    return Movie(
+fun DetailsItemResponse.toAppModel(): DetailsItemData {
+    return when (this) {
+        is DetailsMovieResponse -> DetailsMovieData(
+            baseId = id,
+            baseAdult = adult,
+            baseBackdropPath = backdropPath,
+            budget = budget,
+            baseGenres = genres.map { it.toAppModel() },
+            baseHomepage = homepage,
+            baseOriginalLanguage = originalLanguage,
+            originalTitle = originalTitle,
+            baseOverview = overview,
+            basePopularity = popularity,
+            basePosterPath = posterPath,
+            baseProductionCompanies = productionCompanies.map { it.toAppModel() },
+            baseProductionCountries = productionCountries.map { it.toAppModel() },
+            releaseDate = releaseDate,
+            revenue = revenue,
+            runtime = runtime,
+            baseSpokenLanguages = spokenLanguages.map { it.toAppModel() },
+            baseStatus = status,
+            baseTagline = tagline,
+            title = title,
+            video = video,
+            baseVoteAverage = voteAverage,
+            baseVoteCount = voteCount,
+            baseCredits = credits?.toAppModel(),
+            baseVideos = videos?.toAppModel(),
+            belongsToCollection = belongsToCollection?.toAppModel()
+        )
+
+        is DetailsTvResponse -> DetailsTvData(
+            baseId = id,
+            baseAdult = adult,
+            baseBackdropPath = backdropPath,
+            baseGenres = genres.map { it.toAppModel() },
+            baseHomepage = homepage,
+            baseOriginalLanguage = originalLanguage,
+            baseOverview = overview,
+            basePopularity = popularity,
+            basePosterPath = posterPath,
+            baseProductionCompanies = productionCompanies.map { it.toAppModel() },
+            baseProductionCountries = productionCountries.map { it.toAppModel() },
+            baseStatus = status,
+            baseTagline = tagline,
+            baseVoteAverage = voteAverage,
+            baseVoteCount = voteCount,
+            baseCredits = credits?.toAppModel(),
+            baseVideos = videos?.toAppModel(),
+            originalName = originalName,
+            name = name,
+            firstAirDate = firstAirDate,
+            lastAirDate = lastAirDate,
+            episodeRunTime = episodeRunTime,
+            inProduction = inProduction,
+            numberOfEpisodes = numberOfEpisodes,
+            numberOfSeasons = numberOfSeasons,
+            originCountry = originCountry,
+            lastEpisodeToAir = lastEpisodeToAir?.toAppModel(),
+            nextEpisodeToAir = nextEpisodeToAir?.toAppModel(),
+            seasons = seasons.map { it.toAppModel() },
+            networks = networks.map { it.toAppModel() }
+        )
+
+        else -> throw IllegalArgumentException("Unknown type")
+    }
+
+}
+
+fun SeasonResponse.toAppModel(): SeasonData {
+    return SeasonData(
         id = id,
-        adult = adult,
-        backdropPath = backdropPath,
-        collection = belongsToCollection?.toAppModel(),
-        budget = budget,
-        genres = genres.map { it.toAppModel() },
-        homepage = homepage,
-        imdbId = imdbId,
-        originCountry = originCountry ?: emptyList(),
-        originalLanguage = originalLanguage,
-        originalTitle = originalTitle,
+        name = name,
         overview = overview,
-        popularity = popularity,
+        airDate = airDate,
+        episodeCount = episodeCount,
         posterPath = posterPath,
-        productionCompanies = productionCompanies?.map { it.toAppModel() } ?: emptyList(),
-        productionCountries = productionCountries?.map { it.toAppModel() } ?: emptyList(),
-        releaseDate = releaseDate,
-        revenue = revenue,
-        runtime = runtime,
-        spokenLanguages = spokenLanguages?.map { it.toAppModel() } ?: emptyList(),
-        status = status,
-        tagline = tagline,
-        title = title,
-        video = video,
-        voteAverage = voteAverage,
-        voteCount = voteCount,
-        credits = credits?.toAppModel(),
-        videos = videos?.toAppModel()
+        seasonNumber = seasonNumber,
+        voteAverage = voteAverage
     )
 }
 
-fun GenreResponse.toAppModel(): Genre {
-    return Genre(
+fun NetworkResponse.toAppModel(): NetworkData {
+    return NetworkData(
+        id = id,
+        name = name,
+        logoPath = logoPath,
+        originCountry = originCountry
+    )
+}
+
+fun EpisodeResponse.toAppModel(): EpisodeData {
+    return EpisodeData(
+        id = id,
+        name = name,
+        overview = overview,
+        voteAverage = voteAverage,
+        voteCount = voteCount,
+        airDate = airDate,
+        episodeNumber = episodeNumber,
+        episodeType = episodeType,
+        productionCode = productionCode,
+        runtime = runtime,
+        seasonNumber = seasonNumber,
+        stillPath = stillPath
+    )
+}
+
+fun GenreResponse.toAppModel(): GenreData {
+    return GenreData(
         id = id,
         name = name
     )
 }
 
-fun CollectionResponse.toAppModel(): Collection {
-    return Collection(
+fun CollectionResponse.toAppModel(): CollectionData {
+    return CollectionData(
         id = id,
         name = name,
         posterPath = posterPath,
@@ -74,8 +157,8 @@ fun CollectionResponse.toAppModel(): Collection {
     )
 }
 
-fun ProductionCompanyResponse.toAppModel(): ProductionCompany {
-    return ProductionCompany(
+fun ProductionCompanyResponse.toAppModel(): ProductionCompanyData {
+    return ProductionCompanyData(
         id = id,
         logoPath = logoPath,
         name = name,
@@ -83,30 +166,30 @@ fun ProductionCompanyResponse.toAppModel(): ProductionCompany {
     )
 }
 
-fun ProductionCountryResponse.toAppModel(): ProductionCountry {
-    return ProductionCountry(
+fun ProductionCountryResponse.toAppModel(): ProductionCountryData {
+    return ProductionCountryData(
         isoCode = isoCode,
         name = name
     )
 }
 
-fun SpokenLanguageResponse.toAppModel(): SpokenLanguage {
-    return SpokenLanguage(
+fun SpokenLanguageResponse.toAppModel(): SpokenLanguageData {
+    return SpokenLanguageData(
         englishName = englishName,
         isoCode = isoCode,
         name = name
     )
 }
 
-fun CreditsResponse.toAppModel(): Credits {
-    return Credits(
+fun CreditsResponse.toAppModel(): CreditsData {
+    return CreditsData(
         cast = cast.map { it.toAppModel() },
         crew = crew.map { it.toAppModel() }
     )
 }
 
-fun CastMemberResponse.toAppModel(): CastMember {
-    return CastMember(
+fun CastMemberResponse.toAppModel(): CastMemberData {
+    return CastMemberData(
         adult = adult,
         gender = gender,
         id = id,
@@ -122,8 +205,8 @@ fun CastMemberResponse.toAppModel(): CastMember {
     )
 }
 
-fun CrewMemberResponse.toAppModel(): CrewMember {
-    return CrewMember(
+fun CrewMemberResponse.toAppModel(): CrewMemberData {
+    return CrewMemberData(
         adult = adult,
         gender = gender,
         id = id,
@@ -137,22 +220,15 @@ fun CrewMemberResponse.toAppModel(): CrewMember {
     )
 }
 
-fun VideosResponse.toAppModel(): Videos {
-    return Videos(
+fun VideosResponse.toAppModel(): VideosData {
+    return VideosData(
         results = results.map { it.toAppModel() }
     )
 }
 
-// En el módulo data
 
-fun GenresListResponse.toAppModel(): GenresList {
-    return GenresList(
-        genres = genres.map { it.toAppModel() }
-    )
-}
-
-fun VideoResultResponse.toAppModel(): VideoResult {
-    return VideoResult(
+fun VideoResultResponse.toAppModel(): VideoResultData {
+    return VideoResultData(
         iso6391 = iso6391,
         iso31661 = iso31661,
         name = name,

@@ -3,8 +3,11 @@ package es.josevaldes.filmatch.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import es.josevaldes.data.model.Movie
+import es.josevaldes.data.model.DetailsItemData
+import es.josevaldes.data.model.DetailsMovieData
+import es.josevaldes.data.model.DetailsTvData
 import es.josevaldes.data.repositories.MovieRepository
+import es.josevaldes.data.responses.ItemType
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.utils.DeviceLocaleProvider
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,13 +28,18 @@ class MovieDetailsViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
-    private val _movie = MutableStateFlow<Movie?>(null)
+    private val _movie = MutableStateFlow<DetailsItemData?>(null)
     val movie = _movie.asStateFlow()
 
     fun getMovieById(id: Int) {
         viewModelScope.launch {
             _isLoading.value = true
-            movieRepository.findById(id, _language).onStart {
+            val type = when (_movie.value) {
+                is DetailsMovieData -> ItemType.MOVIE
+                is DetailsTvData -> ItemType.TV
+                else -> throw IllegalStateException("Unknown movie type")
+            }
+            movieRepository.findById(id, type, _language).onStart {
                 _isLoading.value = true
             }.onCompletion {
                 _isLoading.value = false
@@ -45,7 +53,7 @@ class MovieDetailsViewModel @Inject constructor(
         }
     }
 
-    fun setInitialMovie(movie: Movie) {
+    fun setInitialMovie(movie: DetailsItemData) {
         _movie.value = movie
     }
 

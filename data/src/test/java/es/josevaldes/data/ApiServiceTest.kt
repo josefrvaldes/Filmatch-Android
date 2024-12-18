@@ -1,8 +1,8 @@
 package es.josevaldes.data
 
-import es.josevaldes.core.utils.serialization.JsonMapper
 import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
 import es.josevaldes.data.responses.DiscoverMovie
+import es.josevaldes.data.responses.ItemType
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MoviesRemoteDataSource
@@ -31,7 +31,7 @@ class ApiServiceTest {
         // let's create the service
         moviesRemoteDataSource = Retrofit.Builder()
             .baseUrl(mockWebServer.url("/"))
-            .addConverterFactory(JacksonConverterFactory.create(JsonMapper.objectMapper))
+            .addConverterFactory(JacksonConverterFactory.create(es.josevaldes.data.di.JsonMapper.objectMapper))
             .addCallAdapterFactory(ApiResultCallAdapterFactory())
             .build()
             .create(MoviesRemoteDataSource::class.java)
@@ -59,7 +59,7 @@ class ApiServiceTest {
         )
 
         val response = moviesRemoteDataSource.getDiscoverItems(
-            MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+            ItemType.MOVIE.path,
             0,
             "en"
         )
@@ -110,7 +110,7 @@ class ApiServiceTest {
             )
 
             val response = moviesRemoteDataSource.getDiscoverItems(
-                MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+                ItemType.MOVIE.path,
                 0, "en"
             )
 
@@ -148,7 +148,7 @@ class ApiServiceTest {
             )
 
             val response = moviesRemoteDataSource.getDiscoverItems(
-                MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+                ItemType.MOVIE.path,
                 0,
                 "en",
             )
@@ -181,7 +181,7 @@ class ApiServiceTest {
             )
 
             val response = moviesRemoteDataSource.getDiscoverItems(
-                MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+                ItemType.MOVIE.path,
                 0,
                 "en",
             )
@@ -207,7 +207,7 @@ class ApiServiceTest {
         mockWebServer.enqueue(mockResponse)
 
         val response = moviesRemoteDataSource.getDiscoverItems(
-            MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+            ItemType.MOVIE.path,
             1
         )
 
@@ -233,7 +233,7 @@ class ApiServiceTest {
         mockWebServer.enqueue(mockResponse)
 
         val response = moviesRemoteDataSource.getDiscoverItems(
-            MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+            ItemType.MOVIE.path,
             1,
         )
 
@@ -250,7 +250,7 @@ class ApiServiceTest {
 
         val response = runBlocking {
             moviesRemoteDataSource.getDiscoverItems(
-                MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+                ItemType.MOVIE.path,
                 1
             )
         }
@@ -267,7 +267,7 @@ class ApiServiceTest {
 
         val response = runBlocking {
             moviesRemoteDataSource.getDiscoverItems(
-                MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+                ItemType.MOVIE.path,
                 1
             )
         }
@@ -283,7 +283,7 @@ class ApiServiceTest {
         mockWebServer.enqueue(mockResponse)
 
         val response = moviesRemoteDataSource.getDiscoverItems(
-            MoviesRemoteDataSource.DiscoverType.MOVIE.path,
+            ItemType.MOVIE.path,
             1
         )
         val apiError = (response as ApiResult.Error).apiError

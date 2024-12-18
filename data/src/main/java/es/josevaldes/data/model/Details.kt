@@ -3,51 +3,54 @@ package es.josevaldes.data.model
 import android.os.Parcelable
 import es.josevaldes.core.utils.joinWithSeparatorAndFinalSeparator
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-
-@Serializable
 @Parcelize
-data class Movie(
-    val id: Int,
-    val adult: Boolean? = null,
-    val backdropPath: String? = null,
-    val collection: Collection? = null,
-    val budget: Int? = null,
-    val genres: List<Genre> = emptyList(),
-    val homepage: String? = null,
-    val imdbId: String? = null,
-    val originCountry: List<String> = emptyList(),
-    val originalLanguage: String? = null,
-    val originalTitle: String? = null,
-    val overview: String? = null,
-    val popularity: Double? = null,
-    val posterPath: String? = null,
-    val productionCompanies: List<ProductionCompany> = emptyList(),
-    val productionCountries: List<ProductionCountry> = emptyList(),
-    val releaseDate: String? = null,
-    val revenue: Long? = null,
-    val runtime: Int? = null,
-    val spokenLanguages: List<SpokenLanguage> = emptyList(),
-    val status: String? = null,
-    val tagline: String? = null,
-    val title: String? = null,
-    val video: Boolean? = null,
-    val voteAverage: Double? = null,
-    val voteCount: Int? = null,
-    val credits: Credits? = null,
-    val videos: Videos? = null
+data class DetailsData(
+    val detailsItem: DetailsItemData
+) : Parcelable
+
+@Parcelize
+@Serializable
+sealed class DetailsItemData(
+    @SerialName("id") open val id: Int,
+    @SerialName("adult") open val adult: Boolean? = null,
+    @SerialName("backdrop_path") open val backdropPath: String? = null,
+    @SerialName("genres") open val genres: List<GenreData> = emptyList(),
+    @SerialName("homepage") open val homepage: String? = null,
+    @SerialName("original_language") open val originalLanguage: String? = null,
+    @SerialName("overview") open val overview: String? = null,
+    @SerialName("popularity") open val popularity: Double? = null,
+    @SerialName("poster_path") open val posterPath: String? = null,
+    @SerialName("production_companies") open val productionCompanies: List<ProductionCompanyData> = emptyList(),
+    @SerialName("production_countries") open val productionCountries: List<ProductionCountryData> = emptyList(),
+    @SerialName("spoken_languages") open val spokenLanguages: List<SpokenLanguageData> = emptyList(),
+    @SerialName("status") open val status: String? = null,
+    @SerialName("tagline") open val tagline: String? = null,
+    @SerialName("vote_average") open val voteAverage: Double? = null,
+    @SerialName("vote_count") open val voteCount: Int? = null,
+    @SerialName("credits") open val credits: CreditsData? = null,
+    @SerialName("videos") open val videos: VideosData? = null
 ) : Parcelable {
     val posterUrl: String
         get() = "https://image.tmdb.org/t/p/w500${posterPath}"
 
-    val displayableYoutubeVideos: List<VideoResult>
+    val displayableYoutubeVideos: List<VideoResultData>
         get() = videos?.results?.filter { it.site == "YouTube" && it.key?.isNotEmpty() == true }
             ?.reversed() // for some reason, the API returns the videos in what I consider the reversed order, like, the trailers are the last videos, and the featurettes are the first ones
             ?: emptyList()
 
-    val displayableCast: List<CastMember>
+    val displayableCast: List<CastMemberData>
         get() = credits?.cast?.filter { it.profilePath?.isNotEmpty() == true } ?: emptyList()
+
+    val displayTitle: String
+        get() = when (this) {
+            is DetailsMovieData -> title ?: ""
+            is DetailsTvData -> name ?: ""
+            else -> throw IllegalArgumentException("Unknown type")
+        }
+
 
     fun getGenresString(andSeparator: String = "and"): String = joinWithSeparatorAndFinalSeparator(
         finalSeparator = " $andSeparator ",
@@ -55,15 +58,38 @@ data class Movie(
     )
 
     fun getDurationString(): String {
-        val hours = runtime?.div(60) ?: 0
-        val minutes = runtime?.rem(60) ?: 0
-        return "${hours}h ${minutes}m"
+        when (this) {
+            is DetailsMovieData -> {
+                val hours = runtime?.div(60) ?: 0
+                val minutes = runtime?.rem(60) ?: 0
+                return "${hours}h ${minutes}m"
+            }
+
+            is DetailsTvData -> {
+                val runtimeInMinutes = episodeRunTime.firstOrNull()
+                runtimeInMinutes?.let {
+                    val hours = it.div(60)
+                    val minutes = it.rem(60)
+                    return "${hours}h ${minutes}m"
+                } ?: run {
+                    return ""
+                }
+            }
+
+            else -> {
+                return ""
+            }
+        }
     }
 
     fun getReleaseYear(): String? {
         val regex = "\\b(\\d{4})\\b".toRegex()
-        val matchResult = regex.find(releaseDate ?: "")
-        return matchResult?.value
+        if (this is DetailsTvData) {
+            return regex.find(firstAirDate ?: "")?.value
+        } else if (this is DetailsMovieData) {
+            return regex.find(releaseDate ?: "")?.value
+        }
+        return null
     }
 
     fun getDirectorsString(andSeparator: String): String? {
@@ -79,53 +105,189 @@ data class Movie(
     }
 }
 
+@Parcelize
+@Serializable
+data class DetailsMovieData(
+    val originalTitle: String? = null,
+    val title: String? = null,
+    val releaseDate: String? = null,
+    val revenue: Long? = null,
+    val runtime: Int? = null,
+    val budget: Int? = null,
+    val video: Boolean? = null,
+    val belongsToCollection: CollectionData? = null,
+    private val baseId: Int = 0,
+    private val baseAdult: Boolean? = null,
+    private val baseBackdropPath: String? = null,
+    private val baseGenres: List<GenreData> = emptyList(),
+    private val baseHomepage: String? = null,
+    private val baseOriginalLanguage: String? = null,
+    private val baseOverview: String? = null,
+    private val basePopularity: Double? = null,
+    private val basePosterPath: String? = null,
+    private val baseProductionCompanies: List<ProductionCompanyData> = emptyList(),
+    private val baseProductionCountries: List<ProductionCountryData> = emptyList(),
+    private val baseSpokenLanguages: List<SpokenLanguageData> = emptyList(),
+    private val baseStatus: String? = null,
+    private val baseTagline: String? = null,
+    private val baseVoteAverage: Double? = null,
+    private val baseVoteCount: Int? = null,
+    private val baseCredits: CreditsData? = null,
+    private val baseVideos: VideosData? = null
+) : DetailsItemData(
+    baseId,
+    baseAdult,
+    baseBackdropPath,
+    baseGenres,
+    baseHomepage,
+    baseOriginalLanguage,
+    baseOverview,
+    basePopularity,
+    basePosterPath,
+    baseProductionCompanies,
+    baseProductionCountries,
+    baseSpokenLanguages,
+    baseStatus,
+    baseTagline,
+    baseVoteAverage,
+    baseVoteCount,
+    baseCredits,
+    baseVideos
+)
+
 @Serializable
 @Parcelize
-data class Collection(
+data class DetailsTvData(
+    val originalName: String? = null,
+    val name: String? = null,
+    val firstAirDate: String? = null,
+    val lastAirDate: String? = null,
+    val episodeRunTime: List<Int> = emptyList(),
+    val inProduction: Boolean? = null,
+    val numberOfEpisodes: Int? = null,
+    val numberOfSeasons: Int? = null,
+    val originCountry: List<String> = emptyList(),
+    val lastEpisodeToAir: EpisodeData? = null,
+    val nextEpisodeToAir: EpisodeData? = null,
+    val seasons: List<SeasonData> = emptyList(),
+    val networks: List<NetworkData> = emptyList(),
+    private val baseId: Int = 0,
+    private val baseAdult: Boolean? = null,
+    private val baseBackdropPath: String? = null,
+    private val baseGenres: List<GenreData> = emptyList(),
+    private val baseHomepage: String? = null,
+    private val baseOriginalLanguage: String? = null,
+    private val baseOverview: String? = null,
+    private val basePopularity: Double? = null,
+    private val basePosterPath: String? = null,
+    private val baseProductionCompanies: List<ProductionCompanyData> = emptyList(),
+    private val baseProductionCountries: List<ProductionCountryData> = emptyList(),
+    private val baseSpokenLanguages: List<SpokenLanguageData> = emptyList(),
+    private val baseStatus: String? = null,
+    private val baseTagline: String? = null,
+    private val baseVoteAverage: Double? = null,
+    private val baseVoteCount: Int? = null,
+    private val baseCredits: CreditsData? = null,
+    private val baseVideos: VideosData? = null
+) : DetailsItemData(
+    baseId,
+    baseAdult,
+    baseBackdropPath,
+    baseGenres,
+    baseHomepage,
+    baseOriginalLanguage,
+    baseOverview,
+    basePopularity,
+    basePosterPath,
+    baseProductionCompanies,
+    baseProductionCountries,
+    baseSpokenLanguages,
+    baseStatus,
+    baseTagline,
+    baseVoteAverage,
+    baseVoteCount,
+    baseCredits,
+    baseVideos
+)
+
+@Serializable
+@Parcelize
+data class EpisodeData(
+    val id: Int,
+    val name: String? = null,
+    val overview: String? = null,
+    val voteAverage: Double? = null,
+    val voteCount: Int? = null,
+    val airDate: String? = null,
+    val episodeNumber: Int? = null,
+    val episodeType: String? = null,
+    val productionCode: String? = null,
+    val runtime: Int? = null,
+    val seasonNumber: Int? = null,
+    val stillPath: String? = null
+) : Parcelable
+
+@Serializable
+@Parcelize
+data class SeasonData(
+    val id: Int,
+    val name: String? = null,
+    val overview: String? = null,
+    val airDate: String? = null,
+    val episodeCount: Int? = null,
+    val posterPath: String? = null,
+    val seasonNumber: Int? = null,
+    val voteAverage: Double? = null
+) : Parcelable
+
+@Serializable
+@Parcelize
+data class NetworkData(
+    val id: Int,
+    val name: String? = null,
+    val logoPath: String? = null,
+    val originCountry: String? = null
+) : Parcelable
+
+@Serializable
+@Parcelize
+data class CollectionData(
     val id: Int,
     val name: String? = null,
     val posterPath: String? = null,
     val backdropPath: String? = null
 ) : Parcelable
 
-@Serializable
 @Parcelize
-data class Genre(
+@Serializable
+data class GenreData(
     val id: Int,
     val name: String
 ) : Parcelable {
     override fun toString(): String {
         return name
     }
-
-    override fun equals(other: Any?): Boolean {
-        return other is Genre && id == other.id
-    }
-
-    override fun hashCode(): Int {
-        return id.hashCode()
-    }
 }
 
-@Serializable
 @Parcelize
-data class ProductionCompany(
+@Serializable
+data class ProductionCompanyData(
     val id: Int,
     val logoPath: String? = null,
     val name: String,
     val originCountry: String
 ) : Parcelable
 
-@Serializable
 @Parcelize
-data class ProductionCountry(
+@Serializable
+data class ProductionCountryData(
     val isoCode: String,
     val name: String
 ) : Parcelable
 
-@Serializable
 @Parcelize
-data class SpokenLanguage(
+@Serializable
+data class SpokenLanguageData(
     val englishName: String,
     val isoCode: String,
     val name: String
@@ -133,14 +295,14 @@ data class SpokenLanguage(
 
 @Serializable
 @Parcelize
-data class Credits(
-    val cast: List<CastMember> = emptyList(),
-    val crew: List<CrewMember> = emptyList()
+data class CreditsData(
+    val cast: List<CastMemberData> = emptyList(),
+    val crew: List<CrewMemberData> = emptyList()
 ) : Parcelable
 
 @Serializable
 @Parcelize
-data class CastMember(
+data class CastMemberData(
     val adult: Boolean,
     val gender: Int?,
     val id: Int,
@@ -160,7 +322,7 @@ data class CastMember(
 
 @Serializable
 @Parcelize
-data class CrewMember(
+data class CrewMemberData(
     val adult: Boolean? = null,
     val gender: Int? = null,
     val id: Int,
@@ -169,57 +331,28 @@ data class CrewMember(
     val originalName: String? = null,
     val popularity: Float? = null,
     val profilePath: String? = null,
+    val creditId: String? = null,
     val department: String? = null,
     val job: String? = null
 ) : Parcelable
 
 @Serializable
 @Parcelize
-data class Videos(
-    val results: List<VideoResult> = emptyList()
+data class VideosData(
+    val results: List<VideoResultData> = emptyList()
 ) : Parcelable
 
 @Serializable
 @Parcelize
-data class VideoResult(
+data class VideoResultData(
     val iso6391: String? = null,
     val iso31661: String? = null,
     val name: String? = null,
     val key: String? = null,
     val site: String? = null,
     val size: Int? = null,
-    private val type: String? = null,
+    val type: String? = null,
     val official: Boolean? = null,
     val publishedAt: String? = null,
     val id: String? = null
-) : Parcelable {
-    val videoType: VideoType
-        get() = VideoType.from(type)
-}
-
-@Parcelize
-data class GenresList(
-    val genres: List<Genre>
 ) : Parcelable
-
-enum class VideoType {
-    Featurette,
-    Clip,
-    Teaser,
-    Trailer,
-    BehindTheScenes,
-    Other;
-
-    companion object {
-        fun from(value: String?): VideoType {
-            return when (value) {
-                "Featurette" -> Featurette
-                "Clip" -> Clip
-                "Teaser" -> Teaser
-                "Trailer" -> Trailer
-                "Behind the Scenes" -> BehindTheScenes
-                else -> Other // if type is unknown, let's return Other
-            }
-        }
-    }
-}

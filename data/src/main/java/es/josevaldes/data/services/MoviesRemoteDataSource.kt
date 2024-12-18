@@ -1,19 +1,15 @@
 package es.josevaldes.data.services
 
-import es.josevaldes.data.responses.DetailMovieResponse
+import es.josevaldes.data.responses.DetailsItemResponse
 import es.josevaldes.data.responses.DiscoverResponse
+import es.josevaldes.data.responses.ItemType
 import es.josevaldes.data.results.ApiResult
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface MoviesRemoteDataSource {
-    enum class DiscoverType(val path: String) {
-        MOVIE("movie"),
-        TV("tv")
-    }
-
-
+    
     @GET("/3/discover/{type}")
     suspend fun getDiscoverItems(
         @Path("type") type: String,
@@ -30,9 +26,10 @@ interface MoviesRemoteDataSource {
     ): ApiResult<DiscoverResponse>
 
 
-    @GET("/3/movie/{id}?append_to_response=credits,videos")
+    @GET("/3/{type}/{id}?append_to_response=credits,videos")
     suspend fun findById(
         @Path("id") id: Int,
+        @Path("type") type: String = ItemType.MOVIE.path,
         @Query("language") language: String? = "en-US",
-    ): ApiResult<DetailMovieResponse>
+    ): ApiResult<DetailsItemResponse>
 }

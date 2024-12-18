@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 
 data class MovieFilters(
     val contentType: ContentType = ContentType.MOVIES,
-    val genres: List<Genre>? = listOf(),
+    val genres: List<GenreData>? = listOf(),
     val providers: List<Provider>? = listOf(),
     val duration: Duration? = null,
     val score: Score? = null,

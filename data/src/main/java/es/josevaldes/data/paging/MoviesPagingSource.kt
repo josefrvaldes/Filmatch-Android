@@ -4,6 +4,7 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import es.josevaldes.data.extensions.mappers.toAppModel
 import es.josevaldes.data.model.DiscoverItemData
+import es.josevaldes.data.responses.ItemType
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MoviesRemoteDataSource
@@ -12,7 +13,8 @@ import javax.inject.Inject
 class MoviesPagingSource @Inject constructor(
     private val moviesRemoteDataSource: MoviesRemoteDataSource,
     internal var language: String? = null,
-    internal var type: MoviesRemoteDataSource.DiscoverType = MoviesRemoteDataSource.DiscoverType.MOVIE
+    internal var type:
+    ItemType = ItemType.MOVIE
 ) : PagingSource<Int, DiscoverItemData>() {
 
     private var totalPages = 1

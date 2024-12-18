@@ -3,12 +3,13 @@ package es.josevaldes.data.repositories
 import androidx.paging.Pager
 import es.josevaldes.data.extensions.mappers.toAppModel
 import es.josevaldes.data.model.ContentType
+import es.josevaldes.data.model.DetailsItemData
 import es.josevaldes.data.model.DiscoverItemData
 import es.josevaldes.data.model.DiscoverMoviesData
-import es.josevaldes.data.model.Movie
 import es.josevaldes.data.model.MovieFilters
 import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.paging.MoviesPagingSource
+import es.josevaldes.data.responses.ItemType
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.MoviesRemoteDataSource
@@ -48,8 +49,8 @@ class MovieRepository @Inject constructor(
         try {
             val country = language.substring(language.indexOf("-") + 1)
             val type = when (filters.contentType) {
-                ContentType.MOVIES -> MoviesRemoteDataSource.DiscoverType.MOVIE.path
-                ContentType.TV_SHOWS -> MoviesRemoteDataSource.DiscoverType.TV.path
+                ContentType.MOVIES -> ItemType.MOVIE.path
+                ContentType.TV_SHOWS -> ItemType.TV.path
             }
             val result = _moviesRemoteDataSource.getDiscoverItems(
                 type = type,
@@ -84,12 +85,14 @@ class MovieRepository @Inject constructor(
 
     fun findById(
         id: Int,
+        type: ItemType,
         language: String?
-    ): Flow<ApiResult<Movie>> = flow {
+    ): Flow<ApiResult<DetailsItemData>> = flow {
         try {
-            val result = _moviesRemoteDataSource.findById(id, language)
+            val result = _moviesRemoteDataSource.findById(id, type.path, language)
             if (result is ApiResult.Success) {
-                emit(ApiResult.Success(result.data.toAppModel()))
+                val resultAppModel = result.data.toAppModel()
+                emit(ApiResult.Success(resultAppModel))
             } else {
                 emit(result as ApiResult.Error)
             }

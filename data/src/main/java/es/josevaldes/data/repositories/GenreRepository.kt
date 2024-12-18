@@ -1,7 +1,7 @@
 package es.josevaldes.data.repositories
 
 import es.josevaldes.data.extensions.mappers.toAppModel
-import es.josevaldes.data.model.GenresList
+import es.josevaldes.data.model.GenreData
 import es.josevaldes.data.model.MovieType
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
@@ -12,14 +12,15 @@ import kotlinx.coroutines.flow.retryWhen
 import javax.inject.Inject
 
 class GenreRepository @Inject constructor(private val _genreRemoteDataSource: GenreRemoteDataSource) {
-    private fun getAllGenres(type: MovieType): Flow<ApiResult<GenresList>> = flow {
+    private fun getAllGenres(type: MovieType): Flow<ApiResult<List<GenreData>>> = flow {
         try {
             val result = when (type) {
                 MovieType.MOVIE -> _genreRemoteDataSource.getAllMovieGenres()
                 MovieType.TVSHOW -> _genreRemoteDataSource.getAllTvGenres()
             }
             if (result is ApiResult.Success) {
-                emit(ApiResult.Success(result.data.toAppModel()))
+                val genres = result.data.genres.map { it.toAppModel() }
+                emit(ApiResult.Success(genres))
             } else {
                 emit(result as ApiResult.Error)
             }
@@ -30,7 +31,7 @@ class GenreRepository @Inject constructor(private val _genreRemoteDataSource: Ge
         attempt < 3
     }
 
-    fun getAllMovieGenres(): Flow<ApiResult<GenresList>> = getAllGenres(MovieType.MOVIE)
+    fun getAllMovieGenres(): Flow<ApiResult<List<GenreData>>> = getAllGenres(MovieType.MOVIE)
 
-    fun getAllTvGenres(): Flow<ApiResult<GenresList>> = getAllGenres(MovieType.TVSHOW)
+    fun getAllTvGenres(): Flow<ApiResult<List<GenreData>>> = getAllGenres(MovieType.TVSHOW)
 }

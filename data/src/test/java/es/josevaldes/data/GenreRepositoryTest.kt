@@ -44,7 +44,7 @@ class GenreRepositoryTest {
         resultFlow.collect { result ->
             assertTrue(result is ApiResult.Success)
             assertEquals(
-                movieGenresList.toAppModel(),
+                movieGenresList.genres.map { it.toAppModel() }.toList(),
                 (result as ApiResult.Success).data
             )
         }
@@ -72,7 +72,7 @@ class GenreRepositoryTest {
         resultFlow.collect { result ->
             assertTrue(result is ApiResult.Success)
             assertEquals(
-                tvGenresList.toAppModel(),
+                tvGenresList.genres.map { it.toAppModel() }.toList(),
                 (result as ApiResult.Success).data
             )
         }

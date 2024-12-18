@@ -7,7 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import es.josevaldes.data.model.ContentType
 import es.josevaldes.data.model.Duration
 import es.josevaldes.data.model.Filter
-import es.josevaldes.data.model.Genre
+import es.josevaldes.data.model.GenreData
 import es.josevaldes.data.model.MovieFilters
 import es.josevaldes.data.model.OtherFilters
 import es.josevaldes.data.model.Provider
@@ -32,15 +32,15 @@ class FiltersViewModel @Inject constructor(
     private val _contentTypes = MutableStateFlow(OtherFilters.contentTypeFilters.toList())
     val contentTypes = _contentTypes.asStateFlow()
 
-    private val _filtersGenre = MutableStateFlow<List<Filter<Genre>>>(listOf())
+    private val _filtersGenre = MutableStateFlow<List<Filter<GenreData>>>(listOf())
     val filtersGenre = _filtersGenre.asStateFlow()
 
     private val _providers =
         MutableStateFlow<MutableList<Filter<Provider>>>(mutableListOf())
     val providers = _providers.asStateFlow()
 
-    private val _tvGenres = mutableListOf<Filter<Genre>>()
-    private val _movieGenres = mutableListOf<Filter<Genre>>()
+    private val _tvGenres = mutableListOf<Filter<GenreData>>()
+    private val _movieGenres = mutableListOf<Filter<GenreData>>()
 
     private var _fromYear = MutableStateFlow(2000)
     val fromYear = _fromYear.asStateFlow()
@@ -83,11 +83,11 @@ class FiltersViewModel @Inject constructor(
             genresRepository.getAllMovieGenres().collect { result ->
                 if (result is ApiResult.Success) {
                     if (_movieGenres.any { it.item.id == -1 }.not()) {
-                        _movieGenres.add(Filter(Genre(-1, "All"), true))
+                        _movieGenres.add(Filter(GenreData(-1, "All"), true))
                     }
                     // let's add without duplicates
                     _movieGenres.addAll(
-                        result.data.genres.filterNot { genre ->
+                        result.data.filterNot { genre ->
                             _movieGenres.any { it.item.id == genre.id }
                         }.map { Filter(it, false) }
                     )
@@ -100,11 +100,11 @@ class FiltersViewModel @Inject constructor(
             genresRepository.getAllTvGenres().collect { result ->
                 if (result is ApiResult.Success) {
                     if (_tvGenres.any { it.item.id == -1 }.not()) {
-                        _tvGenres.add(Filter(Genre(-1, "All"), true))
+                        _tvGenres.add(Filter(GenreData(-1, "All"), true))
                     }
                     // let's add without duplicates
                     _tvGenres.addAll(
-                        result.data.genres.filterNot { genre ->
+                        result.data.filterNot { genre ->
                             _tvGenres.any { it.item.id == genre.id }
                         }.map { Filter(it, false) }
                     )
@@ -187,7 +187,7 @@ class FiltersViewModel @Inject constructor(
         _filtersGenre.value = genres.toList()
     }
 
-    fun genreClicked(genreClicked: Filter<Genre>) {
+    fun genreClicked(genreClicked: Filter<GenreData>) {
         if (genreClicked.item.id == -1) {
             deselectAllFiltersExceptForAllType()
             return

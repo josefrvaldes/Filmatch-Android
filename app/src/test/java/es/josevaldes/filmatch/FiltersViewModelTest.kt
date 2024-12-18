@@ -3,8 +3,7 @@ package es.josevaldes.filmatch
 import es.josevaldes.data.model.ContentType
 import es.josevaldes.data.model.Duration
 import es.josevaldes.data.model.Filter
-import es.josevaldes.data.model.Genre
-import es.josevaldes.data.model.GenresList
+import es.josevaldes.data.model.GenreData
 import es.josevaldes.data.model.MovieFilters
 import es.josevaldes.data.model.OtherFilters
 import es.josevaldes.data.model.Provider
@@ -42,12 +41,12 @@ class FiltersViewModelTest {
     private val netflixProvider = Provider(1, "Netflix", "netflix.png", 1, emptyMap())
     private val hboProvider = Provider(2, "HBO", "hbo.png", 2, emptyMap())
 
-    private val allGenre = Genre(-1, "All")
-    private val actionGenre = Genre(1, "Action")
-    private val comedyGenre = Genre(2, "Comedy")
-    private val dramaGenre = Genre(3, "Drama")
-    private val tvOnlyGenre = Genre(4, "TvOnlyGenre")
-    private val movieOnlyGenre = Genre(5, "MovieOnlyGenre")
+    private val allGenre = GenreData(-1, "All")
+    private val actionGenre = GenreData(1, "Action")
+    private val comedyGenre = GenreData(2, "Comedy")
+    private val dramaGenre = GenreData(3, "Drama")
+    private val tvOnlyGenre = GenreData(4, "TvOnlyGenre")
+    private val movieOnlyGenre = GenreData(5, "MovieOnlyGenre")
 
 
     @Before
@@ -55,18 +54,10 @@ class FiltersViewModelTest {
         every { deviceLocaleProvider.getDeviceLocale() } returns "en"
         every { deviceLocaleProvider.getDeviceCountry() } returns "US"
         coEvery { genresRepository.getAllMovieGenres() } returns flowOf(
-            ApiResult.Success(
-                GenresList(
-                    listOf(actionGenre, comedyGenre, dramaGenre, movieOnlyGenre)
-                )
-            )
+            ApiResult.Success(listOf(actionGenre, comedyGenre, dramaGenre, movieOnlyGenre))
         )
         coEvery { genresRepository.getAllTvGenres() } returns flowOf(
-            ApiResult.Success(
-                GenresList(
-                    listOf(actionGenre, comedyGenre, dramaGenre, tvOnlyGenre)
-                )
-            )
+            ApiResult.Success(listOf(actionGenre, comedyGenre, dramaGenre, tvOnlyGenre))
         )
         coEvery {
             providersRepository.getMovieProviders(any(), any())

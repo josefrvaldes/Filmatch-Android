@@ -6,10 +6,11 @@ import androidx.paging.testing.TestPager
 import es.josevaldes.data.extensions.mappers.toAppModel
 import es.josevaldes.data.paging.MoviesPagingSource
 import es.josevaldes.data.repositories.MovieRepository
-import es.josevaldes.data.responses.DetailMovieResponse
+import es.josevaldes.data.responses.DetailsMovieResponse
 import es.josevaldes.data.responses.DiscoverItem
 import es.josevaldes.data.responses.DiscoverMovie
 import es.josevaldes.data.responses.DiscoverResponse
+import es.josevaldes.data.responses.ItemType
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
@@ -142,9 +143,11 @@ class MovieRepositoryTest {
 
     @Test
     fun `findById should return success on valid result`() = runTest {
-        val movie = DetailMovieResponse(id = 1, title = "hello")
-        coEvery { moviesRemoteDataSource.findById(any(), any()) } returns ApiResult.Success(movie)
-        val resultFlow = movieRepository.findById(movie.id, "")
+        val movie = DetailsMovieResponse(id = 1, title = "hello")
+        coEvery { moviesRemoteDataSource.findById(any(), any(), any()) } returns ApiResult.Success(
+            movie
+        )
+        val resultFlow = movieRepository.findById(movie.id, ItemType.MOVIE, "es-ES")
         resultFlow.collect {
             assertEquals(ApiResult.Success(movie.toAppModel()), it)
         }
@@ -155,10 +158,11 @@ class MovieRepositoryTest {
         coEvery {
             moviesRemoteDataSource.findById(
                 any(),
+                any(),
                 any()
             )
         } returns ApiResult.Error(ApiError.Unknown)
-        val resultFlow = movieRepository.findById(1, "")
+        val resultFlow = movieRepository.findById(1, ItemType.MOVIE, "es-ES")
         resultFlow.collect {
             assertEquals(ApiResult.Error(ApiError.Unknown), it)
         }
@@ -169,10 +173,11 @@ class MovieRepositoryTest {
         coEvery {
             moviesRemoteDataSource.findById(
                 any(),
+                any(),
                 any()
             )
         } returns ApiResult.Error(ApiError.ResourceNotFound)
-        val resultFlow = movieRepository.findById(1, "")
+        val resultFlow = movieRepository.findById(1, ItemType.MOVIE, "es-ES")
         resultFlow.collect {
             assertEquals(ApiResult.Error(ApiError.ResourceNotFound), it)
         }

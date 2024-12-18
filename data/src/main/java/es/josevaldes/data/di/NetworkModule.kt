@@ -1,12 +1,18 @@
 package es.josevaldes.data.di
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.module.SimpleModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import es.josevaldes.core.utils.serialization.JsonMapper
 import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
+import es.josevaldes.data.deserializers.DetailsItemResponseDeserializer
 import es.josevaldes.data.network.HttpClient
+import es.josevaldes.data.responses.DetailsItemResponse
 import es.josevaldes.data.services.GenreRemoteDataSource
 import es.josevaldes.data.services.MoviesRemoteDataSource
 import es.josevaldes.data.services.ProviderRemoteDataSource
@@ -14,6 +20,19 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import javax.inject.Singleton
+
+object JsonMapper {
+    val objectMapper: ObjectMapper = jacksonObjectMapper().apply {
+        registerModule(KotlinModule.Builder().build())
+        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        val module = SimpleModule().addDeserializer(
+            DetailsItemResponse::class.java,
+            DetailsItemResponseDeserializer()
+        )
+        registerModule(module)
+    }
+}
+
 
 @Module
 @InstallIn(SingletonComponent::class)
