@@ -48,7 +48,6 @@ sealed class DetailsItemData(
         get() = when (this) {
             is DetailsMovieData -> title ?: ""
             is DetailsTvData -> name ?: ""
-            else -> throw IllegalArgumentException("Unknown type")
         }
 
 

@@ -98,7 +98,6 @@ class SlideMovieViewModel @Inject constructor(
 
 
                         // we have received one page, if we are in the first three pages, we will have to
-                        // check if the user has already visited it completely
                         val receivedItems = result.data.results
 
                         // todo: this means that there are no more results to show
@@ -107,6 +106,7 @@ class SlideMovieViewModel @Inject constructor(
                             return@collect
                         }
 
+                        // check if the user has already visited it completely
                         val cleanedMovies = cleanVisitedItems(receivedItems)
                         if (cleanedMovies.isEmpty()) {
                             // we will visit always the first 3 pages just in case there are
@@ -141,6 +141,8 @@ class SlideMovieViewModel @Inject constructor(
                         }
 
                         _isLoading.value = false
+                        
+                        // otherwise, we will just show the received movies
                         val swipeableMovies = cleanedMovies.map { SwipeableMovie(it) }
                         initializeMovies(swipeableMovies)
                         _movieListFlow.value.addAll(swipeableMovies)

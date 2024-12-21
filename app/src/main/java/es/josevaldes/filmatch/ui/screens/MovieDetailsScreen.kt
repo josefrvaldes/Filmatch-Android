@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -366,11 +367,16 @@ private fun TitleAndYearSection(movie: DetailsItemData?) {
         modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(movie?.displayTitle ?: "", style = MaterialTheme.typography.titleLarge)
+        Text(movie?.displayTitle ?: "",
+            style = MaterialTheme.typography.titleLarge,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
         movie?.getReleaseYear()?.let {
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 "($it)",
-                modifier = Modifier.padding(start = 8.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -511,7 +517,7 @@ private fun PercentageText(percentage: Int) {
 fun MovieDetailsScreenPreview() {
     val movie = DetailsMovieData(
         baseId = 1184918,
-        title = "The Wild Robot",
+        title = "The Wild Robot and a super long title bla bla bla",
         releaseDate = "2024-09-12",
         basePosterPath = "/wTnV3PCVW5O92JMrFvvrRcV39RU.jpg",
         baseVoteAverage = 8.6,
