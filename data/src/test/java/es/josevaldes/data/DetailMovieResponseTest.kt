@@ -3,6 +3,8 @@ package es.josevaldes.data
 import es.josevaldes.data.model.CreditsData
 import es.josevaldes.data.model.CrewMemberData
 import es.josevaldes.data.model.DetailsMovieData
+import es.josevaldes.data.model.DetailsTvData
+import es.josevaldes.data.model.EpisodeData
 import es.josevaldes.data.model.GenreData
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -61,63 +63,101 @@ class DetailMovieResponseTest {
         assertEquals("", noCategoriesMovie.getGenresString())
     }
 
+
     @Test
-    fun `getDurationString should return the right string`() {
+    fun `displayableRuntime returns runtime for movie`() {
         val movie = DetailsMovieData(
-            baseId = 1,
-            title = "Movie 1",
             runtime = 120
         )
-        assertEquals("2h 0m", movie.getDurationString())
+        assertEquals(120, movie.displayableRuntime())
+    }
 
-        val movie2 = DetailsMovieData(
-            baseId = 1,
-            title = "Movie 1",
-            runtime = 150
-        )
-        assertEquals("2h 30m", movie2.getDurationString())
-
-        val movie3 = DetailsMovieData(
-            baseId = 1,
-            title = "Movie 1",
-            runtime = 90
-        )
-        assertEquals("1h 30m", movie3.getDurationString())
-
-        val movie4 = DetailsMovieData(
-            baseId = 1,
-            title = "Movie 1",
-            runtime = 60
-        )
-        assertEquals("1h 0m", movie4.getDurationString())
-
-        val movie5 = DetailsMovieData(
-            baseId = 1,
-            title = "Movie 1",
-            runtime = 30
-        )
-        assertEquals("0h 30m", movie5.getDurationString())
-
-        val movie6 = DetailsMovieData(
-            baseId = 1,
-            title = "Movie 1",
-            runtime = 15
-        )
-        assertEquals("0h 15m", movie6.getDurationString())
-
-        val movie7 = DetailsMovieData(
-            baseId = 1,
-            title = "Movie 1",
-            runtime = 0
-        )
-        assertEquals("0h 0m", movie7.getDurationString())
-
-        val movie8 = DetailsMovieData(
-            baseId = 1,
-            title = "Movie 1",
+    @Test
+    fun `displayableRuntime returns 0 for movie with null runtime`() {
+        val movie = DetailsMovieData(
             runtime = null
         )
-        assertEquals("0h 0m", movie8.getDurationString())
+        assertEquals(0, movie.displayableRuntime())
+    }
+
+    @Test
+    fun `displayableRuntime returns first episode runtime for tv show`() {
+        val tvShow = DetailsTvData(
+            episodeRunTime = listOf(45)
+        )
+        assertEquals(45, tvShow.displayableRuntime())
+    }
+
+    @Test
+    fun `displayableRuntime calculates average runtime for tv show`() {
+        val tvShow = DetailsTvData(
+            nextEpisodeToAir = EpisodeData(id = 0, runtime = 50),
+            lastEpisodeToAir = EpisodeData(id = 0, runtime = 40)
+        )
+        assertEquals(45, tvShow.displayableRuntime())
+    }
+
+    @Test
+    fun `displayableRuntime returns runtime of next episode if only next episode exists`() {
+        val tvShow = DetailsTvData(
+            nextEpisodeToAir = EpisodeData(id = 0, runtime = 60),
+            lastEpisodeToAir = null
+        )
+        assertEquals(60, tvShow.displayableRuntime())
+    }
+
+    @Test
+    fun `displayableRuntime returns runtime of last episode if only last episode exists`() {
+        val tvShow = DetailsTvData(
+            nextEpisodeToAir = null,
+            lastEpisodeToAir = EpisodeData(id = 0, runtime = 50)
+        )
+        assertEquals(50, tvShow.displayableRuntime())
+    }
+
+    @Test
+    fun `displayableRuntime returns 0 for tv show with no runtimes`() {
+        val tvShow = DetailsTvData(
+            episodeRunTime = emptyList(),
+            nextEpisodeToAir = null,
+            lastEpisodeToAir = null
+        )
+        assertEquals(0, tvShow.displayableRuntime())
+    }
+
+
+    @Test
+    fun `hasRuntime returns true if displayableRuntime is greater than 0 for movie`() {
+        val movie = DetailsMovieData(
+            runtime = 120
+        )
+        assertEquals(true, movie.hasRuntime())
+    }
+
+    @Test
+    fun `hasRuntime returns false if displayableRuntime is 0 for movie`() {
+        val movie = DetailsMovieData(
+            runtime = null
+        )
+        assertEquals(false, movie.hasRuntime())
+    }
+
+    @Test
+    fun `hasRuntime returns true if displayableRuntime is greater than 0 for tv show`() {
+        val tvShow = DetailsTvData(
+            episodeRunTime = listOf(30)
+        )
+        assertEquals(true, tvShow.hasRuntime())
+    }
+
+    @Test
+    fun `hasRuntime returns false if displayableRuntime is 0 for tv show`() {
+        val tvShow = DetailsTvData(
+            episodeRunTime = emptyList(),
+            nextEpisodeToAir = null,
+            lastEpisodeToAir = null
+        )
+        assertEquals(false, tvShow.hasRuntime())
     }
 
     @Test

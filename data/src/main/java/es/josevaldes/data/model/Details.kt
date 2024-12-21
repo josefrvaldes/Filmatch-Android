@@ -56,31 +56,31 @@ sealed class DetailsItemData(
         list = genres.map { it.name }
     )
 
-    fun getDurationString(): String {
-        when (this) {
-            is DetailsMovieData -> {
-                val hours = runtime?.div(60) ?: 0
-                val minutes = runtime?.rem(60) ?: 0
-                return "${hours}h ${minutes}m"
-            }
-
+    fun displayableRuntime(): Int {
+        return when (this) {
+            is DetailsMovieData -> runtime ?: 0
             is DetailsTvData -> {
-                val runtimeInMinutes = episodeRunTime.firstOrNull()
-                runtimeInMinutes?.let {
-                    val hours = it.div(60)
-                    val minutes = it.rem(60)
-                    return "${hours}h ${minutes}m"
-                } ?: run {
-                    return ""
+                var runtimeInMinutes = episodeRunTime.firstOrNull()
+                if (runtimeInMinutes == null) {
+                    val nextEpisodeRuntime = nextEpisodeToAir?.runtime
+                    val lastEpisodeRuntime = lastEpisodeToAir?.runtime
+                    runtimeInMinutes =
+                        if (nextEpisodeRuntime != null && lastEpisodeRuntime != null) {
+                            (nextEpisodeRuntime + lastEpisodeRuntime) / 2
+                        } else {
+                            nextEpisodeRuntime ?: lastEpisodeRuntime
+                        }
                 }
-            }
-
-            else -> {
-                return ""
+                runtimeInMinutes ?: 0
             }
         }
     }
 
+    fun hasRuntime(): Boolean {
+        return displayableRuntime() > 0
+    }
+
+ 
     fun getReleaseYear(): String? {
         val regex = "\\b(\\d{4})\\b".toRegex()
         if (this is DetailsTvData) {

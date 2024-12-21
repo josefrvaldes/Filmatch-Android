@@ -1,11 +1,13 @@
 package es.josevaldes.filmatch.ui.screens
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -59,9 +61,11 @@ import es.josevaldes.data.model.CreditsData
 import es.josevaldes.data.model.CrewMemberData
 import es.josevaldes.data.model.DetailsItemData
 import es.josevaldes.data.model.DetailsMovieData
+import es.josevaldes.data.model.DetailsTvData
 import es.josevaldes.data.model.GenreData
 import es.josevaldes.data.model.VideoResultData
 import es.josevaldes.filmatch.R
+import es.josevaldes.filmatch.extensions.durationString
 import es.josevaldes.filmatch.extensions.openYoutubeVideo
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
@@ -110,6 +114,7 @@ private fun MovieDetailsScreenContent(
     initialMovie: DetailsItemData? = fullMovie,
     isLoading: Boolean
 ) {
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
         Column(
@@ -126,7 +131,10 @@ private fun MovieDetailsScreenContent(
 
 
             PercentageTitleAndDurationSection(fullMovie)
+
+
             TitleAndYearSection(initialMovie)
+            SeasonsSection(fullMovie)
             OverviewSection(initialMovie)
             DirectedBySection(fullMovie)
             val displayableYoutubeVideos = fullMovie?.displayableYoutubeVideos
@@ -138,6 +146,23 @@ private fun MovieDetailsScreenContent(
                 CastSection(displayableCast)
             }
         }
+    }
+}
+
+@Composable
+private fun SeasonsSection(
+    fullMovie: DetailsItemData?,
+) {
+    val context = LocalContext.current
+    val shouldDisplaySeasons = fullMovie is DetailsTvData && fullMovie.seasons.isNotEmpty()
+    AnimatedVisibility(visible = shouldDisplaySeasons) {
+        val seasonsCount = (fullMovie as DetailsTvData).seasons.size
+        Text(
+            context.resources.getQuantityString(R.plurals.seasons_count, seasonsCount, seasonsCount),
+            modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
     }
 }
 
@@ -367,7 +392,8 @@ private fun TitleAndYearSection(movie: DetailsItemData?) {
         modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(movie?.displayTitle ?: "",
+        Text(
+            movie?.displayTitle ?: "",
             style = MaterialTheme.typography.titleLarge,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -408,6 +434,7 @@ private fun DirectedBySection(movie: DetailsItemData?) {
 
 @Composable
 private fun PercentageTitleAndDurationSection(movie: DetailsItemData?) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .padding(top = 14.dp, start = 16.dp, end = 16.dp),
@@ -438,8 +465,7 @@ private fun PercentageTitleAndDurationSection(movie: DetailsItemData?) {
         }
 
 
-
-        AnimatedVisibility(visible = (movie?.getDurationString() ?: "") != "") {
+        AnimatedVisibility(visible = movie?.hasRuntime() == true) {
             Row {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_duration),
@@ -448,7 +474,7 @@ private fun PercentageTitleAndDurationSection(movie: DetailsItemData?) {
                         .size(16.dp)
                 )
                 Text(
-                    movie?.getDurationString() ?: "",
+                    movie?.durationString(context) ?: "",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(start = 10.dp)
                 )
