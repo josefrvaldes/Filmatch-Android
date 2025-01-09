@@ -4,13 +4,14 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import es.josevaldes.data.di.IoDispatcher
 import es.josevaldes.data.model.DiscoverItemData
 import es.josevaldes.data.model.MovieFilters
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.utils.DeviceLocaleProvider
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -23,7 +24,8 @@ import kotlin.random.Random
 @HiltViewModel
 class SlideMovieViewModel @Inject constructor(
     private val movieRepository: MovieRepository,
-    private val deviceLocaleProvider: DeviceLocaleProvider
+    private val deviceLocaleProvider: DeviceLocaleProvider,
+    @IoDispatcher private val dispatcherIO: CoroutineDispatcher
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -77,8 +79,9 @@ class SlideMovieViewModel @Inject constructor(
         }
     }
 
-    private suspend fun cleanVisitedItems(movies: List<DiscoverItemData>): List<DiscoverItemData> {
-        return withContext(Dispatchers.IO) {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal suspend fun cleanVisitedItems(movies: List<DiscoverItemData>): List<DiscoverItemData> {
+        return withContext(dispatcherIO) {
             movies.filter { movie ->
                 !movieRepository.isMovieVisited(movie.id.toString())
             }
@@ -86,8 +89,7 @@ class SlideMovieViewModel @Inject constructor(
     }
 
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal fun loadCurrentPage() {
+    fun loadCurrentPage() {
         val language = deviceLocaleProvider.getDeviceLocale()
         viewModelScope.launch {
             _isLoading.value = true
@@ -141,7 +143,7 @@ class SlideMovieViewModel @Inject constructor(
                         }
 
                         _isLoading.value = false
-                        
+
                         // otherwise, we will just show the received movies
                         val swipeableMovies = cleanedMovies.map { SwipeableMovie(it) }
                         initializeMovies(swipeableMovies)
@@ -152,6 +154,7 @@ class SlideMovieViewModel @Inject constructor(
                         }
                         return@collect
                     } else {
+                        _isLoading.value = false
                         _errorMessage.emit(result as ApiResult.Error)
                     }
                 }

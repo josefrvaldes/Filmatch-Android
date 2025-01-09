@@ -1,13 +1,11 @@
 package es.josevaldes.filmatch.ui.screens
 
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -114,7 +112,6 @@ private fun MovieDetailsScreenContent(
     initialMovie: DetailsItemData? = fullMovie,
     isLoading: Boolean
 ) {
-    val context = LocalContext.current
     val scrollState = rememberScrollState()
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
         Column(
@@ -158,7 +155,11 @@ private fun SeasonsSection(
     AnimatedVisibility(visible = shouldDisplaySeasons) {
         val seasonsCount = (fullMovie as DetailsTvData).seasons.size
         Text(
-            context.resources.getQuantityString(R.plurals.seasons_count, seasonsCount, seasonsCount),
+            context.resources.getQuantityString(
+                R.plurals.seasons_count,
+                seasonsCount,
+                seasonsCount
+            ),
             modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)

@@ -54,6 +54,40 @@ open class DiscoverItemData(
             is DiscoverTvData -> firstAirDate
             else -> null
         }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as DiscoverItemData
+
+        if (id != other.id) return false
+        if (adult != other.adult) return false
+        if (backdropPath != other.backdropPath) return false
+        if (genreIds != other.genreIds) return false
+        if (originalLanguage != other.originalLanguage) return false
+        if (posterPath != other.posterPath) return false
+        if (overview != other.overview) return false
+        if (voteAverage != other.voteAverage) return false
+        if (voteCount != other.voteCount) return false
+        if (popularity != other.popularity) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id
+        result = 31 * result + (adult?.hashCode() ?: 0)
+        result = 31 * result + (backdropPath?.hashCode() ?: 0)
+        result = 31 * result + genreIds.hashCode()
+        result = 31 * result + (originalLanguage?.hashCode() ?: 0)
+        result = 31 * result + (posterPath?.hashCode() ?: 0)
+        result = 31 * result + (overview?.hashCode() ?: 0)
+        result = 31 * result + (voteAverage?.hashCode() ?: 0)
+        result = 31 * result + (voteCount ?: 0)
+        result = 31 * result + (popularity?.hashCode() ?: 0)
+        return result
+    }
 }
 
 
