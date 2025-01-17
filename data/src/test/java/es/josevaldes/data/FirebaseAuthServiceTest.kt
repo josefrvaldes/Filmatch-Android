@@ -10,6 +10,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GetTokenResult
 import com.google.firebase.auth.GoogleAuthProvider
 import es.josevaldes.data.model.User
 import es.josevaldes.data.results.AuthError
@@ -23,6 +24,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -60,6 +62,16 @@ class FirebaseAuthServiceTest {
             every { uid } returns "123"
             every { photoUrl } returns Uri.EMPTY
         }
+    }
+
+    private fun <T> mockSuccessfulTask(result: T): Task<T> {
+        val task = mockk<Task<T>>()
+        every { task.isComplete } returns true
+        every { task.isSuccessful } returns true
+        every { task.exception } returns null
+        every { task.isCanceled } returns false
+        every { task.result } returns result
+        return task
     }
 
     private fun mockSuccessfulAuthTask(user: FirebaseUser?): Task<FirebaseAuthResult> {
@@ -432,33 +444,43 @@ class FirebaseAuthServiceTest {
 
 
     @Test
-    fun `isLoggedIn should return true when user is logged in and email is verified`() {
-        val mockedUser = mockk<FirebaseUser> {
-            every { isEmailVerified } returns true
+    fun `isLoggedIn should return true when user is logged in and email is verified`() =
+        runTest {
+            val mockedUser = mockk<FirebaseUser> {
+                every { isEmailVerified } returns true
+            }
+
+            every { mockFirebaseAuth.currentUser } returns mockedUser
+
+            val mockedTokenResult = mockk<GetTokenResult> {
+                every { token } returns "asfaa"
+            }
+
+            coEvery { mockedUser.getIdToken(false) } returns mockSuccessfulTask(
+                mockedTokenResult
+            )
+
+            val result = authService.isLoggedIn()
+
+            assertTrue(result)
         }
 
-        every { mockFirebaseAuth.currentUser } returns mockedUser
-
-        val result = authService.isLoggedIn()
-
-        assertTrue(result)
-    }
-
     @Test
-    fun `isLoggedIn should return false when user is logged in but email is not verified`() {
-        val mockedUser = mockk<FirebaseUser> {
-            every { isEmailVerified } returns false
+    fun `isLoggedIn should return false when user is logged in but email is not verified`() =
+        runTest {
+            val mockedUser = mockk<FirebaseUser> {
+                every { isEmailVerified } returns false
+            }
+
+            every { mockFirebaseAuth.currentUser } returns mockedUser
+
+            val result = authService.isLoggedIn()
+
+            assertFalse(result)
         }
 
-        every { mockFirebaseAuth.currentUser } returns mockedUser
-
-        val result = authService.isLoggedIn()
-
-        assertFalse(result)
-    }
-
     @Test
-    fun `isLoggedIn should return false when no user is logged in`() {
+    fun `isLoggedIn should return false when no user is logged in`() = runTest {
         every { mockFirebaseAuth.currentUser } returns null
 
         val result = authService.isLoggedIn()

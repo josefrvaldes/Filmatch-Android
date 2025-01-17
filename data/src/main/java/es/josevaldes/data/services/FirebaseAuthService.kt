@@ -165,8 +165,17 @@ class FirebaseAuthService(private val auth: FirebaseAuth) : AuthService {
         }
     }
 
-    override fun isLoggedIn(): Boolean {
+    override suspend fun isLoggedIn(): Boolean {
         val user = auth.currentUser
-        return user != null && user.isEmailVerified
+
+        val isLoggedInInFirebaseAuth = user != null && user.isEmailVerified
+        if (!isLoggedInInFirebaseAuth) return false
+
+
+        val tokenResult = user?.getIdToken(false)?.await()
+        val token = tokenResult?.token
+        val isLoggedIn = token?.isNotEmpty() == true
+        Timber.tag("AuthService").d("auth token: $token")
+        return isLoggedIn
     }
 }

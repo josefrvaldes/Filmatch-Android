@@ -22,6 +22,6 @@ interface AuthService {
 
     suspend fun callForgotPassword(email: String): AuthResult<Unit>
 
-    fun isLoggedIn(): Boolean
+    suspend fun isLoggedIn(): Boolean
 }
 

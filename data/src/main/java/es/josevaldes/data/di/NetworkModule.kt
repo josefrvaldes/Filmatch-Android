@@ -39,7 +39,7 @@ object JsonMapper {
 class NetworkModule {
 
     companion object {
-        const val BASE_URL = "https://api.themoviedb.org"
+        const val TMDB_BASE_URL = "https://api.themoviedb.org"
     }
 
     @Provides
@@ -53,7 +53,7 @@ class NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(TMDB_BASE_URL)
             .client(okHttpClient)
             .addCallAdapterFactory(ApiResultCallAdapterFactory())
             .addConverterFactory(JacksonConverterFactory.create(JsonMapper.objectMapper))

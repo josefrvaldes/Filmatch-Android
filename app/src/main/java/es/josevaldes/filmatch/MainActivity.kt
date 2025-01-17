@@ -9,6 +9,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -25,6 +26,7 @@ import es.josevaldes.filmatch.ui.screens.SlideMovieScreen
 import es.josevaldes.filmatch.ui.screens.WelcomeScreen
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.utils.SimplePreferencesManager
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.reflect.typeOf
 
@@ -37,23 +39,24 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            FilmatchApp(
-                startDestination = if (isLoggedIn()) {
-                    Route.SlideMovieRoute
-                } else {
-                    if (SimplePreferencesManager(this).isOnboardingFinished()) {
-                        Route.WelcomeRoute
-                    } else {
-                        Route.OnBoardingRoute
-                    }
-                }
-            )
-        }
-    }
 
-    private fun isLoggedIn(): Boolean {
-        return authService.isLoggedIn()
+        lifecycleScope.launch {
+            val startDestination = if (authService.isLoggedIn()) {
+                Route.SlideMovieRoute
+            } else {
+                if (SimplePreferencesManager(this@MainActivity).isOnboardingFinished()) {
+                    Route.WelcomeRoute
+                } else {
+                    Route.OnBoardingRoute
+                }
+            }
+
+            setContent {
+                FilmatchApp(
+                    startDestination = startDestination
+                )
+            }
+        }
     }
 }
 
