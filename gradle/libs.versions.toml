@@ -37,6 +37,7 @@ kotlinxSerializationVersion = "1.7.3"
 kotlinxSerializationPluginVersion = "2.0.20"
 jacksonVersion = "2.17.0"
 splashScreenVersion = "1.0.1"
+roomVersion = "2.6.1"
 
 
 [libraries]
@@ -91,6 +92,10 @@ androidx-navigation = { group = "androidx.navigation", name = "navigation-compos
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationVersion" }
 jackson = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jacksonVersion" }
 splashScreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashScreenVersion" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomVersion" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomVersion" }
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "roomVersion" }
+room-testing = { group = "androidx.room", name = "room-testing", version.ref = "roomVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -14,9 +14,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dagger.hilt.android.AndroidEntryPoint
-import es.josevaldes.data.model.Movie
+import es.josevaldes.data.extensions.mappers.toDetailsItemData
+import es.josevaldes.data.model.DetailsItemData
 import es.josevaldes.data.services.AuthService
-import es.josevaldes.filmatch.navigation.MovieParameterType
+import es.josevaldes.filmatch.navigation.DetailsItemDataParameterType
 import es.josevaldes.filmatch.navigation.Route
 import es.josevaldes.filmatch.ui.screens.MovieDetailsScreen
 import es.josevaldes.filmatch.ui.screens.OnBoardingScreen
@@ -26,6 +27,7 @@ import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.utils.SimplePreferencesManager
 import javax.inject.Inject
 import kotlin.reflect.typeOf
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -89,7 +91,7 @@ fun FilmatchApp(startDestination: Route) {
                 )
             }
         ) {
-            composable<Route.MovieDetailsRoute>(typeMap = mapOf(typeOf<Movie>() to MovieParameterType)) { backStackEntry ->
+            composable<Route.MovieDetailsRoute>(typeMap = mapOf(typeOf<DetailsItemData>() to DetailsItemDataParameterType)) { backStackEntry ->
                 val movieDetailsRoute = backStackEntry.toRoute<Route.MovieDetailsRoute>()
                 MovieDetailsScreen(movieDetailsRoute.movie, backStackEntry)
             }
@@ -103,8 +105,8 @@ fun FilmatchApp(startDestination: Route) {
                 })
             }
             composable<Route.SlideMovieRoute> {
-                SlideMovieScreen(onNavigateToMovieDetailsScreen = { movie ->
-                    navController.navigate(Route.MovieDetailsRoute(movie))
+                SlideMovieScreen(onNavigateToMovieDetailsScreen = { discoverItem ->
+                    navController.navigate(Route.MovieDetailsRoute(discoverItem.toDetailsItemData()))
                 })
             }
             composable<Route.WelcomeRoute> {

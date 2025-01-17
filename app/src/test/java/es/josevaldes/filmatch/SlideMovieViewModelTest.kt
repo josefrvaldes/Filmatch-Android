@@ -1,7 +1,8 @@
 package es.josevaldes.filmatch
 
+import es.josevaldes.data.model.DiscoverItemData
+import es.josevaldes.data.model.DiscoverMovieData
 import es.josevaldes.data.model.DiscoverMoviesData
-import es.josevaldes.data.model.Movie
 import es.josevaldes.data.repositories.MovieRepository
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
@@ -18,12 +19,17 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Before
@@ -37,12 +43,13 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34], manifest = Config.NONE)
 class SlideMovieViewModelTest {
 
-
     private val movieRepository = mockk<MovieRepository>()
     private val deviceLocaleProvider = mockk<DeviceLocaleProvider>()
+    private val myDispatcherIO = StandardTestDispatcher()
     private lateinit var viewModel: SlideMovieViewModel
 
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Before
     fun setUp() {
         coEvery {
@@ -54,8 +61,78 @@ class SlideMovieViewModelTest {
         } returns flowOf(ApiResult.Success(DiscoverMoviesData(listOf(), 1, 1, 1)))
         every { deviceLocaleProvider.getDeviceLocale() } returns "en-US"
         every { deviceLocaleProvider.getDeviceCountry() } returns "US"
-        viewModel = SlideMovieViewModel(movieRepository, deviceLocaleProvider)
+
+        viewModel = SlideMovieViewModel(movieRepository, deviceLocaleProvider, myDispatcherIO)
+        Dispatchers.setMain(myDispatcherIO)
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `loadCurrentPage should return a list of movies in the flow and fill the observableMovies and load the next observable movie`() =
+        runTest(myDispatcherIO) {
+            println("let's run our test madafaka")
+            val discoverMoviesResponse = DiscoverMoviesData(
+                listOf(
+                    DiscoverMovieData(id = 1),
+                    DiscoverMovieData(id = 2),
+                    DiscoverMovieData(id = 3),
+                    DiscoverMovieData(id = 4),
+                    DiscoverMovieData(id = 5),
+                ), 1, 5, 1
+            )
+            coEvery {
+                movieRepository.getDiscoverMovies(
+                    any(),
+                    any(),
+                    any()
+                )
+            } returns flowOf(ApiResult.Success(discoverMoviesResponse))
+
+            coEvery { movieRepository.isMovieVisited(any()) } returns false
+
+
+            var emittedErrorMessage: ApiResult.Error? = null
+            // let's listen temporarily to the error message before calling the function
+            val job = viewModel.errorMessage.onEach { emittedErrorMessage = it }.launchIn(this)
+
+            viewModel.loadCurrentPage()
+
+            advanceUntilIdle()
+            job.cancel()
+
+            assertFalse(viewModel.isLoading.value)
+            assertEquals(discoverMoviesResponse.results.size, viewModel.movieListFlow.value.size)
+
+            // let's test that the observable movies are filled correctly
+            for (i in 0 until SlideMovieViewModel.Companion.NUMBER_OF_VISIBLE_MOVIES) {
+                val currentMovie = discoverMoviesResponse.results[i]
+                assertEquals(
+                    currentMovie.id,
+                    viewModel.observableMovies.value[i].movie.id
+                )
+            }
+
+            assertEquals(viewModel.pages, discoverMoviesResponse.totalPages)
+
+            // let's test that the next observable movie is the next one in the list
+            assertEquals(
+                discoverMoviesResponse.results[SlideMovieViewModel.Companion.NUMBER_OF_VISIBLE_MOVIES].id,
+                viewModel.movieThatWillBeObservableNext.value?.movie?.id
+            )
+
+            // let's test that there were no errors
+            assertEquals(
+                emittedErrorMessage,
+                null
+            )
+        }
 
 
     @Test
@@ -102,59 +179,41 @@ class SlideMovieViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `loadCurrentPage should return a list of movies in the flow and fill the observableMovies and load the next observable movie`() =
-        runTest {
+    fun `loadCurrentPage should start from page 1 if no pages have been visited`() =
+        runTest(myDispatcherIO) {
+
             val discoverMoviesResponse = DiscoverMoviesData(
-                listOf(
-                    Movie(id = 1),
-                    Movie(id = 2),
-                    Movie(id = 3),
-                    Movie(id = 4),
-                    Movie(id = 5),
-                ), 1, 5, 1
+                results = listOf(
+                    DiscoverMovieData(id = 1),
+                    DiscoverMovieData(id = 2),
+                    DiscoverMovieData(id = 3),
+                ),
+                page = 1,
+                totalPages = 5,
+                totalResults = 3
             )
+
+            // Simulate that no pages have been visited
+            coEvery { movieRepository.getMaxPage(any()) } returns null
+
+            // Mock the flow to return success
             coEvery {
-                movieRepository.getDiscoverMovies(
-                    any(),
-                    any(),
-                    any()
-                )
+                movieRepository.getDiscoverMovies(page = 1, any(), any())
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
 
-
-            var emittedErrorMessage: ApiResult.Error? = null
-            // let's listen temporarily to the error message before calling the function
-            val job = viewModel.errorMessage.onEach { emittedErrorMessage = it }.launchIn(this)
+            every { deviceLocaleProvider.getDeviceLocale() } returns "en-US"
+            coEvery { movieRepository.isMovieVisited(any()) } returns false
 
             viewModel.loadCurrentPage()
-
             advanceUntilIdle()
-            job.cancel()
 
-            assertFalse(viewModel.isLoading.value)
+            // Verify that the movie list is populated correctly
             assertEquals(discoverMoviesResponse.results.size, viewModel.movieListFlow.value.size)
 
-            // let's test that the observable movies are filled correctly
-            for (i in 0 until SlideMovieViewModel.Companion.NUMBER_OF_VISIBLE_MOVIES) {
-                val currentMovie = discoverMoviesResponse.results[i]
-                assertEquals(
-                    currentMovie.id,
-                    viewModel.observableMovies.value[i].movie.id
-                )
-            }
-
-            assertEquals(viewModel.pages, discoverMoviesResponse.totalPages)
-
-            // let's test that the next observable movie is the next one in the list
+            // Verify that the observable movies are set correctly
             assertEquals(
-                discoverMoviesResponse.results[SlideMovieViewModel.Companion.NUMBER_OF_VISIBLE_MOVIES].id,
-                viewModel.movieThatWillBeObservableNext.value?.movie?.id
-            )
-
-            // let's test that there were no errors
-            assertEquals(
-                emittedErrorMessage,
-                null
+                discoverMoviesResponse.results.first().id,
+                viewModel.observableMovies.value.first().movie.id
             )
         }
 
@@ -190,13 +249,20 @@ class SlideMovieViewModelTest {
             )
         }
 
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `onSwipe should remove the first movie from the list and load the next page if the list is below the threshold`() =
-        runTest {
+        runTest(myDispatcherIO) {
             val resultsPerPage = 10
-            val movies = List(resultsPerPage) { index -> Movie(id = index) }
+            val movies =
+                List(resultsPerPage) { index -> DiscoverMovieData(id = index) }.map {
+                    SwipeableMovie(
+                        it
+                    )
+                }
             val discoverMoviesResponse = DiscoverMoviesData(
-                movies, 1, 20, 2
+                movies.map { it.movie }, 1, 20, 2
             )
             coEvery {
                 movieRepository.getDiscoverMovies(
@@ -205,23 +271,94 @@ class SlideMovieViewModelTest {
                     any()
                 )
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
+            coEvery { movieRepository.isMovieVisited(any()) } returns false
+            coEvery { movieRepository.markedMovieAsVisited(any()) } just Runs
 
             viewModel.loadCurrentPage()
+            advanceUntilIdle()
 
             // let's swipe all the movies right before reaching the threshold
             for (i in 0 until LOADING_THRESHOLD) {
-                viewModel.onSwipe()
+                viewModel.onSwipe(movies.first())
                 assertEquals(resultsPerPage - i - 1, viewModel.movieListFlow.value.size)
             }
 
             // let's swipe one more time we will reach the threshold and the next page will be loaded
-            viewModel.onSwipe()
+            viewModel.onSwipe(movies.first())
+            advanceUntilIdle() // we have to wait again here because, after swiping this movie, the next page will be loaded
             assertEquals(resultsPerPage + LOADING_THRESHOLD - 1, viewModel.movieListFlow.value.size)
         }
 
+
+    @Test
+    fun `cleanVisitedItems should return all movies if none are visited`() = runTest {
+        // Prepare test data
+        val movies = listOf(
+            DiscoverItemData(id = 1),
+            DiscoverItemData(id = 2),
+            DiscoverItemData(id = 3)
+        )
+
+        // Mock repository to return false for all IDs
+        movies.forEach { movie ->
+            coEvery { movieRepository.isMovieVisited(movie.id.toString()) } returns false
+        }
+
+        // Execute the method
+        val result = viewModel.cleanVisitedItems(movies)
+
+        // Assert all movies are returned
+        assertEquals(movies, result)
+    }
+
+    @Test
+    fun `cleanVisitedItems should filter out visited movies`() = runTest {
+        // Prepare test data
+        val movies = listOf(
+            DiscoverItemData(id = 1),
+            DiscoverItemData(id = 2),
+            DiscoverItemData(id = 3)
+        )
+
+        // Mock repository to simulate some movies as visited
+        coEvery { movieRepository.isMovieVisited("1") } returns true
+        coEvery { movieRepository.isMovieVisited("2") } returns false
+        coEvery { movieRepository.isMovieVisited("3") } returns true
+
+        // Execute the method
+        val result = viewModel.cleanVisitedItems(movies)
+
+        // Assert only unvisited movies are returned
+        val expected = listOf(
+            DiscoverItemData(id = 2) // Only movie with ID 2 is unvisited
+        )
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun `cleanVisitedItems should return empty list if all movies are visited`() = runTest {
+        // Prepare test data
+        val movies = listOf(
+            DiscoverItemData(id = 1),
+            DiscoverItemData(id = 2),
+            DiscoverItemData(id = 3)
+        )
+
+        // Mock repository to return true for all IDs
+        movies.forEach { movie ->
+            coEvery { movieRepository.isMovieVisited(movie.id.toString()) } returns true
+        }
+
+        // Execute the method
+        val result = viewModel.cleanVisitedItems(movies)
+
+        // Assert the result is an empty list
+        assertEquals(emptyList<DiscoverItemData>(), result)
+    }
+
     @Test
     fun `getMovieThatWillBeObservableNext should chose the proper movie all the time`() = run {
-        val movies = List(5) { index -> SwipeableMovie(Movie(id = index)) }
+        val movies = List(5) { index -> SwipeableMovie(DiscoverMovieData(id = index)) }
         viewModel.movieListFlow.value.addAll(movies)
 
         viewModel.getMovieThatWillBeObservableNext()

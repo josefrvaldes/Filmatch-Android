@@ -5,7 +5,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import es.josevaldes.data.paging.MoviesPagingSource
-import es.josevaldes.data.services.MovieService
+import es.josevaldes.data.services.MoviesRemoteDataSource
 import javax.inject.Singleton
 
 @Module
@@ -14,7 +14,7 @@ class RepositoriesModule {
 
     @Provides
     @Singleton
-    fun provideMoviesPagingSource(movieService: MovieService): MoviesPagingSource {
-        return MoviesPagingSource(movieService = movieService)
+    fun provideMoviesPagingSource(moviesRemoteDataSource: MoviesRemoteDataSource): MoviesPagingSource {
+        return MoviesPagingSource(moviesRemoteDataSource = moviesRemoteDataSource)
     }
 }

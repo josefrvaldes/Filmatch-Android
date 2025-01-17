@@ -6,7 +6,7 @@ import es.josevaldes.data.responses.GetProvidersResponse
 import es.josevaldes.data.responses.ProviderResponse
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.ProviderService
+import es.josevaldes.data.services.ProviderRemoteDataSource
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,7 +21,7 @@ import org.junit.Test
 class ProviderRepositoryTest {
 
     private lateinit var providerRepository: ProviderRepository
-    private val providerService: ProviderService = mockk()
+    private val providerRemoteDataSource: ProviderRemoteDataSource = mockk()
 
     // Sample data
     private val movieProvidersResponse =
@@ -41,16 +41,21 @@ class ProviderRepositoryTest {
 
     @Before
     fun setUp() {
-        providerRepository = ProviderRepository(providerService)
+        providerRepository = ProviderRepository(providerRemoteDataSource)
     }
 
     @Test
     fun `getMovieProviders should return merged providers on success`() = runTest {
         // Mock service responses
-        coEvery { providerService.getMovieProviders("en", "US") } returns ApiResult.Success(
+        coEvery {
+            providerRemoteDataSource.getMovieProviders(
+                "en",
+                "US"
+            )
+        } returns ApiResult.Success(
             movieProvidersResponse
         )
-        coEvery { providerService.getTvProviders("en", "US") } returns ApiResult.Success(
+        coEvery { providerRemoteDataSource.getTvProviders("en", "US") } returns ApiResult.Success(
             tvProvidersResponse
         )
 
@@ -76,13 +81,13 @@ class ProviderRepositoryTest {
     fun `getMovieProviders should return error if both responses fail`() = runTest {
         // Mock service responses
         coEvery {
-            providerService.getMovieProviders(
+            providerRemoteDataSource.getMovieProviders(
                 "en",
                 "US"
             )
         } returns ApiResult.Error(ApiError.ResourceNotFound)
         coEvery {
-            providerService.getTvProviders(
+            providerRemoteDataSource.getTvProviders(
                 "en",
                 "US"
             )
@@ -98,10 +103,15 @@ class ProviderRepositoryTest {
     @Test
     fun `getMovieProviders should return error if both responses are empty`() = runTest {
         // Mock service responses
-        coEvery { providerService.getMovieProviders("en", "US") } returns ApiResult.Success(
+        coEvery {
+            providerRemoteDataSource.getMovieProviders(
+                "en",
+                "US"
+            )
+        } returns ApiResult.Success(
             GetProvidersResponse(emptyList())
         )
-        coEvery { providerService.getTvProviders("en", "US") } returns ApiResult.Success(
+        coEvery { providerRemoteDataSource.getTvProviders("en", "US") } returns ApiResult.Success(
             GetProvidersResponse(emptyList())
         )
 
@@ -116,11 +126,16 @@ class ProviderRepositoryTest {
     fun `getMovieProviders should return success with partial data if one response fails`() =
         runTest {
             // Mock service responses
-            coEvery { providerService.getMovieProviders("en", "US") } returns ApiResult.Success(
+            coEvery {
+                providerRemoteDataSource.getMovieProviders(
+                    "en",
+                    "US"
+                )
+            } returns ApiResult.Success(
                 movieProvidersResponse
             )
             coEvery {
-                providerService.getTvProviders(
+                providerRemoteDataSource.getTvProviders(
                     "en",
                     "US"
                 )
@@ -144,12 +159,17 @@ class ProviderRepositoryTest {
     fun `getMovieProviders should handle exceptions`() = runTest {
         // Mock service to throw an exception
         coEvery {
-            providerService.getMovieProviders(
+            providerRemoteDataSource.getMovieProviders(
                 "en",
                 "US"
             )
         } throws Exception("Unexpected error")
-        coEvery { providerService.getTvProviders("en", "US") } throws Exception("Unexpected error")
+        coEvery {
+            providerRemoteDataSource.getTvProviders(
+                "en",
+                "US"
+            )
+        } throws Exception("Unexpected error")
 
         val resultFlow = providerRepository.getMovieProviders("en", "US")
         resultFlow.collect { result ->

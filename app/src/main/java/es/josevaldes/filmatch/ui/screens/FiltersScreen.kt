@@ -181,7 +181,7 @@ fun FiltersScreen(selectedFilters: MovieFilters, onFiltersSelected: (MovieFilter
                 context.getString(R.string.filter_score_string, intScore)
             }
         }) {
-            viewModel.otherFilterClicked(it)
+            viewModel.otherFilterClicked(it, true)
         }
 
         Box(modifier = Modifier.weight(1f))

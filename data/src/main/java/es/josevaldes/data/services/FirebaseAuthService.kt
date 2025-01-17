@@ -58,7 +58,7 @@ class FirebaseAuthService(private val auth: FirebaseAuth) : AuthService {
         val credentialManager = CredentialManager.create(context)
 
         val signInRequest = GetGoogleIdOption.Builder()
-            .setFilterByAuthorizedAccounts(true)
+            .setFilterByAuthorizedAccounts(false)
             .setServerClientId(BuildConfig.GOOGLE_AUTH_CLIENT_ID)
             .setAutoSelectEnabled(false)
             .setNonce(generateNonce())
