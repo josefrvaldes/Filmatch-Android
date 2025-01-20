@@ -13,6 +13,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GetTokenResult
 import com.google.firebase.auth.GoogleAuthProvider
 import es.josevaldes.data.model.User
+import es.josevaldes.data.repositories.AuthRepository
 import es.josevaldes.data.results.AuthError
 import es.josevaldes.data.results.AuthResult
 import es.josevaldes.data.services.FirebaseAuthService
@@ -43,12 +44,13 @@ class FirebaseAuthServiceTest {
 
 
     private val mockCredential: AuthCredential = mockk()
+    private val mockAuthRepository: AuthRepository = mockk()
 
     private lateinit var authService: FirebaseAuthService
 
     @Before
     fun setUp() {
-        authService = FirebaseAuthService(mockFirebaseAuth)
+        authService = FirebaseAuthService(mockFirebaseAuth, mockAuthRepository)
         mockkStatic(GoogleAuthProvider::class)
         every { GoogleAuthProvider.getCredential(any(), any()) } returns mockCredential
 
@@ -207,7 +209,7 @@ class FirebaseAuthServiceTest {
         runBlocking {
             val context = mockk<Context>()
             val idToken = "valid_token"
-            val mockUser = User("123", "username", "email", "")
+            val mockUser = User("123", "username", "email", "", "123")
 
             // We are spying the service to be able to call private methods
             val spyAuthService = spyk(authService)
@@ -275,7 +277,7 @@ class FirebaseAuthServiceTest {
                 )
             } returns mockedSuccessfulTask
 
-            val expectedUser = User("123", "", "user@example.com", "")
+            val expectedUser = User("123", "", "user@example.com", "", "123")
 
             val result = authService.register("user@example.com", "password")
 

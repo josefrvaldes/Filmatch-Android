@@ -25,3 +25,7 @@ interface AuthService {
     suspend fun isLoggedIn(): Boolean
 }
 
+interface TokenProvider {
+    suspend fun getToken(): String
+}
+
