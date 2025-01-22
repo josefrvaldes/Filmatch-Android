@@ -1,6 +1,7 @@
 package es.josevaldes.data.services
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
@@ -78,7 +79,8 @@ class FirebaseAuthService(
         }
     }
 
-    private suspend fun getGoogleToken(context: Context): AuthResult<String> {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal suspend fun getGoogleToken(context: Context): AuthResult<String> {
         val credentialManager = CredentialManager.create(context)
 
         val signInRequest = GetGoogleIdOption.Builder()

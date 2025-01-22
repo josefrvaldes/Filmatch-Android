@@ -14,6 +14,8 @@ import com.google.firebase.auth.GetTokenResult
 import com.google.firebase.auth.GoogleAuthProvider
 import es.josevaldes.data.model.User
 import es.josevaldes.data.repositories.AuthRepository
+import es.josevaldes.data.results.ApiError
+import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.results.AuthError
 import es.josevaldes.data.results.AuthResult
 import es.josevaldes.data.services.FirebaseAuthService
@@ -24,6 +26,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.spyk
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -97,12 +100,95 @@ class FirebaseAuthServiceTest {
         coEvery {
             mockFirebaseAuth.signInWithEmailAndPassword(any(), any())
         } returns mockedSuccessfulTask
+        coEvery {
+            mockAuthRepository.auth()
+        } returns flow { emit(ApiResult.Success(Unit)) }
 
         val result = authService.login("user@example.com", "password")
 
         assertTrue(result is AuthResult.Success)
         assertEquals("user@example.com", (result as AuthResult.Success).data.email)
     }
+
+
+    @Test
+    fun `login success from firebase but api returns error should return AuthResult Error`() =
+        runBlocking {
+            val mockedUser = mockFirebaseUser(isEmailVerified = true)
+            val mockedSuccessfulTask = mockSuccessfulAuthTask(mockedUser)
+            coEvery {
+                mockFirebaseAuth.signInWithEmailAndPassword(any(), any())
+            } returns mockedSuccessfulTask
+
+            coEvery {
+                mockAuthRepository.auth()
+            } returns flow { emit(ApiResult.Error(ApiError.InvalidCredentials)) }
+
+            val result = authService.login("user@example.com", "password")
+
+            assertTrue(result is AuthResult.Error)
+            assertEquals(AuthError.InvalidCredentials, (result as AuthResult.Error).authError)
+        }
+
+
+    @Test
+    fun `signInWithGoogle when firebase succeeds but api returns error should return AuthResult Error`() =
+        runBlocking {
+            val context = mockk<Context>()
+            val idToken = "valid_token"
+            val mockUser = User("123", "username", "email", "", "123")
+
+            val spyAuthService = spyk(authService)
+
+            coEvery { spyAuthService invoke "getGoogleToken" withArguments listOf(context) } returns AuthResult.Success(
+                idToken
+            )
+
+            coEvery { spyAuthService invoke "firebaseAuthWithGoogle" withArguments listOf(idToken) } returns AuthResult.Success(
+                mockUser
+            )
+
+            coEvery {
+                mockAuthRepository.auth()
+            } returns flow { emit(ApiResult.Error(ApiError.InvalidCredentials)) }
+
+            val result = spyAuthService.signInWithGoogle(context)
+
+            assertTrue(result is AuthResult.Error)
+            assertEquals(AuthError.InvalidCredentials, (result as AuthResult.Error).authError)
+        }
+
+    @Test
+    fun `register when user is created successfully but api returns error should return AuthResult Error`() =
+        runBlocking {
+            val mockedUser = mockk<FirebaseUser> {
+                every { uid } returns "123"
+                every { displayName } returns "whatever on displayName"
+                every { email } returns "user@example.com"
+                every { photoUrl } returns Uri.EMPTY
+            }
+            val mockedSuccessfulTask = mockSuccessfulAuthTask(mockedUser)
+            val mockedVerificationTask = mockk<Task<Void>> {
+                every { isSuccessful } returns true
+                every { isComplete } returns true
+                every { exception } returns null
+            }
+
+            coEvery { mockedUser.sendEmailVerification() } returns mockedVerificationTask
+
+            coEvery {
+                mockFirebaseAuth.createUserWithEmailAndPassword(any(), any())
+            } returns mockedSuccessfulTask
+
+            coEvery {
+                mockAuthRepository.auth()
+            } returns flow { emit(ApiResult.Error(ApiError.InvalidCredentials)) }
+
+            val result = authService.register("user@example.com", "password")
+
+            assertTrue(result is AuthResult.Error)
+            assertEquals(AuthError.InvalidCredentials, (result as AuthResult.Error).authError)
+        }
 
 
     @Test
@@ -186,7 +272,7 @@ class FirebaseAuthServiceTest {
 
 
     @Test
-    fun `signInWithGoogle when getGoogleToken returns Error should return AuthResult Error`() =
+    fun `signInWithGoogle when getGoogleToken returns Error should return AuthResult Error when firebase signin is error`() =
         runBlocking {
             val context = mockk<Context>()
 
@@ -223,6 +309,9 @@ class FirebaseAuthServiceTest {
             coEvery { spyAuthService invoke "firebaseAuthWithGoogle" withArguments listOf(idToken) } returns AuthResult.Success(
                 mockUser
             )
+            coEvery {
+                mockAuthRepository.auth()
+            } returns flow { emit(ApiResult.Success(Unit)) }
 
             val result = spyAuthService.signInWithGoogle(context)
 
@@ -276,6 +365,10 @@ class FirebaseAuthServiceTest {
                     any()
                 )
             } returns mockedSuccessfulTask
+
+            coEvery {
+                mockAuthRepository.auth()
+            } returns flow { emit(ApiResult.Success(Unit)) }
 
             val expectedUser = User("123", "", "user@example.com", "", "123")
 
@@ -446,7 +539,7 @@ class FirebaseAuthServiceTest {
 
 
     @Test
-    fun `isLoggedIn should return true when user is logged in and email is verified`() =
+    fun `isLoggedIn should return true when user is logged in and email is verified and api is okay`() =
         runTest {
             val mockedUser = mockk<FirebaseUser> {
                 every { isEmailVerified } returns true
@@ -461,6 +554,10 @@ class FirebaseAuthServiceTest {
             coEvery { mockedUser.getIdToken(false) } returns mockSuccessfulTask(
                 mockedTokenResult
             )
+
+            coEvery {
+                mockAuthRepository.auth()
+            } returns flow { emit(ApiResult.Success(Unit)) }
 
             val result = authService.isLoggedIn()
 
@@ -489,5 +586,32 @@ class FirebaseAuthServiceTest {
 
         assertFalse(result)
     }
+
+    @Test
+    fun `isLoggedIn when firebase succeeds but api returns error should return false`() =
+        runBlocking {
+            val mockedUser = mockk<FirebaseUser> {
+                every { uid } returns "123"
+                every { isEmailVerified } returns true
+            }
+
+            val mockedTokenResult = mockk<GetTokenResult> {
+                every { token } returns "valid_token"
+            }
+
+            every { mockFirebaseAuth.currentUser } returns mockedUser
+
+            coEvery { mockedUser.getIdToken(false) } returns mockSuccessfulTask(
+                mockedTokenResult
+            )
+
+            coEvery {
+                mockAuthRepository.auth()
+            } returns flow { emit(ApiResult.Error(ApiError.InvalidCredentials)) }
+
+            val result = authService.isLoggedIn()
+
+            assertFalse(result)
+        }
 
 }
