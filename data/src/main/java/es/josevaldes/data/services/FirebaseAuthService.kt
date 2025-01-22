@@ -1,6 +1,7 @@
 package es.josevaldes.data.services
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
@@ -16,19 +17,43 @@ import es.josevaldes.core.utils.generateNonce
 import es.josevaldes.data.BuildConfig
 import es.josevaldes.data.extensions.toUser
 import es.josevaldes.data.model.User
+import es.josevaldes.data.repositories.AuthRepository
+import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.results.AuthError
 import es.josevaldes.data.results.AuthResult
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 
-class FirebaseAuthService(private val auth: FirebaseAuth) : AuthService {
+class FirebaseAuthService(
+    private val auth: FirebaseAuth,
+    private val authRepository: AuthRepository
+) : AuthService {
+
+
+    private suspend fun handleFirebaseAndApi(
+        firebaseAction: suspend () -> AuthResult<User>
+    ): AuthResult<User> {
+        return when (val firebaseResult = firebaseAction()) {
+            is AuthResult.Success -> {
+                when (authRepository.auth().first()) {
+                    is ApiResult.Success -> firebaseResult
+                    is ApiResult.Error -> AuthResult.Error(AuthError.InvalidCredentials)
+                }
+            }
+
+            is AuthResult.Error -> firebaseResult
+        }
+    }
 
     override suspend fun signInWithGoogle(
         context: Context
     ): AuthResult<User> {
-        return when (val result = getGoogleToken(context)) {
-            is AuthResult.Error -> result
-            is AuthResult.Success -> return firebaseAuthWithGoogle(result.data)
+        return handleFirebaseAndApi {
+            when (val result = getGoogleToken(context)) {
+                is AuthResult.Error -> result
+                is AuthResult.Success -> firebaseAuthWithGoogle(result.data)
+            }
         }
     }
 
@@ -54,7 +79,8 @@ class FirebaseAuthService(private val auth: FirebaseAuth) : AuthService {
         }
     }
 
-    private suspend fun getGoogleToken(context: Context): AuthResult<String> {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal suspend fun getGoogleToken(context: Context): AuthResult<String> {
         val credentialManager = CredentialManager.create(context)
 
         val signInRequest = GetGoogleIdOption.Builder()
@@ -102,24 +128,26 @@ class FirebaseAuthService(private val auth: FirebaseAuth) : AuthService {
         email: String,
         pass: String
     ): AuthResult<User> {
-        return try {
-            val result = auth.createUserWithEmailAndPassword(email, pass).await()
-            result.user?.let {
-                it.sendEmailVerification()
-                auth.signOut()
-                AuthResult.Success(it.toUser())
-            } ?: run {
-                AuthResult.Error(AuthError.UserNotFound)
+        return handleFirebaseAndApi {
+            try {
+                val result = auth.createUserWithEmailAndPassword(email, pass).await()
+                result.user?.let {
+                    it.sendEmailVerification()
+                    auth.signOut()
+                    AuthResult.Success(it.toUser())
+                } ?: run {
+                    AuthResult.Error(AuthError.UserNotFound)
+                }
+            } catch (e: FirebaseAuthWeakPasswordException) {
+                AuthResult.Error(AuthError.WeakPassword)
+            } catch (e: FirebaseAuthInvalidCredentialsException) {
+                AuthResult.Error(AuthError.InvalidCredentials)
+            } catch (e: FirebaseAuthUserCollisionException) {
+                AuthResult.Error(AuthError.UserExists)
+            } catch (e: Exception) {
+                Timber.tag("AuthService").d("register: ${e.message}")
+                AuthResult.Error(AuthError.Unknown)
             }
-        } catch (e: FirebaseAuthWeakPasswordException) {
-            AuthResult.Error(AuthError.WeakPassword)
-        } catch (e: FirebaseAuthInvalidCredentialsException) {
-            AuthResult.Error(AuthError.InvalidCredentials)
-        } catch (e: FirebaseAuthUserCollisionException) {
-            AuthResult.Error(AuthError.UserExists)
-        } catch (e: Exception) {
-            Timber.tag("AuthService").d("register: ${e.message}")
-            AuthResult.Error(AuthError.Unknown)
         }
     }
 
@@ -127,25 +155,27 @@ class FirebaseAuthService(private val auth: FirebaseAuth) : AuthService {
         email: String,
         pass: String
     ): AuthResult<User> {
-        return try {
-            val result = auth.signInWithEmailAndPassword(email, pass).await()
-            result.user?.let { currentUser ->
-                if (currentUser.isEmailVerified) {
-                    AuthResult.Success(currentUser.toUser())
-                } else {
-                    auth.signOut()
-                    AuthResult.Error(AuthError.EmailNotVerified)
+        return handleFirebaseAndApi {
+            try {
+                val result = auth.signInWithEmailAndPassword(email, pass).await()
+                result.user?.let { currentUser ->
+                    if (currentUser.isEmailVerified) {
+                        AuthResult.Success(currentUser.toUser())
+                    } else {
+                        auth.signOut()
+                        AuthResult.Error(AuthError.EmailNotVerified)
+                    }
+                } ?: run {
+                    AuthResult.Error(AuthError.UserNotFound)
                 }
-            } ?: run {
+            } catch (e: FirebaseAuthInvalidUserException) {
                 AuthResult.Error(AuthError.UserNotFound)
+            } catch (e: FirebaseAuthInvalidCredentialsException) {
+                AuthResult.Error(AuthError.InvalidCredentials)
+            } catch (e: Exception) {
+                Timber.tag("AuthService").d("login: ${e.message}")
+                AuthResult.Error(AuthError.Unknown)
             }
-        } catch (e: FirebaseAuthInvalidUserException) {
-            AuthResult.Error(AuthError.UserNotFound)
-        } catch (e: FirebaseAuthInvalidCredentialsException) {
-            AuthResult.Error(AuthError.InvalidCredentials)
-        } catch (e: Exception) {
-            Timber.tag("AuthService").d("login: ${e.message}")
-            AuthResult.Error(AuthError.Unknown)
         }
     }
 
@@ -165,8 +195,21 @@ class FirebaseAuthService(private val auth: FirebaseAuth) : AuthService {
         }
     }
 
-    override fun isLoggedIn(): Boolean {
+    override suspend fun isLoggedIn(): Boolean {
         val user = auth.currentUser
-        return user != null && user.isEmailVerified
+
+        val isLoggedInInFirebaseAuth = user != null && user.isEmailVerified
+        if (!isLoggedInInFirebaseAuth) return false
+
+
+        val tokenResult = user?.getIdToken(false)?.await()
+        val token = tokenResult?.token
+        val isLoggedIn = token?.isNotEmpty() == true
+
+        val authResult = authRepository.auth().first()
+        if (authResult is ApiResult.Error) return false
+
+        Timber.tag("AuthService").d("auth token: $token")
+        return isLoggedIn
     }
 }

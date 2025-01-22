@@ -84,7 +84,7 @@ class AuthViewModelTest {
 
     @Test
     fun `call register should set authResult to Success and return a valid user`() = runTest {
-        val user = User("123", "username", "email@gmail.com", "")
+        val user = User("123", "username", "email@gmail.com", "", "")
         coEvery { mockedAuthService.register(any(), any()) } returns AuthResult.Success(user)
         authViewModel.register(user.email, "password")
         val result = authViewModel.authResult.first()
@@ -154,7 +154,7 @@ class AuthViewModelTest {
 
     @Test
     fun `call login should set authResult to Success and return a valid user`() = runTest {
-        val user = User("123", "username", "email@gmail.com", "")
+        val user = User("123", "username", "email@gmail.com", "", "")
         coEvery { mockedAuthService.login(any(), any()) } returns AuthResult.Success(user)
         authViewModel.login(user.email, "password")
         val result = authViewModel.authResult.first()
@@ -164,7 +164,7 @@ class AuthViewModelTest {
 
     @Test
     fun `call login should set authResult to Error and return a UserNotFound error`() = runTest {
-        val user = User("123", "username", "email@gmail.com", "")
+        val user = User("123", "username", "email@gmail.com", "", "")
         coEvery {
             mockedAuthService.login(
                 any(),
@@ -180,7 +180,7 @@ class AuthViewModelTest {
     @Test
     fun `call login should set authResult to Error and return a InvalidCredentials error`() =
         runTest {
-            val user = User("123", "username", "email@gmail.com", "")
+            val user = User("123", "username", "email@gmail.com", "", "")
             coEvery {
                 mockedAuthService.login(
                     any(),
@@ -195,7 +195,7 @@ class AuthViewModelTest {
 
     @Test
     fun `call login should set authResult to Error and return a EmailIsNotValid error`() = runTest {
-        val user = User("123", "username", "email@gmail.com", "")
+        val user = User("123", "username", "email@gmail.com", "", "")
         coEvery {
             mockedAuthService.login(
                 any(),
@@ -211,7 +211,7 @@ class AuthViewModelTest {
     @Test
     fun `call signInWithGoogle should set authResult to Success and return a valid user`() =
         runTest {
-            val user = User("123", "username", "email@gmail.com", "")
+            val user = User("123", "username", "email@gmail.com", "", "")
             val context: Context = mockk()
             coEvery { mockedAuthService.signInWithGoogle(any()) } returns AuthResult.Success(user)
             authViewModel.signInWithGoogle(context)

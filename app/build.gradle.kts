@@ -16,7 +16,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "es.josevaldes.filmatch"
+        applicationId = "com.catdevs.filmatch"
         minSdk = 29
         targetSdk = 35
         versionCode = 1
@@ -49,6 +49,7 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("prod")
+
         }
     }
     compileOptions {

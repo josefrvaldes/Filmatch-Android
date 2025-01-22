@@ -2,6 +2,13 @@ package es.josevaldes.local.entities
 
 import androidx.room.Entity
 
+enum class InterestStatus {
+    INTERESTED,
+    SUPER_INTERESTED,
+    NOT_INTERESTED,
+    WATCHED,
+}
+
 @Entity(tableName = "movies", primaryKeys = ["id"])
 data class Movie(
     val id: Int,
@@ -18,4 +25,5 @@ data class Movie(
     val video: Boolean? = null,
     val voteAverage: Double? = null,
     val voteCount: Int? = null,
+    val interestStatus: InterestStatus? = null,
 )

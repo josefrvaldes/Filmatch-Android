@@ -8,6 +8,7 @@ fun FirebaseUser.toUser(): User {
         id = this.uid,
         email = this.email ?: "",
         photoUrl = this.photoUrl.toString(),
-        username = ""
+        username = "",
+        uid = this.uid
     )
 }
