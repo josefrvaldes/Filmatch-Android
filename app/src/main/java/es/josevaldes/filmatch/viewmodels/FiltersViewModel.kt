@@ -8,7 +8,7 @@ import es.josevaldes.data.model.ContentType
 import es.josevaldes.data.model.Duration
 import es.josevaldes.data.model.Filter
 import es.josevaldes.data.model.GenreData
-import es.josevaldes.data.model.MovieFilters
+import es.josevaldes.data.model.MediaFilters
 import es.josevaldes.data.model.OtherFilters
 import es.josevaldes.data.model.Provider
 import es.josevaldes.data.model.Score
@@ -317,7 +317,7 @@ class FiltersViewModel @Inject constructor(
         }
     }
 
-    fun setSelectedFilters(filters: MovieFilters) {
+    fun setSelectedFilters(filters: MediaFilters) {
         val contentType = _contentTypes.value.firstOrNull { it.item == filters.contentType }
         contentType?.let { contentTypeClicked(it) }
 
@@ -352,7 +352,7 @@ class FiltersViewModel @Inject constructor(
         _toYear.value = filters.yearTo ?: LocalDateTime.now().year
     }
 
-    fun getSelectedFilters(): MovieFilters {
+    fun getSelectedFilters(): MediaFilters {
         val selectedContentType = _contentTypes.value.firstOrNull { it.isSelected }?.item
         val selectedGenres =
             _filtersGenre.value.filter { it.isSelected && it.item.id >= 0 }.map { it.item }
@@ -361,7 +361,7 @@ class FiltersViewModel @Inject constructor(
         val selectedDuration = _timeFilters.value.firstOrNull { it.isSelected }?.item
         val selectedScore = _scoreFilters.value.firstOrNull { it.isSelected }?.item
 
-        return MovieFilters(
+        return MediaFilters(
             contentType = selectedContentType ?: ContentType.MOVIES,
             genres = selectedGenres,
             providers = selectedProviders,

@@ -2,10 +2,10 @@ package es.josevaldes.data
 
 import es.josevaldes.data.adapters.ApiResultCallAdapterFactory
 import es.josevaldes.data.responses.DiscoverMovie
-import es.josevaldes.data.responses.ItemType
+import es.josevaldes.data.responses.MediaType
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.MoviesRemoteDataSource
+import es.josevaldes.data.services.MediaRemoteDataSource
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -20,7 +20,7 @@ import retrofit2.converter.jackson.JacksonConverterFactory
 class ApiServiceTest {
 
     private lateinit var mockWebServer: MockWebServer
-    private lateinit var moviesRemoteDataSource: MoviesRemoteDataSource
+    private lateinit var mediaRemoteDataSource: MediaRemoteDataSource
 
     @Before
     fun setUp() {
@@ -29,12 +29,12 @@ class ApiServiceTest {
         mockWebServer.start()
 
         // let's create the service
-        moviesRemoteDataSource = Retrofit.Builder()
+        mediaRemoteDataSource = Retrofit.Builder()
             .baseUrl(mockWebServer.url("/"))
             .addConverterFactory(JacksonConverterFactory.create(es.josevaldes.data.di.JsonMapper.objectMapper))
             .addCallAdapterFactory(ApiResultCallAdapterFactory())
             .build()
-            .create(MoviesRemoteDataSource::class.java)
+            .create(MediaRemoteDataSource::class.java)
     }
 
     @After
@@ -58,8 +58,8 @@ class ApiServiceTest {
                 .setBody(errorJson)
         )
 
-        val response = moviesRemoteDataSource.getDiscoverItems(
-            ItemType.MOVIE.path,
+        val response = mediaRemoteDataSource.getDiscoverItems(
+            MediaType.MOVIE.path,
             0,
             "en"
         )
@@ -109,8 +109,8 @@ class ApiServiceTest {
                     .setBody(responseJson)
             )
 
-            val response = moviesRemoteDataSource.getDiscoverItems(
-                ItemType.MOVIE.path,
+            val response = mediaRemoteDataSource.getDiscoverItems(
+                MediaType.MOVIE.path,
                 0, "en"
             )
 
@@ -147,8 +147,8 @@ class ApiServiceTest {
                     .setBody(responseJson)
             )
 
-            val response = moviesRemoteDataSource.getDiscoverItems(
-                ItemType.MOVIE.path,
+            val response = mediaRemoteDataSource.getDiscoverItems(
+                MediaType.MOVIE.path,
                 0,
                 "en",
             )
@@ -180,8 +180,8 @@ class ApiServiceTest {
                     .setBody(responseJson)
             )
 
-            val response = moviesRemoteDataSource.getDiscoverItems(
-                ItemType.MOVIE.path,
+            val response = mediaRemoteDataSource.getDiscoverItems(
+                MediaType.MOVIE.path,
                 0,
                 "en",
             )
@@ -206,8 +206,8 @@ class ApiServiceTest {
             )
         mockWebServer.enqueue(mockResponse)
 
-        val response = moviesRemoteDataSource.getDiscoverItems(
-            ItemType.MOVIE.path,
+        val response = mediaRemoteDataSource.getDiscoverItems(
+            MediaType.MOVIE.path,
             1
         )
 
@@ -232,8 +232,8 @@ class ApiServiceTest {
             )
         mockWebServer.enqueue(mockResponse)
 
-        val response = moviesRemoteDataSource.getDiscoverItems(
-            ItemType.MOVIE.path,
+        val response = mediaRemoteDataSource.getDiscoverItems(
+            MediaType.MOVIE.path,
             1,
         )
 
@@ -249,8 +249,8 @@ class ApiServiceTest {
         mockWebServer.enqueue(mockResponse)
 
         val response = runBlocking {
-            moviesRemoteDataSource.getDiscoverItems(
-                ItemType.MOVIE.path,
+            mediaRemoteDataSource.getDiscoverItems(
+                MediaType.MOVIE.path,
                 1
             )
         }
@@ -266,8 +266,8 @@ class ApiServiceTest {
         mockWebServer.enqueue(mockResponse)
 
         val response = runBlocking {
-            moviesRemoteDataSource.getDiscoverItems(
-                ItemType.MOVIE.path,
+            mediaRemoteDataSource.getDiscoverItems(
+                MediaType.MOVIE.path,
                 1
             )
         }
@@ -282,8 +282,8 @@ class ApiServiceTest {
             .setBody("<html><body>Error</body></html>")
         mockWebServer.enqueue(mockResponse)
 
-        val response = moviesRemoteDataSource.getDiscoverItems(
-            ItemType.MOVIE.path,
+        val response = mediaRemoteDataSource.getDiscoverItems(
+            MediaType.MOVIE.path,
             1
         )
         val apiError = (response as ApiResult.Error).apiError

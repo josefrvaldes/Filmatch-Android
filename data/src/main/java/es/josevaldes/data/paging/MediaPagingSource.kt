@@ -4,17 +4,17 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import es.josevaldes.data.extensions.mappers.toAppModel
 import es.josevaldes.data.model.DiscoverItemData
-import es.josevaldes.data.responses.ItemType
+import es.josevaldes.data.responses.MediaType
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.MoviesRemoteDataSource
+import es.josevaldes.data.services.MediaRemoteDataSource
 import javax.inject.Inject
 
-class MoviesPagingSource @Inject constructor(
-    private val moviesRemoteDataSource: MoviesRemoteDataSource,
+class MediaPagingSource @Inject constructor(
+    private val mediaRemoteDataSource: MediaRemoteDataSource,
     internal var language: String? = null,
     internal var type:
-    ItemType = ItemType.MOVIE
+    MediaType = MediaType.MOVIE
 ) : PagingSource<Int, DiscoverItemData>() {
 
     private var totalPages = 1
@@ -26,7 +26,7 @@ class MoviesPagingSource @Inject constructor(
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, DiscoverItemData> {
         val page = params.key ?: 1
         return when (val result =
-            moviesRemoteDataSource.getDiscoverItems(type.path, page, language = language)) {
+            mediaRemoteDataSource.getDiscoverItems(type.path, page, language = language)) {
             is ApiResult.Success -> {
                 val discoverMoviesResponse = result.data
                 totalPages = discoverMoviesResponse.totalPages

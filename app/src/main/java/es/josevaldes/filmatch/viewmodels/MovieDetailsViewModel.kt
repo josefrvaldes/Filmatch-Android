@@ -6,8 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import es.josevaldes.data.model.DetailsItemData
 import es.josevaldes.data.model.DetailsMovieData
 import es.josevaldes.data.model.DetailsTvData
-import es.josevaldes.data.repositories.MovieRepository
-import es.josevaldes.data.responses.ItemType
+import es.josevaldes.data.repositories.MediaRepository
+import es.josevaldes.data.responses.MediaType
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.utils.DeviceLocaleProvider
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MovieDetailsViewModel @Inject constructor(
-    private val movieRepository: MovieRepository,
+    private val mediaRepository: MediaRepository,
     localeProvider: DeviceLocaleProvider
 ) : ViewModel() {
 
@@ -35,11 +35,11 @@ class MovieDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             val type = when (_movie.value) {
-                is DetailsMovieData -> ItemType.MOVIE
-                is DetailsTvData -> ItemType.TV
+                is DetailsMovieData -> MediaType.MOVIE
+                is DetailsTvData -> MediaType.TV
                 else -> throw IllegalStateException("Unknown movie type")
             }
-            movieRepository.findById(id, type, _language).onStart {
+            mediaRepository.findById(id, type, _language).onStart {
                 _isLoading.value = true
             }.onCompletion {
                 _isLoading.value = false

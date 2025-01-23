@@ -4,18 +4,18 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingSource.LoadResult
 import androidx.paging.testing.TestPager
 import es.josevaldes.data.extensions.mappers.toAppModel
-import es.josevaldes.data.paging.MoviesPagingSource
-import es.josevaldes.data.repositories.MovieRepository
+import es.josevaldes.data.paging.MediaPagingSource
+import es.josevaldes.data.repositories.MediaRepository
 import es.josevaldes.data.responses.DetailsMovieResponse
 import es.josevaldes.data.responses.DiscoverItem
 import es.josevaldes.data.responses.DiscoverMovie
 import es.josevaldes.data.responses.DiscoverResponse
-import es.josevaldes.data.responses.ItemType
+import es.josevaldes.data.responses.MediaType
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
-import es.josevaldes.data.services.MoviesRemoteDataSource
-import es.josevaldes.local.datasources.MoviesLocalDataSource
+import es.josevaldes.data.services.MediaRemoteDataSource
+import es.josevaldes.local.datasources.MediaLocalDataSource
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -29,22 +29,22 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
-class MovieRepositoryTest {
+class MediaRepositoryTest {
 
-    private lateinit var movieRepository: MovieRepository
-    private lateinit var moviesPagingSource: MoviesPagingSource
-    private lateinit var moviesRemoteDataSource: MoviesRemoteDataSource
-    private lateinit var moviesLocalDataSource: MoviesLocalDataSource
+    private lateinit var mediaRepository: MediaRepository
+    private lateinit var mediaPagingSource: MediaPagingSource
+    private lateinit var mediaRemoteDataSource: MediaRemoteDataSource
+    private lateinit var mediaLocalDataSource: MediaLocalDataSource
     private var listOfMovies = mutableListOf<DiscoverItem>()
     private val config = PagingConfig(pageSize = 5, enablePlaceholders = false)
 
     @Before
     fun setUp() {
-        moviesRemoteDataSource = mockk()
-        moviesLocalDataSource = mockk()
-        moviesPagingSource = MoviesPagingSource(moviesRemoteDataSource, "en")
-        movieRepository =
-            MovieRepository(moviesPagingSource, moviesRemoteDataSource, moviesLocalDataSource)
+        mediaRemoteDataSource = mockk()
+        mediaLocalDataSource = mockk()
+        mediaPagingSource = MediaPagingSource(mediaRemoteDataSource, "en")
+        mediaRepository =
+            MediaRepository(mediaPagingSource, mediaRemoteDataSource, mediaLocalDataSource)
         for (i in 1..20) {
             listOfMovies.add(
                 DiscoverMovie(id = i, title = "Movie $i")
@@ -56,7 +56,7 @@ class MovieRepositoryTest {
     fun `getDiscoverMovies should return success on valid result`() = runTest {
         val resultList = listOfMovies.subList(0, config.pageSize)
         coEvery {
-            moviesRemoteDataSource.getDiscoverItems(
+            mediaRemoteDataSource.getDiscoverItems(
                 any(),
                 any(),
                 any()
@@ -69,7 +69,7 @@ class MovieRepositoryTest {
                 totalPages = listOfMovies.size / config.pageSize
             )
         )
-        val testPager = TestPager(config, moviesPagingSource)
+        val testPager = TestPager(config, mediaPagingSource)
         val refreshResult = testPager.refresh()
         assertTrue(refreshResult is LoadResult.Page)
         val result = refreshResult as LoadResult.Page<Int, DiscoverMovie>
@@ -80,7 +80,7 @@ class MovieRepositoryTest {
     fun `getDiscoverMovies should return success after appending data`() = runTest {
         var counter = 0
         var currentSubList = mutableListOf<DiscoverItem>()
-        coEvery { moviesRemoteDataSource.getDiscoverItems(any(), any(), any()) } answers {
+        coEvery { mediaRemoteDataSource.getDiscoverItems(any(), any(), any()) } answers {
             currentSubList = listOfMovies.subList(
                 counter * config.pageSize,
                 counter * config.pageSize + config.pageSize
@@ -95,7 +95,7 @@ class MovieRepositoryTest {
                 )
             )
         }
-        val pager = TestPager(config, moviesPagingSource)
+        val pager = TestPager(config, mediaPagingSource)
         val result = with(pager) {
             this.refresh()
             append()
@@ -108,7 +108,7 @@ class MovieRepositoryTest {
     @Test
     fun `getDiscoverMovies should handle Unknown errors correctly`() = runTest {
         coEvery {
-            moviesRemoteDataSource.getDiscoverItems(
+            mediaRemoteDataSource.getDiscoverItems(
                 any(),
                 any(),
                 any()
@@ -116,7 +116,7 @@ class MovieRepositoryTest {
         } returns ApiResult.Error(
             ApiError.Unknown
         )
-        val testPager = TestPager(config, moviesPagingSource)
+        val testPager = TestPager(config, mediaPagingSource)
         val result = testPager.refresh() as LoadResult.Error<Int, DiscoverMovie>
         assertEquals(ApiErrorException(ApiError.Unknown).toString(), result.throwable.toString())
     }
@@ -125,7 +125,7 @@ class MovieRepositoryTest {
     @Test
     fun `getDiscoverMovies should handle ResourceNotFound errors correctly`() = runTest {
         coEvery {
-            moviesRemoteDataSource.getDiscoverItems(
+            mediaRemoteDataSource.getDiscoverItems(
                 any(),
                 any(),
                 any()
@@ -133,7 +133,7 @@ class MovieRepositoryTest {
         } returns ApiResult.Error(
             ApiError.ResourceNotFound
         )
-        val testPager = TestPager(config, moviesPagingSource)
+        val testPager = TestPager(config, mediaPagingSource)
         val result = testPager.refresh() as LoadResult.Error<Int, DiscoverMovie>
         assertEquals(
             ApiErrorException(ApiError.ResourceNotFound).toString(),
@@ -144,10 +144,10 @@ class MovieRepositoryTest {
     @Test
     fun `findById should return success on valid result`() = runTest {
         val movie = DetailsMovieResponse(id = 1, title = "hello")
-        coEvery { moviesRemoteDataSource.findById(any(), any(), any()) } returns ApiResult.Success(
+        coEvery { mediaRemoteDataSource.findById(any(), any(), any()) } returns ApiResult.Success(
             movie
         )
-        val resultFlow = movieRepository.findById(movie.id, ItemType.MOVIE, "es-ES")
+        val resultFlow = mediaRepository.findById(movie.id, MediaType.MOVIE, "es-ES")
         resultFlow.collect {
             assertEquals(ApiResult.Success(movie.toAppModel()), it)
         }
@@ -156,13 +156,13 @@ class MovieRepositoryTest {
     @Test
     fun `findById should return error on invalid result`() = runTest {
         coEvery {
-            moviesRemoteDataSource.findById(
+            mediaRemoteDataSource.findById(
                 any(),
                 any(),
                 any()
             )
         } returns ApiResult.Error(ApiError.Unknown)
-        val resultFlow = movieRepository.findById(1, ItemType.MOVIE, "es-ES")
+        val resultFlow = mediaRepository.findById(1, MediaType.MOVIE, "es-ES")
         resultFlow.collect {
             assertEquals(ApiResult.Error(ApiError.Unknown), it)
         }
@@ -171,13 +171,13 @@ class MovieRepositoryTest {
     @Test
     fun `findById should return error on resource not found`() = runTest {
         coEvery {
-            moviesRemoteDataSource.findById(
+            mediaRemoteDataSource.findById(
                 any(),
                 any(),
                 any()
             )
         } returns ApiResult.Error(ApiError.ResourceNotFound)
-        val resultFlow = movieRepository.findById(1, ItemType.MOVIE, "es-ES")
+        val resultFlow = mediaRepository.findById(1, MediaType.MOVIE, "es-ES")
         resultFlow.collect {
             assertEquals(ApiResult.Error(ApiError.ResourceNotFound), it)
         }

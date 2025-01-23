@@ -8,8 +8,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import es.josevaldes.local.dao.LocalDatabase
-import es.josevaldes.local.dao.VisitedMoviesDao
-import es.josevaldes.local.datasources.MoviesLocalDataSource
+import es.josevaldes.local.dao.VisitedMediaDao
+import es.josevaldes.local.datasources.MediaLocalDataSource
 import javax.inject.Singleton
 
 @Module
@@ -27,12 +27,12 @@ class LocalModule {
     }
 
     @Provides
-    fun provideVisitedMoviesDao(database: LocalDatabase): VisitedMoviesDao {
-        return database.visitedMoviesDao()
+    fun provideVisitedMediaDao(database: LocalDatabase): VisitedMediaDao {
+        return database.visitedMediaDao()
     }
 
     @Provides
-    fun provideMoviesLocalDataSource(visitedMoviesDao: VisitedMoviesDao): MoviesLocalDataSource {
-        return MoviesLocalDataSource(visitedMoviesDao)
+    fun provideMoviesLocalDataSource(visitedMediaDao: VisitedMediaDao): MediaLocalDataSource {
+        return MediaLocalDataSource(visitedMediaDao)
     }
 }

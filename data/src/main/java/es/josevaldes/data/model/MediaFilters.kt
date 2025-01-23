@@ -3,7 +3,7 @@ package es.josevaldes.data.model
 import es.josevaldes.core.utils.md5
 import java.time.LocalDateTime
 
-data class MovieFilters(
+data class MediaFilters(
     val contentType: ContentType = ContentType.MOVIES,
     val genres: List<GenreData>? = listOf(),
     val providers: List<Provider>? = listOf(),

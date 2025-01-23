@@ -3,7 +3,7 @@ package es.josevaldes.filmatch
 import es.josevaldes.data.model.DiscoverItemData
 import es.josevaldes.data.model.DiscoverMovieData
 import es.josevaldes.data.model.DiscoverMoviesData
-import es.josevaldes.data.repositories.MovieRepository
+import es.josevaldes.data.repositories.MediaRepository
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SwipeableMovie
@@ -43,7 +43,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34], manifest = Config.NONE)
 class SlideMovieViewModelTest {
 
-    private val movieRepository = mockk<MovieRepository>()
+    private val mediaRepository = mockk<MediaRepository>()
     private val deviceLocaleProvider = mockk<DeviceLocaleProvider>()
     private val myDispatcherIO = StandardTestDispatcher()
     private lateinit var viewModel: SlideMovieViewModel
@@ -53,7 +53,7 @@ class SlideMovieViewModelTest {
     @Before
     fun setUp() {
         coEvery {
-            movieRepository.getDiscoverMovies(
+            mediaRepository.getDiscoverMovies(
                 any(),
                 any(),
                 any()
@@ -62,7 +62,7 @@ class SlideMovieViewModelTest {
         every { deviceLocaleProvider.getDeviceLocale() } returns "en-US"
         every { deviceLocaleProvider.getDeviceCountry() } returns "US"
 
-        viewModel = SlideMovieViewModel(movieRepository, deviceLocaleProvider, myDispatcherIO)
+        viewModel = SlideMovieViewModel(mediaRepository, deviceLocaleProvider, myDispatcherIO)
         Dispatchers.setMain(myDispatcherIO)
     }
 
@@ -88,14 +88,14 @@ class SlideMovieViewModelTest {
                 ), 1, 5, 1
             )
             coEvery {
-                movieRepository.getDiscoverMovies(
+                mediaRepository.getDiscoverMovies(
                     any(),
                     any(),
                     any()
                 )
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
 
-            coEvery { movieRepository.isMovieVisited(any()) } returns false
+            coEvery { mediaRepository.isMovieVisited(any()) } returns false
 
 
             var emittedErrorMessage: ApiResult.Error? = null
@@ -137,21 +137,21 @@ class SlideMovieViewModelTest {
 
     @Test
     fun `onLikeButtonClicked should modify swipeAction to LIKE`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
+        coEvery { mediaRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
         viewModel.onLikeButtonClicked()
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
     }
 
     @Test
     fun `onDislikeButtonClicked should modify swipeAction to DISLIKE`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
+        coEvery { mediaRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
         viewModel.onDislikeButtonClicked()
         assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
     }
 
     @Test
     fun `clearLikeButtonAction should modify likeButtonAction to null`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
+        coEvery { mediaRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
         viewModel.clearLikeButtonAction()
         assert(viewModel.likeButtonAction.value == null)
     }
@@ -194,15 +194,15 @@ class SlideMovieViewModelTest {
             )
 
             // Simulate that no pages have been visited
-            coEvery { movieRepository.getMaxPage(any()) } returns null
+            coEvery { mediaRepository.getMaxPage(any()) } returns null
 
             // Mock the flow to return success
             coEvery {
-                movieRepository.getDiscoverMovies(page = 1, any(), any())
+                mediaRepository.getDiscoverMovies(page = 1, any(), any())
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
 
             every { deviceLocaleProvider.getDeviceLocale() } returns "en-US"
-            coEvery { movieRepository.isMovieVisited(any()) } returns false
+            coEvery { mediaRepository.isMovieVisited(any()) } returns false
 
             viewModel.loadCurrentPage()
             advanceUntilIdle()
@@ -223,7 +223,7 @@ class SlideMovieViewModelTest {
     fun `loadCurrentPage should emit an error message when the result is not successful`() =
         runTest {
             coEvery {
-                movieRepository.getDiscoverMovies(
+                mediaRepository.getDiscoverMovies(
                     any(),
                     any(),
                     any()
@@ -265,14 +265,14 @@ class SlideMovieViewModelTest {
                 movies.map { it.movie }, 1, 20, 2
             )
             coEvery {
-                movieRepository.getDiscoverMovies(
+                mediaRepository.getDiscoverMovies(
                     any(),
                     any(),
                     any()
                 )
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
-            coEvery { movieRepository.isMovieVisited(any()) } returns false
-            coEvery { movieRepository.markedMovieAsVisited(any()) } just Runs
+            coEvery { mediaRepository.isMovieVisited(any()) } returns false
+            coEvery { mediaRepository.markedMovieAsVisited(any(), any()) } just Runs
 
             viewModel.loadCurrentPage()
             advanceUntilIdle()
@@ -301,7 +301,7 @@ class SlideMovieViewModelTest {
 
         // Mock repository to return false for all IDs
         movies.forEach { movie ->
-            coEvery { movieRepository.isMovieVisited(movie.id.toString()) } returns false
+            coEvery { mediaRepository.isMovieVisited(movie) } returns false
         }
 
         // Execute the method
@@ -321,9 +321,9 @@ class SlideMovieViewModelTest {
         )
 
         // Mock repository to simulate some movies as visited
-        coEvery { movieRepository.isMovieVisited("1") } returns true
-        coEvery { movieRepository.isMovieVisited("2") } returns false
-        coEvery { movieRepository.isMovieVisited("3") } returns true
+        coEvery { mediaRepository.isMovieVisited(movies[0]) } returns true
+        coEvery { mediaRepository.isMovieVisited(movies[1]) } returns false
+        coEvery { mediaRepository.isMovieVisited(movies[2]) } returns true
 
         // Execute the method
         val result = viewModel.cleanVisitedItems(movies)
@@ -346,7 +346,7 @@ class SlideMovieViewModelTest {
 
         // Mock repository to return true for all IDs
         movies.forEach { movie ->
-            coEvery { movieRepository.isMovieVisited(movie.id.toString()) } returns true
+            coEvery { mediaRepository.isMovieVisited(movie) } returns true
         }
 
         // Execute the method
