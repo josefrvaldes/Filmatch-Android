@@ -23,7 +23,7 @@ class AuthRepository @Inject constructor(
         } else if (result is ApiResult.Error) {
             emit(result)
         }
-    }.catch { e ->
+    }.catch { _ ->
         emit(ApiResult.Error(ApiError.Unknown))
     }
 }
