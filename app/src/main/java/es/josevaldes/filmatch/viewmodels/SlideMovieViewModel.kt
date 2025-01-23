@@ -192,7 +192,7 @@ class SlideMovieViewModel @Inject constructor(
 
     fun onSwipe(movie: SwipeableMovie) {
         viewModelScope.launch {
-            mediaRepository.markedMovieAsVisited(movie.movie, movie.swipedStatus)
+            mediaRepository.markMovieAsVisited(movie.movie, movie.swipedStatus)
         }
 
         if (_movieListFlow.value.isNotEmpty()) {

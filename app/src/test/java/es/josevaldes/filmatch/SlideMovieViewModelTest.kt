@@ -272,7 +272,7 @@ class SlideMovieViewModelTest {
                 )
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
             coEvery { mediaRepository.isMovieVisited(any()) } returns false
-            coEvery { mediaRepository.markedMovieAsVisited(any(), any()) } just Runs
+            coEvery { mediaRepository.markMovieAsVisited(any(), any()) } just Runs
 
             viewModel.loadCurrentPage()
             advanceUntilIdle()

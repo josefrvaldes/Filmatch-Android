@@ -13,9 +13,12 @@ import es.josevaldes.data.model.InterestStatus
 import es.josevaldes.data.model.MediaFilters
 import es.josevaldes.data.paging.MediaPagingSource
 import es.josevaldes.data.paging.MovieDBPagingConfig
+import es.josevaldes.data.requests.MarkMovieAsVisitedRequest
+import es.josevaldes.data.requests.MarkShowAsVisitedRequest
 import es.josevaldes.data.responses.MediaType
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
+import es.josevaldes.data.services.FilmatchRemoteDataSource
 import es.josevaldes.data.services.MediaRemoteDataSource
 import es.josevaldes.local.datasources.MediaLocalDataSource
 import es.josevaldes.local.entities.MediaEntityType
@@ -23,13 +26,15 @@ import es.josevaldes.local.entities.VisitedFiltersEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retryWhen
+import timber.log.Timber
 import javax.inject.Inject
 
 
 class MediaRepository @Inject constructor(
     private val _mediaPagingSource: MediaPagingSource,
     private val _mediaRemoteDataSource: MediaRemoteDataSource,
-    private val _mediaLocalDataSource: MediaLocalDataSource
+    private val _mediaLocalDataSource: MediaLocalDataSource,
+    private val _filmatchRemoteDataSource: FilmatchRemoteDataSource
 ) {
     fun getDiscoverMovies(
         language: String?,
@@ -105,9 +110,34 @@ class MediaRepository @Inject constructor(
         }
     }
 
-    suspend fun markedMovieAsVisited(media: DiscoverItemData, interestStatus: InterestStatus) {
-        val visitedMediaWithItem = media.toVisitedMediaWithItem(interestStatus)
-        _mediaLocalDataSource.saveVisitedMedia(visitedMediaWithItem)
+    suspend fun markMovieAsVisited(media: DiscoverItemData, interestStatus: InterestStatus) {
+        val mediaAsVisitedRequest = when (media) {
+            is DiscoverMovieData -> {
+                MarkMovieAsVisitedRequest(
+                    media,
+                    interestStatus.ordinal
+                )
+            }
+
+            is DiscoverTvData -> {
+                MarkShowAsVisitedRequest(
+                    media,
+                    interestStatus.ordinal
+                )
+            }
+
+            else -> throw IllegalArgumentException("Couldn't convert media to request")
+        }
+
+        val result = _filmatchRemoteDataSource.markMediaAsVisited(mediaAsVisitedRequest)
+
+        if (result is ApiResult.Success) {
+            val visitedMediaWithItem = media.toVisitedMediaWithItem(interestStatus)
+            _mediaLocalDataSource.saveVisitedMedia(visitedMediaWithItem)
+            Timber.d("Marked media as visited locally and remotely: $result")
+        } else {
+            Timber.e("Failed to mark media as visited remotely: $result")
+        }
     }
 
 
