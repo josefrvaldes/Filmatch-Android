@@ -128,12 +128,11 @@ class FirebaseAuthService(
         email: String,
         pass: String
     ): AuthResult<User> {
-        return handleFirebaseAndApi {
+        val result = handleFirebaseAndApi {
             try {
                 val result = auth.createUserWithEmailAndPassword(email, pass).await()
                 result.user?.let {
                     it.sendEmailVerification()
-                    auth.signOut()
                     AuthResult.Success(it.toUser())
                 } ?: run {
                     AuthResult.Error(AuthError.UserNotFound)
@@ -149,6 +148,8 @@ class FirebaseAuthService(
                 AuthResult.Error(AuthError.Unknown)
             }
         }
+        auth.signOut()
+        return result
     }
 
     override suspend fun login(
