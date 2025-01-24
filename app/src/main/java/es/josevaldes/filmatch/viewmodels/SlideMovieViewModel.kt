@@ -16,8 +16,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.random.Random
 
@@ -81,11 +81,13 @@ class SlideMovieViewModel @Inject constructor(
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal suspend fun cleanVisitedItems(movies: List<DiscoverItemData>): List<DiscoverItemData> {
-        return withContext(dispatcherIO) {
-            movies.filter { movie ->
-                !mediaRepository.isMovieVisited(movie)
+        val result = mediaRepository.getVisitsByIds(movies).first()
+        if (result is ApiResult.Success) {
+            return movies.filter { movie ->
+                !result.data.contains(movie.id)
             }
         }
+        return movies
     }
 
 
