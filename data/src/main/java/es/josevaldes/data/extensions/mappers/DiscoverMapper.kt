@@ -77,7 +77,7 @@ fun DiscoverItemData.toVisitedMediaWithItem(interestStatus: es.josevaldes.data.m
         MediaEntityType.MOVIE -> (this as DiscoverMovieData).toEntity()
         MediaEntityType.TV -> (this as DiscoverTvData).toEntity()
     }
-    
+
     val visitedMediaItemEntity = VisitedMediaItemEntity(
         mediaId = mediaEntity.id,
         type = type,
@@ -163,6 +163,16 @@ fun es.josevaldes.data.model.InterestStatus.toLocalModel(): InterestStatus {
         es.josevaldes.data.model.InterestStatus.NOT_INTERESTED -> InterestStatus.NOT_INTERESTED
         es.josevaldes.data.model.InterestStatus.WATCHED -> InterestStatus.WATCHED
         es.josevaldes.data.model.InterestStatus.NONE -> InterestStatus.NONE
+    }
+}
+
+fun InterestStatus.toDataModel(): es.josevaldes.data.model.InterestStatus {
+    return when (this) {
+        InterestStatus.INTERESTED -> es.josevaldes.data.model.InterestStatus.INTERESTED
+        InterestStatus.SUPER_INTERESTED -> es.josevaldes.data.model.InterestStatus.SUPER_INTERESTED
+        InterestStatus.NOT_INTERESTED -> es.josevaldes.data.model.InterestStatus.NOT_INTERESTED
+        InterestStatus.WATCHED -> es.josevaldes.data.model.InterestStatus.WATCHED
+        InterestStatus.NONE -> es.josevaldes.data.model.InterestStatus.NONE
     }
 }
 

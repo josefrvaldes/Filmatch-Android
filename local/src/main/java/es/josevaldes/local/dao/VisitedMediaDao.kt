@@ -44,6 +44,9 @@ interface VisitedMediaDao {
     @Query("SELECT EXISTS(SELECT 1 FROM visited_medias WHERE mediaId = :mediaId AND type = :type)")
     suspend fun isVisitedMedia(mediaId: Int, type: MediaEntityType): Boolean
 
+    @Query("SELECT interestStatus FROM visited_medias WHERE mediaId = :mediaId AND type = :type")
+    suspend fun getMediaStatus(mediaId: Int, type: MediaEntityType): InterestStatus?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVisitedFilters(visitedFilters: VisitedFiltersEntity)
 

@@ -1,6 +1,7 @@
 package es.josevaldes.local.datasources
 
 import es.josevaldes.local.dao.VisitedMediaDao
+import es.josevaldes.local.entities.InterestStatus
 import es.josevaldes.local.entities.MediaEntityType
 import es.josevaldes.local.entities.VisitedFiltersEntity
 import es.josevaldes.local.entities.VisitedMediaWithItem
@@ -16,6 +17,10 @@ class MediaLocalDataSource @Inject constructor(
 
     suspend fun isMovieVisited(movieId: Int, type: MediaEntityType): Boolean {
         return moviesDao.isVisitedMedia(movieId, type)
+    }
+
+    suspend fun getMediaStatus(mediaId: Int, type: MediaEntityType): InterestStatus? {
+        return moviesDao.getMediaStatus(mediaId, type)
     }
 
 

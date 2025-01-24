@@ -14,6 +14,7 @@ import es.josevaldes.data.responses.MediaType
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiErrorException
 import es.josevaldes.data.results.ApiResult
+import es.josevaldes.data.services.FilmatchRemoteDataSource
 import es.josevaldes.data.services.MediaRemoteDataSource
 import es.josevaldes.local.datasources.MediaLocalDataSource
 import io.mockk.coEvery
@@ -35,6 +36,7 @@ class MediaRepositoryTest {
     private lateinit var mediaPagingSource: MediaPagingSource
     private lateinit var mediaRemoteDataSource: MediaRemoteDataSource
     private lateinit var mediaLocalDataSource: MediaLocalDataSource
+    private lateinit var filmatchRemoteDataSource: FilmatchRemoteDataSource
     private var listOfMovies = mutableListOf<DiscoverItem>()
     private val config = PagingConfig(pageSize = 5, enablePlaceholders = false)
 
@@ -42,9 +44,15 @@ class MediaRepositoryTest {
     fun setUp() {
         mediaRemoteDataSource = mockk()
         mediaLocalDataSource = mockk()
+        filmatchRemoteDataSource = mockk()
         mediaPagingSource = MediaPagingSource(mediaRemoteDataSource, "en")
         mediaRepository =
-            MediaRepository(mediaPagingSource, mediaRemoteDataSource, mediaLocalDataSource)
+            MediaRepository(
+                mediaPagingSource,
+                mediaRemoteDataSource,
+                mediaLocalDataSource,
+                filmatchRemoteDataSource
+            )
         for (i in 1..20) {
             listOfMovies.add(
                 DiscoverMovie(id = i, title = "Movie $i")
