@@ -14,8 +14,10 @@ data class MediaFilters(
     val sortBy: String = "popularity.desc",
 ) {
     val filtersHash: String
-        get() = "$contentType-${genres?.joinToString("|") { it.id.toString() }}-${
-            providers?.joinToString(
+        get() = "$contentType-${
+            genres?.sortedBy { it.id }?.joinToString("|") { it.id.toString() }
+        }-${
+            providers?.sortedBy { it.id }?.joinToString(
                 "|"
             ) { it.id.toString() }
         }-${duration?.duration}-${score?.score}-${yearFrom}-${yearTo}-${sortBy}".md5()
