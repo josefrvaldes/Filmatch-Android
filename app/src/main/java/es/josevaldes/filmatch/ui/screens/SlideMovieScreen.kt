@@ -71,12 +71,12 @@ import coil.Coil
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import es.josevaldes.data.model.Movie
-import es.josevaldes.data.model.MovieFilters
+import es.josevaldes.data.model.DiscoverItemData
+import es.josevaldes.data.model.InterestStatus
+import es.josevaldes.data.model.MediaFilters
 import es.josevaldes.data.model.User
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.errors.ErrorMessageWrapper
-import es.josevaldes.filmatch.model.MovieSwipedStatus
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.ui.theme.BackButtonBackground
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
@@ -97,7 +97,7 @@ import kotlin.math.roundToInt
 
 
 @Composable
-fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
+fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (DiscoverItemData) -> Unit) {
     val viewModel: SlideMovieViewModel = hiltViewModel()
     val context = LocalContext.current
     val vibrationManager = remember { VibrationUtils(context) }
@@ -141,7 +141,8 @@ fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
 @Composable
 fun FiltersBottomSheetDialog(
     showFiltersBottomSheet: MutableState<Boolean>,
-    onFiltersSelected: (MovieFilters) -> Unit = {}
+    selectedFilters: MediaFilters,
+    onFiltersSelected: (MediaFilters) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -149,7 +150,7 @@ fun FiltersBottomSheetDialog(
         onDismissRequest = { showFiltersBottomSheet.value = false },
         sheetState = sheetState,
     ) {
-        FiltersScreen {
+        FiltersScreen(selectedFilters) {
             onFiltersSelected(it)
             showFiltersBottomSheet.value = false
         }
@@ -170,7 +171,7 @@ fun PreviewBottomLikeDislike() {
 }
 
 @Composable
-private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (Movie) -> Unit) {
+private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (DiscoverItemData) -> Unit) {
     val viewModel = hiltViewModel<SlideMovieViewModel>()
     val context = LocalContext.current
 
@@ -202,8 +203,8 @@ private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (Movie) -> 
                         observableMoviesCount = observableMovies.value.size,
                         movie = movie,
                         index = index,
-                        onSwipeCompleted = {
-                            viewModel.onSwipe()
+                        onSwipeCompleted = { movie ->
+                            viewModel.onSwipe(movie)
                         },
                         onMovieClicked = { movie ->
                             onNavigateToMovieDetailsScreen(movie)
@@ -218,7 +219,7 @@ private fun SwipeableMoviesComponent(onNavigateToMovieDetailsScreen: (Movie) -> 
 
 private fun preloadMoviePoster(
     context: Context,
-    movie: Movie?,
+    movie: DiscoverItemData?,
 ) {
     movie?.let {
         Coil.imageLoader(context).enqueue(
@@ -237,8 +238,8 @@ private fun SwipeableMovieView(
     observableMoviesCount: Int,
     movie: SwipeableMovie,
     index: Int,
-    onSwipeCompleted: () -> Unit,
-    onMovieClicked: (Movie) -> Unit,
+    onSwipeCompleted: (SwipeableMovie) -> Unit,
+    onMovieClicked: (DiscoverItemData) -> Unit,
 ) {
     val translationOffset = remember { Animatable(0f) }
     val rotationOffset = getProperRotation(movie, index, observableMoviesCount)
@@ -257,7 +258,8 @@ private fun SwipeableMovieView(
             observableMoviesCount,
             rotationOffset,
             translationOffset,
-            onSwipeCompleted
+            onSwipeCompleted,
+            movie
         )
     }
 
@@ -291,7 +293,8 @@ private suspend fun performAnimationAccordingToLikeButtonAction(
     observableMoviesCount: Int,
     rotationOffset: Animatable<Float, AnimationVector1D>,
     translationOffset: Animatable<Float, AnimationVector1D>,
-    onSwipeCompleted: () -> Unit
+    onSwipeCompleted: (SwipeableMovie) -> Unit,
+    movie: SwipeableMovie
 ) {
     if (index == observableMoviesCount - 1 && likeButtonAction != null) {
         val targetTranslationOffset = when (likeButtonAction) {
@@ -320,7 +323,12 @@ private suspend fun performAnimationAccordingToLikeButtonAction(
             awaitAll(rotationJob, translationJob)
         }
 
-        onSwipeCompleted()
+        val interestStatus = when (likeButtonAction) {
+            SlideMovieViewModel.LikeButtonAction.LIKE -> InterestStatus.INTERESTED
+            SlideMovieViewModel.LikeButtonAction.DISLIKE -> InterestStatus.NOT_INTERESTED
+        }
+        movie.swipedStatus = interestStatus
+        onSwipeCompleted(movie)
     }
 }
 
@@ -344,7 +352,7 @@ private fun PosterImageView(
     movie: SwipeableMovie,
     blurRadius: State<Dp>,
     tint: State<Color>,
-    onMovieClicked: (Movie) -> Unit
+    onMovieClicked: (DiscoverItemData) -> Unit
 ) {
     AsyncImage(
         filterQuality = FilterQuality.Medium,
@@ -374,7 +382,7 @@ private fun PosterImageView(
             .build(),
         contentScale = ContentScale.FillHeight,
         alignment = Alignment.Center,
-        contentDescription = movie.movie.title,
+        contentDescription = movie.movie.displayTitle,
     )
 }
 
@@ -384,16 +392,13 @@ private suspend fun handleSwipeRelease(
     rotationOffset: Animatable<Float, AnimationVector1D>,
     swipedMaxOffset: Int,
     movie: SwipeableMovie,
-    currentSwipedStatus: MutableState<MovieSwipedStatus>,
+    currentSwipedStatus: MutableState<InterestStatus>,
     screenWidth: Int,
-    onSwipeCompleted: () -> Unit
+    onSwipeCompleted: (SwipeableMovie) -> Unit
 ) {
     if (translationOffset.value.absoluteValue > swipedMaxOffset) {
         Timber.tag("SlideMovieScreen").d("Swiped confirmed")
 
-        Timber.tag("SlideMovieScreen").d("Removing tint")
-        movie.swipedStatus = MovieSwipedStatus.NONE
-        currentSwipedStatus.value = movie.swipedStatus
 
         // animating outside the screen
         val result = translationOffset.animateTo(
@@ -403,10 +408,15 @@ private suspend fun handleSwipeRelease(
 
         if (result.endReason == AnimationEndReason.Finished) {
             // let's remove the last movie
-            Timber.tag("SlideMovieScreen").d("Removing movie: ${movie.movie.title}")
-            onSwipeCompleted()
+            Timber.tag("SlideMovieScreen").d("Removing movie: ${movie.movie.displayTitle}")
+            onSwipeCompleted(movie)
             translationOffset.snapTo(0f)
         }
+
+
+        Timber.tag("SlideMovieScreen").d("Removing tint")
+        movie.swipedStatus = InterestStatus.NONE
+        currentSwipedStatus.value = movie.swipedStatus
     } else {
         coroutineScope {
             val rotationJob = async {
@@ -429,7 +439,7 @@ private fun handleSwipeMovement(
     swipedMaxOffset: Int,
     vibrationUtils: VibrationUtils,
     movie: SwipeableMovie,
-    currentSwipedStatus: MutableState<MovieSwipedStatus>
+    currentSwipedStatus: MutableState<InterestStatus>
 ) {
     val previousTranslationOffset = translationOffset.value
     val newTranslationOffset = translationOffset.value + delta
@@ -447,17 +457,17 @@ private fun handleSwipeMovement(
         // box
         movie.swipedStatus = if (newTranslationOffset > 0) {
             Timber.tag("SlideMovieScreen").d("Tinting green")
-            MovieSwipedStatus.LIKED
+            InterestStatus.INTERESTED
         } else {
             Timber.tag("SlideMovieScreen").d("Tinting red")
-            MovieSwipedStatus.DISLIKED
+            InterestStatus.NOT_INTERESTED
         }
         currentSwipedStatus.value = movie.swipedStatus
 
 
     } else if (previousTranslationOffset.absoluteValue >= swipedMaxOffset && newTranslationOffset.absoluteValue < swipedMaxOffset) {
         Timber.tag("SlideMovieScreen").d("Removing tint")
-        movie.swipedStatus = MovieSwipedStatus.NONE
+        movie.swipedStatus = InterestStatus.NONE
         currentSwipedStatus.value = movie.swipedStatus
     }
 }
@@ -468,8 +478,8 @@ private fun Modifier.swipeHandler(
     translationOffset: Animatable<Float, AnimationVector1D>,
     rotationOffset: Animatable<Float, AnimationVector1D>,
     movie: SwipeableMovie,
-    currentSwipedStatus: MutableState<MovieSwipedStatus>,
-    onSwipeCompleted: () -> Unit
+    currentSwipedStatus: MutableState<InterestStatus>,
+    onSwipeCompleted: (SwipeableMovie) -> Unit
 ): Modifier {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -517,11 +527,11 @@ private fun Modifier.setupMovieGraphics(
 
 
 @Composable
-private fun getProperTint(currentSwipedStatus: MutableState<MovieSwipedStatus>) =
+private fun getProperTint(currentSwipedStatus: MutableState<InterestStatus>) =
     animateColorAsState(
         targetValue = when (currentSwipedStatus.value) {
-            MovieSwipedStatus.LIKED -> LikeButtonBackground.copy(0.5f)
-            MovieSwipedStatus.DISLIKED -> DislikeButtonBackground.copy(0.5f)
+            InterestStatus.INTERESTED -> LikeButtonBackground.copy(0.5f)
+            InterestStatus.NOT_INTERESTED -> DislikeButtonBackground.copy(0.5f)
             else -> Color.Transparent
         },
         animationSpec = tween(durationMillis = 500),
@@ -612,7 +622,7 @@ private fun LikeDislikeBottomSection(
 }
 
 @Composable
-fun TopBar(onFiltersSelected: (MovieFilters) -> Unit = {}) {
+fun TopBar(onFiltersSelected: (MediaFilters) -> Unit = {}) {
 
     val showFiltersBottomSheet = remember { mutableStateOf(false) }
     Row(
@@ -643,15 +653,17 @@ fun TopBar(onFiltersSelected: (MovieFilters) -> Unit = {}) {
     }
 
     if (showFiltersBottomSheet.value) {
-        FiltersBottomSheetDialog(showFiltersBottomSheet, onFiltersSelected)
+        val viewModel = hiltViewModel<SlideMovieViewModel>()
+        val selectedFilters = viewModel.mediaFilters
+        FiltersBottomSheetDialog(showFiltersBottomSheet, selectedFilters, onFiltersSelected)
     }
 }
 
-@Preview
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun TopBarPreview() {
     FilmatchTheme(darkTheme = true) {
-        TopBar()
+        TopBar {}
     }
 }
 
@@ -662,7 +674,8 @@ fun UserTopBar() {
         id = "1",
         username = "Joselete Valdés",
         photoUrl = "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/6018d2fb-507f-4b50-af6a-b593b6c6eeb9/db1so0b-cd9d0be3-3691-4728-891b-f1505b7e1dc8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzYwMThkMmZiLTUwN2YtNGI1MC1hZjZhLWI1OTNiNmM2ZWViOVwvZGIxc28wYi1jZDlkMGJlMy0zNjkxLTQ3MjgtODkxYi1mMTUwNWI3ZTFkYzgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.9awWi0q7WpdwQDXG9quXvnDVo0NUDqF_S9ygzRxCbEM",
-        email = ""
+        email = "",
+        uid = ""
     )
     Row(
         modifier = Modifier
@@ -687,7 +700,7 @@ fun UserTopBar() {
         }
         Text(
             modifier = Modifier.padding(start = 10.dp),
-            text = user.username,
+            text = user.username ?: "",
             style = usernameTitleStyle
         )
     }

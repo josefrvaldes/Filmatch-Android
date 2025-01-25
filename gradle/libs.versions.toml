@@ -1,21 +1,21 @@
 [versions]
-agp = "8.6.1"
+agp = "8.7.3"
 kotlin = "2.0.20"
-coreKtx = "1.13.1"
+coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.6"
-activityCompose = "1.9.2"
-composeBom = "2024.09.02"
+lifecycleRuntimeKtx = "2.8.7"
+activityCompose = "1.9.3"
+composeBom = "2024.11.00"
 coilVersion = "2.7.0"
-googleFontsVersion = "1.7.2"
+googleFontsVersion = "1.7.5"
 hiltVersion = "2.52"
 hiltNavigationComposeVersion = "1.2.0"
 retrofitVersion = "2.11.0"
 okHttpVersion = "4.12.0"
-pagingVersion = "3.3.2"
-firebaseBomVersion = "33.3.0"
+pagingVersion = "3.3.4"
+firebaseBomVersion = "33.7.0"
 googleServicesPluginVersion = "4.4.2"
 playServicesAuthVersion = "21.2.0"
 crashlyticsPluginVersion = "3.0.2"
@@ -29,14 +29,15 @@ roboelectricVersion = "4.13"
 coreTestingVersion = "2.2.0"
 coroutinesTestVersion = "1.8.1"
 testMonitorVersion = "1.7.2"
-pagingTestVersion = "3.3.2"
-pagingTestingAndroid = "3.3.2"
-lifecycleViewmodelKtx = "2.6.2"
-navigationVersion = "2.8.3"
+pagingTestVersion = "3.3.4"
+pagingTestingAndroid = "3.3.4"
+lifecycleViewmodelKtx = "2.8.7"
+navigationVersion = "2.8.4"
 kotlinxSerializationVersion = "1.7.3"
 kotlinxSerializationPluginVersion = "2.0.20"
-jacksonVersion = "2.13.0"
+jacksonVersion = "2.17.0"
 splashScreenVersion = "1.0.1"
+roomVersion = "2.6.1"
 
 
 [libraries]
@@ -91,6 +92,10 @@ androidx-navigation = { group = "androidx.navigation", name = "navigation-compos
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationVersion" }
 jackson = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jacksonVersion" }
 splashScreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashScreenVersion" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomVersion" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomVersion" }
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "roomVersion" }
+room-testing = { group = "androidx.room", name = "room-testing", version.ref = "roomVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

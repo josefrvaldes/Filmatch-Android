@@ -121,7 +121,7 @@ fun LoginScreen(onGoToSlideMovieScreen: () -> Unit, onGoToRegisterClicked: () ->
             onDismiss = { shouldDisplayForgotPasswordDialog.value = false }
         )
     } else if (shouldDisplaySuccessForgettingPasswordDialog) {
-        SuccessSendingForgotPasswordDialog(backgroundColor = MaterialTheme.colorScheme.background) {
+        SuccessSendingForgotPasswordDialog {
             shouldDisplaySuccessForgettingPasswordDialog = false
         }
     }

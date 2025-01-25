@@ -1,6 +1,6 @@
 package es.josevaldes.data.results.calls
 
-import es.josevaldes.core.utils.serialization.JsonMapper
+import es.josevaldes.data.di.JsonMapper
 import es.josevaldes.data.network.ApiResponseHandler
 import es.josevaldes.data.responses.ApiErrorResponse
 import es.josevaldes.data.results.ApiError

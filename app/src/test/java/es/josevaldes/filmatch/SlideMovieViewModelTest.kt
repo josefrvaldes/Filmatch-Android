@@ -1,8 +1,9 @@
 package es.josevaldes.filmatch
 
+import es.josevaldes.data.model.DiscoverItemData
+import es.josevaldes.data.model.DiscoverMovieData
 import es.josevaldes.data.model.DiscoverMoviesData
-import es.josevaldes.data.model.Movie
-import es.josevaldes.data.repositories.MovieRepository
+import es.josevaldes.data.repositories.MediaRepository
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SwipeableMovie
@@ -18,12 +19,17 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Before
@@ -37,16 +43,17 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34], manifest = Config.NONE)
 class SlideMovieViewModelTest {
 
-
-    private val movieRepository = mockk<MovieRepository>()
+    private val mediaRepository = mockk<MediaRepository>()
     private val deviceLocaleProvider = mockk<DeviceLocaleProvider>()
+    private val myDispatcherIO = StandardTestDispatcher()
     private lateinit var viewModel: SlideMovieViewModel
 
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Before
     fun setUp() {
         coEvery {
-            movieRepository.getDiscoverMovies(
+            mediaRepository.getDiscoverMovies(
                 any(),
                 any(),
                 any()
@@ -54,72 +61,43 @@ class SlideMovieViewModelTest {
         } returns flowOf(ApiResult.Success(DiscoverMoviesData(listOf(), 1, 1, 1)))
         every { deviceLocaleProvider.getDeviceLocale() } returns "en-US"
         every { deviceLocaleProvider.getDeviceCountry() } returns "US"
-        viewModel = SlideMovieViewModel(movieRepository, deviceLocaleProvider)
+
+        viewModel = SlideMovieViewModel(mediaRepository, deviceLocaleProvider, myDispatcherIO)
+        Dispatchers.setMain(myDispatcherIO)
     }
 
-
-    @Test
-    fun `onLikeButtonClicked should modify swipeAction to LIKE`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
-        viewModel.onLikeButtonClicked()
-        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
-    @Test
-    fun `onDislikeButtonClicked should modify swipeAction to DISLIKE`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
-        viewModel.onDislikeButtonClicked()
-        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
-    }
-
-    @Test
-    fun `clearLikeButtonAction should modify likeButtonAction to null`() = runTest {
-        coEvery { movieRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
-        viewModel.clearLikeButtonAction()
-        assert(viewModel.likeButtonAction.value == null)
-    }
-
-    @Test
-    fun `likeButtonAction should be null by default`() = runTest {
-        assert(viewModel.likeButtonAction.value == null)
-    }
-
-    @Test
-    fun `swipeAction should react correctly to different changes in a row`() = runTest {
-        viewModel.onLikeButtonClicked()
-        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
-        viewModel.onDislikeButtonClicked()
-        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
-        viewModel.clearLikeButtonAction()
-        assert(viewModel.likeButtonAction.value == null)
-        viewModel.onDislikeButtonClicked()
-        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
-        viewModel.clearLikeButtonAction()
-        assert(viewModel.likeButtonAction.value == null)
-        viewModel.onLikeButtonClicked()
-        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
-    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `loadCurrentPage should return a list of movies in the flow and fill the observableMovies and load the next observable movie`() =
-        runTest {
+        runTest(myDispatcherIO) {
+            println("let's run our test madafaka")
             val discoverMoviesResponse = DiscoverMoviesData(
                 listOf(
-                    Movie(id = 1),
-                    Movie(id = 2),
-                    Movie(id = 3),
-                    Movie(id = 4),
-                    Movie(id = 5),
+                    DiscoverMovieData(id = 1),
+                    DiscoverMovieData(id = 2),
+                    DiscoverMovieData(id = 3),
+                    DiscoverMovieData(id = 4),
+                    DiscoverMovieData(id = 5),
                 ), 1, 5, 1
             )
             coEvery {
-                movieRepository.getDiscoverMovies(
+                mediaRepository.getDiscoverMovies(
                     any(),
                     any(),
                     any()
                 )
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
+
+            coEvery { mediaRepository.getVisitsByIds(any()) } returns flowOf(
+                ApiResult.Success(emptyList())
+            )
 
 
             var emittedErrorMessage: ApiResult.Error? = null
@@ -159,12 +137,97 @@ class SlideMovieViewModelTest {
         }
 
 
+    @Test
+    fun `onLikeButtonClicked should modify swipeAction to LIKE`() = runTest {
+        coEvery { mediaRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
+        viewModel.onLikeButtonClicked()
+        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
+    }
+
+    @Test
+    fun `onDislikeButtonClicked should modify swipeAction to DISLIKE`() = runTest {
+        coEvery { mediaRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
+        viewModel.onDislikeButtonClicked()
+        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
+    }
+
+    @Test
+    fun `clearLikeButtonAction should modify likeButtonAction to null`() = runTest {
+        coEvery { mediaRepository.getDiscoverMovies(any(), any(), any()) } returns mockk()
+        viewModel.clearLikeButtonAction()
+        assert(viewModel.likeButtonAction.value == null)
+    }
+
+    @Test
+    fun `likeButtonAction should be null by default`() = runTest {
+        assert(viewModel.likeButtonAction.value == null)
+    }
+
+    @Test
+    fun `swipeAction should react correctly to different changes in a row`() = runTest {
+        viewModel.onLikeButtonClicked()
+        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
+        viewModel.onDislikeButtonClicked()
+        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
+        viewModel.clearLikeButtonAction()
+        assert(viewModel.likeButtonAction.value == null)
+        viewModel.onDislikeButtonClicked()
+        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.DISLIKE)
+        viewModel.clearLikeButtonAction()
+        assert(viewModel.likeButtonAction.value == null)
+        viewModel.onLikeButtonClicked()
+        assert(viewModel.likeButtonAction.value == SlideMovieViewModel.LikeButtonAction.LIKE)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `loadCurrentPage should start from page 1 if no pages have been visited`() =
+        runTest(myDispatcherIO) {
+
+            val discoverMoviesResponse = DiscoverMoviesData(
+                results = listOf(
+                    DiscoverMovieData(id = 1),
+                    DiscoverMovieData(id = 2),
+                    DiscoverMovieData(id = 3),
+                ),
+                page = 1,
+                totalPages = 5,
+                totalResults = 3
+            )
+
+            // Simulate that no pages have been visited
+            coEvery { mediaRepository.getMaxPage(any()) } returns null
+
+            // Mock the flow to return success
+            coEvery {
+                mediaRepository.getDiscoverMovies(page = 1, any(), any())
+            } returns flowOf(ApiResult.Success(discoverMoviesResponse))
+
+            every { deviceLocaleProvider.getDeviceLocale() } returns "en-US"
+            coEvery { mediaRepository.getVisitsByIds(any()) } returns flowOf(
+                ApiResult.Success(emptyList())
+            )
+
+            viewModel.loadCurrentPage()
+            advanceUntilIdle()
+
+            // Verify that the movie list is populated correctly
+            assertEquals(discoverMoviesResponse.results.size, viewModel.movieListFlow.value.size)
+
+            // Verify that the observable movies are set correctly
+            assertEquals(
+                discoverMoviesResponse.results.first().id,
+                viewModel.observableMovies.value.first().movie.id
+            )
+        }
+
+
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `loadCurrentPage should emit an error message when the result is not successful`() =
         runTest {
             coEvery {
-                movieRepository.getDiscoverMovies(
+                mediaRepository.getDiscoverMovies(
                     any(),
                     any(),
                     any()
@@ -190,38 +253,121 @@ class SlideMovieViewModelTest {
             )
         }
 
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `onSwipe should remove the first movie from the list and load the next page if the list is below the threshold`() =
-        runTest {
+        runTest(myDispatcherIO) {
             val resultsPerPage = 10
-            val movies = List(resultsPerPage) { index -> Movie(id = index) }
+            val movies =
+                List(resultsPerPage) { index -> DiscoverMovieData(id = index) }.map {
+                    SwipeableMovie(
+                        it
+                    )
+                }
             val discoverMoviesResponse = DiscoverMoviesData(
-                movies, 1, 20, 2
+                movies.map { it.movie }, 1, 20, 2
             )
             coEvery {
-                movieRepository.getDiscoverMovies(
+                mediaRepository.getDiscoverMovies(
                     any(),
                     any(),
                     any()
                 )
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
+            coEvery { mediaRepository.getVisitsByIds(any()) } returns flowOf(
+                ApiResult.Success(emptyList())
+            )
+            coEvery { mediaRepository.markMovieAsVisited(any(), any()) } just Runs
 
             viewModel.loadCurrentPage()
+            advanceUntilIdle()
 
             // let's swipe all the movies right before reaching the threshold
             for (i in 0 until LOADING_THRESHOLD) {
-                viewModel.onSwipe()
+                viewModel.onSwipe(movies.first())
                 assertEquals(resultsPerPage - i - 1, viewModel.movieListFlow.value.size)
             }
 
             // let's swipe one more time we will reach the threshold and the next page will be loaded
-            viewModel.onSwipe()
+            viewModel.onSwipe(movies.first())
+            advanceUntilIdle() // we have to wait again here because, after swiping this movie, the next page will be loaded
             assertEquals(resultsPerPage + LOADING_THRESHOLD - 1, viewModel.movieListFlow.value.size)
         }
 
+
+    @Test
+    fun `cleanVisitedItems should return all movies if none are visited`() = runTest {
+        // Prepare test data
+        val movies = listOf(
+            DiscoverItemData(id = 1),
+            DiscoverItemData(id = 2),
+            DiscoverItemData(id = 3)
+        )
+
+        // Mock repository to return false for all IDs
+
+        coEvery { mediaRepository.getVisitsByIds(movies) } returns flowOf(
+            ApiResult.Success(emptyList())
+        )
+
+
+        // Execute the method
+        val result = viewModel.cleanVisitedItems(movies)
+
+        // Assert all movies are returned
+        assertEquals(movies, result)
+    }
+
+    @Test
+    fun `cleanVisitedItems should filter out visited movies`() = runTest {
+        // Prepare test data
+        val movies = listOf(
+            DiscoverItemData(id = 1),
+            DiscoverItemData(id = 2),
+            DiscoverItemData(id = 3)
+        )
+
+        // Mock repository to simulate some movies as visited
+        coEvery { mediaRepository.getVisitsByIds(movies) } returns flowOf(
+            ApiResult.Success(listOf(1, 3))
+        )
+
+        // Execute the method
+        val result = viewModel.cleanVisitedItems(movies)
+
+        // Assert only unvisited movies are returned
+        val expected = listOf(
+            DiscoverItemData(id = 2) // Only movie with ID 2 is unvisited
+        )
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun `cleanVisitedItems should return empty list if all movies are visited`() = runTest {
+        // Prepare test data
+        val movies = listOf(
+            DiscoverItemData(id = 1),
+            DiscoverItemData(id = 2),
+            DiscoverItemData(id = 3)
+        )
+
+        // Mock repository to return true for all IDs
+        coEvery { mediaRepository.getVisitsByIds(movies) } returns flowOf(
+            ApiResult.Success(movies.map { it.id }.toList())
+        )
+
+
+        // Execute the method
+        val result = viewModel.cleanVisitedItems(movies)
+
+        // Assert the result is an empty list
+        assertEquals(emptyList<DiscoverItemData>(), result)
+    }
+
     @Test
     fun `getMovieThatWillBeObservableNext should chose the proper movie all the time`() = run {
-        val movies = List(5) { index -> SwipeableMovie(Movie(id = index)) }
+        val movies = List(5) { index -> SwipeableMovie(DiscoverMovieData(id = index)) }
         viewModel.movieListFlow.value.addAll(movies)
 
         viewModel.getMovieThatWillBeObservableNext()

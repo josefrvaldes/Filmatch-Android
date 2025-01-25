@@ -25,6 +25,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,7 +49,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import es.josevaldes.data.model.Duration
 import es.josevaldes.data.model.Filter
-import es.josevaldes.data.model.MovieFilters
+import es.josevaldes.data.model.MediaFilters
 import es.josevaldes.data.model.Score
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
@@ -72,10 +73,20 @@ fun Modifier.filterBoxStyle(color: Color = MaterialTheme.colorScheme.outlineVari
 
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-fun FiltersScreen(onFiltersSelected: (MovieFilters) -> Unit = {}) {
+fun FiltersScreen(selectedFilters: MediaFilters, onFiltersSelected: (MediaFilters) -> Unit = {}) {
     val viewModel: FiltersViewModel = hiltViewModel()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(Unit) {
+        viewModel.setSelectedFilters(selectedFilters)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.resetFilters()
+        }
+    }
 
     val genres by viewModel.filtersGenre.collectAsState()
     val providers by viewModel.providers.collectAsState()
@@ -170,7 +181,7 @@ fun FiltersScreen(onFiltersSelected: (MovieFilters) -> Unit = {}) {
                 context.getString(R.string.filter_score_string, intScore)
             }
         }) {
-            viewModel.otherFilterClicked(it)
+            viewModel.otherFilterClicked(it, true)
         }
 
         Box(modifier = Modifier.weight(1f))

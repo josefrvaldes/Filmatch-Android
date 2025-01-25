@@ -116,4 +116,10 @@
     <string name="year_range_selector_to_label">To</string>
     <string name="filter_duration_string"><![CDATA[< %1$s min]]></string>
     <string name="filter_score_string"><![CDATA[Score > %1$s]]></string>
+    <string name="duration_string_movie">%1$dh %2$dm</string>
+    <string name="duration_string_tv_show">%1$dm approx.</string>
+    <plurals name="seasons_count">
+        <item quantity="one">%d season</item>
+        <item quantity="other">%d seasons</item>
+    </plurals>
 </resources>

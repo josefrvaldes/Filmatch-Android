@@ -7,8 +7,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import es.josevaldes.data.model.ContentType
 import es.josevaldes.data.model.Duration
 import es.josevaldes.data.model.Filter
-import es.josevaldes.data.model.Genre
-import es.josevaldes.data.model.MovieFilters
+import es.josevaldes.data.model.GenreData
+import es.josevaldes.data.model.MediaFilters
 import es.josevaldes.data.model.OtherFilters
 import es.josevaldes.data.model.Provider
 import es.josevaldes.data.model.Score
@@ -26,21 +26,21 @@ import javax.inject.Inject
 class FiltersViewModel @Inject constructor(
     private val genresRepository: GenreRepository,
     private val providersRepository: ProviderRepository,
-    deviceLocaleProvider: DeviceLocaleProvider
+    private val deviceLocaleProvider: DeviceLocaleProvider
 ) : ViewModel() {
 
     private val _contentTypes = MutableStateFlow(OtherFilters.contentTypeFilters.toList())
     val contentTypes = _contentTypes.asStateFlow()
 
-    private val _filtersGenre = MutableStateFlow<List<Filter<Genre>>>(listOf())
+    private val _filtersGenre = MutableStateFlow<List<Filter<GenreData>>>(listOf())
     val filtersGenre = _filtersGenre.asStateFlow()
 
     private val _providers =
         MutableStateFlow<MutableList<Filter<Provider>>>(mutableListOf())
     val providers = _providers.asStateFlow()
 
-    private val _tvGenres = mutableListOf<Filter<Genre>>()
-    private val _movieGenres = mutableListOf<Filter<Genre>>()
+    private val _tvGenres = mutableListOf<Filter<GenreData>>()
+    private val _movieGenres = mutableListOf<Filter<GenreData>>()
 
     private var _fromYear = MutableStateFlow(2000)
     val fromYear = _fromYear.asStateFlow()
@@ -82,8 +82,16 @@ class FiltersViewModel @Inject constructor(
         viewModelScope.launch {
             genresRepository.getAllMovieGenres().collect { result ->
                 if (result is ApiResult.Success) {
-                    _movieGenres.add(Filter(Genre(-1, "All"), true))
-                    _movieGenres.addAll(result.data.genres.map { Filter(it, false) })
+                    if (_movieGenres.any { it.item.id == -1 }.not()) {
+                        _movieGenres.add(Filter(GenreData(-1, "All"), true))
+                    }
+                    // let's add without duplicates
+                    _movieGenres.addAll(
+                        result.data.filterNot { genre ->
+                            _movieGenres.any { it.item.id == genre.id }
+                        }.map { Filter(it, false) }
+                    )
+                    _filtersGenre.value = _movieGenres.toList()
                 } else {
                     _movieGenres.clear()
                 }
@@ -91,36 +99,23 @@ class FiltersViewModel @Inject constructor(
 
             genresRepository.getAllTvGenres().collect { result ->
                 if (result is ApiResult.Success) {
-                    _tvGenres.add(Filter(Genre(-1, "All"), true))
-                    _tvGenres.addAll(result.data.genres.map { Filter(it, false) })
+                    if (_tvGenres.any { it.item.id == -1 }.not()) {
+                        _tvGenres.add(Filter(GenreData(-1, "All"), true))
+                    }
+                    // let's add without duplicates
+                    _tvGenres.addAll(
+                        result.data.filterNot { genre ->
+                            _tvGenres.any { it.item.id == genre.id }
+                        }.map { Filter(it, false) }
+                    )
+                    if (_filtersGenre.value.isEmpty()) {
+                        _filtersGenre.value = _tvGenres.toList()
+                    }
                 } else {
                     _tvGenres.clear()
                 }
             }
-            _filtersGenre.value = mergeGenresList()
-
         }
-    }
-
-    private fun mergeGenresList(): List<Filter<Genre>> {
-        val mergedGenres = mutableListOf<Filter<Genre>>()
-        for (genre in _movieGenres) {
-            if (mergedGenres.none { it.item.id == genre.item.id }) {
-                mergedGenres.add(genre)
-            }
-        }
-
-        for (genre in _tvGenres) {
-            if (mergedGenres.none { it.item.id == genre.item.id }) {
-                mergedGenres.add(genre)
-            }
-        }
-
-        val allItem = mergedGenres.first { it.item.id == -1 }
-        mergedGenres.remove(allItem)
-        mergedGenres.sortBy { it.item.name }
-        mergedGenres.add(0, allItem)
-        return mergedGenres.toList()
     }
 
     fun contentTypeClicked(contentType: Filter<ContentType>) {
@@ -192,7 +187,7 @@ class FiltersViewModel @Inject constructor(
         _filtersGenre.value = genres.toList()
     }
 
-    fun genreClicked(genreClicked: Filter<Genre>) {
+    fun genreClicked(genreClicked: Filter<GenreData>) {
         if (genreClicked.item.id == -1) {
             deselectAllFiltersExceptForAllType()
             return
@@ -240,9 +235,11 @@ class FiltersViewModel @Inject constructor(
             deselectProviderFilterTypeAll()
         }
         val providers = _providers.value.toMutableList()
-        val index = providers.indexOf(provider)
-        providers[index] = provider.copy(isSelected = !provider.isSelected)
-        _providers.value = providers
+        val index = providers.indexOfFirst { it.item.id == provider.item.id }
+        if (index >= 0) {
+            providers[index] = provider.copy(isSelected = !provider.isSelected)
+            _providers.value = providers
+        }
 
         val selectedCount = providers.count { it.isSelected }
         if (selectedCount == 0) {
@@ -278,8 +275,24 @@ class FiltersViewModel @Inject constructor(
         _toYear.value = year
     }
 
+    /**
+     * Handles the logic for toggling the selected state of a filter and deselecting all others in the same group.
+     *
+     * Depending on the type of the provided filter (`Duration` or another type), the method processes the corresponding
+     * list of filters (`_timeFilters` or `_scoreFilters`) to toggle the selected state of the specified filter.
+     * - If the filter is toggled, its selection state will be inverted.
+     * - All other filters in the list will be deselected.
+     *
+     * @param filter The filter to toggle. It can contain any item type, such as `Duration` or `Score`.
+     * @param toggleState A flag indicating whether to toggle the selection state of the filter. If `true`,
+     * the filter's state will be inverted; if `false`, the filter's current state will be preserved.
+     *
+     * Example:
+     * If the user clicks on a filter in a group, this method ensures that only the clicked filter is selected,
+     * and all others are deselected.
+     */
     @Suppress("UNCHECKED_CAST")
-    fun otherFilterClicked(filter: Filter<Any>) {
+    fun otherFilterClicked(filter: Filter<Any>, toggleState: Boolean) {
         val listToProcess = if (filter.item is Duration) {
             _timeFilters.value.toMutableList() as MutableList<Filter<Any>>
         } else {
@@ -290,7 +303,8 @@ class FiltersViewModel @Inject constructor(
         val index = listToProcess.indexOf(filter)
         listToProcess.forEachIndexed { i, item ->
             if (i == index) {
-                listToProcess[i] = item.copy(isSelected = !selectedStatus)
+                listToProcess[i] =
+                    item.copy(isSelected = if (toggleState) !selectedStatus else selectedStatus)
             } else {
                 listToProcess[i] = item.copy(isSelected = false)
             }
@@ -303,7 +317,42 @@ class FiltersViewModel @Inject constructor(
         }
     }
 
-    fun getSelectedFilters(): MovieFilters {
+    fun setSelectedFilters(filters: MediaFilters) {
+        val contentType = _contentTypes.value.firstOrNull { it.item == filters.contentType }
+        contentType?.let { contentTypeClicked(it) }
+
+        filters.genres?.forEach { genre ->
+            genreClicked(
+                Filter(
+                    genre,
+                    false
+                )
+            ) // the method genreClicked will toggle the status, since we want the genre to be selected, we have to mark it as non selected first
+        }
+
+        filters.providers?.forEach { provider ->
+            providerClicked(
+                Filter(
+                    provider,
+                    false,
+                    imageUrl = provider.logoUrl
+                )
+            ) // same logic as above
+        }
+
+        filters.duration?.let {
+            otherFilterClicked(Filter(it, true), false)
+        }
+
+        filters.score?.let {
+            otherFilterClicked(Filter(it, true), false)
+        }
+
+        _fromYear.value = filters.yearFrom ?: 2000
+        _toYear.value = filters.yearTo ?: LocalDateTime.now().year
+    }
+
+    fun getSelectedFilters(): MediaFilters {
         val selectedContentType = _contentTypes.value.firstOrNull { it.isSelected }?.item
         val selectedGenres =
             _filtersGenre.value.filter { it.isSelected && it.item.id >= 0 }.map { it.item }
@@ -312,7 +361,7 @@ class FiltersViewModel @Inject constructor(
         val selectedDuration = _timeFilters.value.firstOrNull { it.isSelected }?.item
         val selectedScore = _scoreFilters.value.firstOrNull { it.isSelected }?.item
 
-        return MovieFilters(
+        return MediaFilters(
             contentType = selectedContentType ?: ContentType.MOVIES,
             genres = selectedGenres,
             providers = selectedProviders,

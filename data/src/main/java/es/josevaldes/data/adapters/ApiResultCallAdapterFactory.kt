@@ -13,6 +13,7 @@ import java.lang.reflect.Type
 // https://gitlab.com/cp-hardik-p/error-handling
 class ApiResultCallAdapterFactory : CallAdapter.Factory() {
 
+    @Suppress("UNCHECKED_CAST")
     override fun get(
         returnType: Type,
         annotations: Array<out Annotation>,
@@ -24,11 +25,11 @@ class ApiResultCallAdapterFactory : CallAdapter.Factory() {
         val upperBound = getParameterUpperBound(0, returnType)
 
         return if (upperBound is ParameterizedType && upperBound.rawType == ApiResult::class.java) {
-            object : CallAdapter<Any, Call<Result<*>>> {
+            object : CallAdapter<Any, Call<ApiResult<*>>> {
                 override fun responseType(): Type = getParameterUpperBound(0, upperBound)
 
-                override fun adapt(call: Call<Any>): Call<Result<*>> {
-                    val result = ApiResultCall(call) as Call<Result<*>>
+                override fun adapt(call: Call<Any>): Call<ApiResult<*>> {
+                    val result = ApiResultCall(call) as Call<ApiResult<*>>
                     return result
                 }
             }

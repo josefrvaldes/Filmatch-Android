@@ -1,18 +1,13 @@
 package es.josevaldes.filmatch.model
 
-import es.josevaldes.data.model.Movie
-
-enum class MovieSwipedStatus {
-    LIKED,
-    DISLIKED,
-    NONE
-}
+import es.josevaldes.data.model.DiscoverItemData
+import es.josevaldes.data.model.InterestStatus
 
 data class SwipeableMovie(
-    val movie: Movie,
+    val movie: DiscoverItemData,
     var isLiked: Boolean? = null,
     var rotation: Float? = null,
     var translationX: Float? = null,
     var translationY: Float? = null,
-    var swipedStatus: MovieSwipedStatus = MovieSwipedStatus.NONE
+    var swipedStatus: InterestStatus = InterestStatus.NONE
 )

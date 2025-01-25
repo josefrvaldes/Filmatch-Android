@@ -3,6 +3,12 @@ package es.josevaldes.data.model
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
+
+@Parcelize
+data class ProvidersList(
+    val results: List<Provider>
+) : Parcelable
+
 @Parcelize
 data class Provider(
     val id: Int,
@@ -18,8 +24,3 @@ data class Provider(
         return name
     }
 }
-
-@Parcelize
-data class ProvidersList(
-    val results: List<Provider>
-) : Parcelable

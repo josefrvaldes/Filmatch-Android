@@ -9,14 +9,16 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dagger.hilt.android.AndroidEntryPoint
-import es.josevaldes.data.model.Movie
+import es.josevaldes.data.extensions.mappers.toDetailsItemData
+import es.josevaldes.data.model.DetailsItemData
 import es.josevaldes.data.services.AuthService
-import es.josevaldes.filmatch.navigation.MovieParameterType
+import es.josevaldes.filmatch.navigation.DetailsItemDataParameterType
 import es.josevaldes.filmatch.navigation.Route
 import es.josevaldes.filmatch.ui.screens.MovieDetailsScreen
 import es.josevaldes.filmatch.ui.screens.OnBoardingScreen
@@ -24,8 +26,10 @@ import es.josevaldes.filmatch.ui.screens.SlideMovieScreen
 import es.josevaldes.filmatch.ui.screens.WelcomeScreen
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.utils.SimplePreferencesManager
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.reflect.typeOf
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -35,23 +39,24 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            FilmatchApp(
-                startDestination = if (isLoggedIn()) {
-                    Route.SlideMovieRoute
-                } else {
-                    if (SimplePreferencesManager(this).isOnboardingFinished()) {
-                        Route.WelcomeRoute
-                    } else {
-                        Route.OnBoardingRoute
-                    }
-                }
-            )
-        }
-    }
 
-    private fun isLoggedIn(): Boolean {
-        return authService.isLoggedIn()
+        lifecycleScope.launch {
+            val startDestination = if (authService.isLoggedIn()) {
+                Route.SlideMovieRoute
+            } else {
+                if (SimplePreferencesManager(this@MainActivity).isOnboardingFinished()) {
+                    Route.WelcomeRoute
+                } else {
+                    Route.OnBoardingRoute
+                }
+            }
+
+            setContent {
+                FilmatchApp(
+                    startDestination = startDestination
+                )
+            }
+        }
     }
 }
 
@@ -89,7 +94,7 @@ fun FilmatchApp(startDestination: Route) {
                 )
             }
         ) {
-            composable<Route.MovieDetailsRoute>(typeMap = mapOf(typeOf<Movie>() to MovieParameterType)) { backStackEntry ->
+            composable<Route.MovieDetailsRoute>(typeMap = mapOf(typeOf<DetailsItemData>() to DetailsItemDataParameterType)) { backStackEntry ->
                 val movieDetailsRoute = backStackEntry.toRoute<Route.MovieDetailsRoute>()
                 MovieDetailsScreen(movieDetailsRoute.movie, backStackEntry)
             }
@@ -103,8 +108,8 @@ fun FilmatchApp(startDestination: Route) {
                 })
             }
             composable<Route.SlideMovieRoute> {
-                SlideMovieScreen(onNavigateToMovieDetailsScreen = { movie ->
-                    navController.navigate(Route.MovieDetailsRoute(movie))
+                SlideMovieScreen(onNavigateToMovieDetailsScreen = { discoverItem ->
+                    navController.navigate(Route.MovieDetailsRoute(discoverItem.toDetailsItemData()))
                 })
             }
             composable<Route.WelcomeRoute> {

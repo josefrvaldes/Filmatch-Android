@@ -3,9 +3,8 @@ package es.josevaldes.filmatch
 import es.josevaldes.data.model.ContentType
 import es.josevaldes.data.model.Duration
 import es.josevaldes.data.model.Filter
-import es.josevaldes.data.model.Genre
-import es.josevaldes.data.model.GenresList
-import es.josevaldes.data.model.MovieFilters
+import es.josevaldes.data.model.GenreData
+import es.josevaldes.data.model.MediaFilters
 import es.josevaldes.data.model.OtherFilters
 import es.josevaldes.data.model.Provider
 import es.josevaldes.data.model.Score
@@ -42,12 +41,12 @@ class FiltersViewModelTest {
     private val netflixProvider = Provider(1, "Netflix", "netflix.png", 1, emptyMap())
     private val hboProvider = Provider(2, "HBO", "hbo.png", 2, emptyMap())
 
-    private val allGenre = Genre(-1, "All")
-    private val actionGenre = Genre(1, "Action")
-    private val comedyGenre = Genre(2, "Comedy")
-    private val dramaGenre = Genre(3, "Drama")
-    private val tvOnlyGenre = Genre(4, "TvOnlyGenre")
-    private val movieOnlyGenre = Genre(5, "MovieOnlyGenre")
+    private val allGenre = GenreData(-1, "All")
+    private val actionGenre = GenreData(1, "Action")
+    private val comedyGenre = GenreData(2, "Comedy")
+    private val dramaGenre = GenreData(3, "Drama")
+    private val tvOnlyGenre = GenreData(4, "TvOnlyGenre")
+    private val movieOnlyGenre = GenreData(5, "MovieOnlyGenre")
 
 
     @Before
@@ -55,18 +54,10 @@ class FiltersViewModelTest {
         every { deviceLocaleProvider.getDeviceLocale() } returns "en"
         every { deviceLocaleProvider.getDeviceCountry() } returns "US"
         coEvery { genresRepository.getAllMovieGenres() } returns flowOf(
-            ApiResult.Success(
-                GenresList(
-                    listOf(actionGenre, comedyGenre, dramaGenre, movieOnlyGenre)
-                )
-            )
+            ApiResult.Success(listOf(actionGenre, comedyGenre, dramaGenre, movieOnlyGenre))
         )
         coEvery { genresRepository.getAllTvGenres() } returns flowOf(
-            ApiResult.Success(
-                GenresList(
-                    listOf(actionGenre, comedyGenre, dramaGenre, tvOnlyGenre)
-                )
-            )
+            ApiResult.Success(listOf(actionGenre, comedyGenre, dramaGenre, tvOnlyGenre))
         )
         coEvery {
             providersRepository.getMovieProviders(any(), any())
@@ -76,14 +67,13 @@ class FiltersViewModelTest {
 
     @Test
     fun `getAllGenres should load genres into filtersGenre`() {
-        viewModel.getAllGenres()
+        viewModel.getAllGenres() // it should return movies genres by default
 
         // the result will be sorted by name except the all filter which will always be the first one
         val expectedFilters = listOf(
             Filter(actionGenre, false),
             Filter(comedyGenre, false),
             Filter(dramaGenre, false),
-            Filter(tvOnlyGenre, false),
             Filter(movieOnlyGenre, false),
         ).sortedBy { it.item.name }.toMutableList()
             .apply { add(0, Filter(allGenre, true)) }
@@ -150,7 +140,7 @@ class FiltersViewModelTest {
     @Suppress("UNCHECKED_CAST")
     fun `otherFilterClicked should toggle time filter`() {
         val timeFilter = Filter(Duration(120), false)
-        viewModel.otherFilterClicked(timeFilter as Filter<Any>)
+        viewModel.otherFilterClicked(timeFilter as Filter<Any>, true)
 
         val toggledFilter = timeFilter.copy(isSelected = true)
         assertTrue(viewModel.timeFilters.value.contains(toggledFilter as Filter<Duration>))
@@ -158,7 +148,7 @@ class FiltersViewModelTest {
 
     @Test
     fun `getSelectedFilters should return all selected filters`() {
-        val expectedFilters = MovieFilters(
+        val expectedFilters = MediaFilters(
             contentType = ContentType.MOVIES,
             genres = listOf(actionGenre),
             providers = listOf(netflixProvider),
@@ -254,12 +244,11 @@ class FiltersViewModelTest {
         // Initial state: "All" is selected by default
         assertTrue(viewModel.contentTypes.value.first { it.item == ContentType.MOVIES }.isSelected)
 
-        // Verify merged genres (unique genres from both TV and Movies) when "All" is selected
+        // Verify content type genres (in this case, Movies)
         val expectedAllGenres = listOf(
             Filter(actionGenre, false),
             Filter(comedyGenre, false),
             Filter(dramaGenre, false),
-            Filter(tvOnlyGenre, false),
             Filter(movieOnlyGenre, false)
         ).sortedBy { it.item.name }
             .toMutableList().apply { add(0, Filter(allGenre, true)) }
@@ -317,43 +306,43 @@ class FiltersViewModelTest {
     fun `otherFilterClicked should allow only one filter per type to be selected at a time`() {
         // Select a duration (95 minutes) and verify it's the only selected one
         val duration95 = OtherFilters.timeFilters[0]
-        viewModel.otherFilterClicked(duration95 as Filter<Any>)
+        viewModel.otherFilterClicked(duration95 as Filter<Any>, true)
         assertTrue(viewModel.timeFilters.value.first { it.item == Duration(95) }.isSelected)
         assertFalse(viewModel.timeFilters.value.any { it.item != Duration(95) && it.isSelected })
 
         // Select another duration (120 minutes) and verify the previous one is deselected
         val duration120 = OtherFilters.timeFilters[1]
-        viewModel.otherFilterClicked(duration120 as Filter<Any>)
+        viewModel.otherFilterClicked(duration120 as Filter<Any>, true)
         assertTrue(viewModel.timeFilters.value.first { it.item == Duration(120) }.isSelected)
         assertFalse(viewModel.timeFilters.value.any { it.item == Duration(95) && it.isSelected })
 
         // Deselect the current duration (120 minutes) and verify none are selected
-        viewModel.otherFilterClicked(duration120 as Filter<Any>)
+        viewModel.otherFilterClicked(duration120 as Filter<Any>, true)
         assertFalse(viewModel.timeFilters.value.any { it.isSelected })
 
         // Select a score (50%) and verify it's the only selected one
         val score50 = OtherFilters.scoreFilters[0]
-        viewModel.otherFilterClicked(score50 as Filter<Any>)
+        viewModel.otherFilterClicked(score50 as Filter<Any>, true)
         assertTrue(viewModel.scoreFilters.value.first { it.item == Score(5f) }.isSelected)
         assertFalse(viewModel.scoreFilters.value.any { it.item != Score(5f) && it.isSelected })
 
         // Select another score (75%) and verify the previous one is deselected
         val score75 = OtherFilters.scoreFilters[1]
-        viewModel.otherFilterClicked(score75 as Filter<Any>)
+        viewModel.otherFilterClicked(score75 as Filter<Any>, true)
         assertTrue(viewModel.scoreFilters.value.first { it.item == Score(7.5f) }.isSelected)
         assertFalse(viewModel.scoreFilters.value.any { it.item == Score(5f) && it.isSelected })
 
         // Deselect the current score (75%) and verify none are selected
-        viewModel.otherFilterClicked(score75 as Filter<Any>)
+        viewModel.otherFilterClicked(score75 as Filter<Any>, true)
         assertFalse(viewModel.scoreFilters.value.any { it.isSelected })
 
         // Ensure that selecting a duration does not affect scores
-        viewModel.otherFilterClicked(duration95 as Filter<Any>)
+        viewModel.otherFilterClicked(duration95 as Filter<Any>, true)
         assertTrue(viewModel.timeFilters.value.first { it.item == Duration(95) }.isSelected)
         assertFalse(viewModel.scoreFilters.value.any { it.isSelected })
 
         // Ensure that selecting a score does not affect durations
-        viewModel.otherFilterClicked(score50 as Filter<Any>)
+        viewModel.otherFilterClicked(score50 as Filter<Any>, true)
         assertTrue(viewModel.scoreFilters.value.first { it.item == Score(5f) }.isSelected)
         assertTrue(viewModel.timeFilters.value.first { it.item == Duration(95) }.isSelected)
     }

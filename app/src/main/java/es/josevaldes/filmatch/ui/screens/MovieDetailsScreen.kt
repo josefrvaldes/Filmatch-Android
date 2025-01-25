@@ -54,13 +54,16 @@ import androidx.navigation.NavBackStackEntry
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import es.josevaldes.data.model.CastMember
-import es.josevaldes.data.model.Credits
-import es.josevaldes.data.model.CrewMember
-import es.josevaldes.data.model.Genre
-import es.josevaldes.data.model.Movie
-import es.josevaldes.data.model.VideoResult
+import es.josevaldes.data.model.CastMemberData
+import es.josevaldes.data.model.CreditsData
+import es.josevaldes.data.model.CrewMemberData
+import es.josevaldes.data.model.DetailsItemData
+import es.josevaldes.data.model.DetailsMovieData
+import es.josevaldes.data.model.DetailsTvData
+import es.josevaldes.data.model.GenreData
+import es.josevaldes.data.model.VideoResultData
 import es.josevaldes.filmatch.R
+import es.josevaldes.filmatch.extensions.durationString
 import es.josevaldes.filmatch.extensions.openYoutubeVideo
 import es.josevaldes.filmatch.ui.theme.DislikeButtonBackground
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
@@ -68,7 +71,7 @@ import es.josevaldes.filmatch.viewmodels.MovieDetailsViewModel
 
 
 @Composable
-fun MovieDetailsScreen(movie: Movie, backStackEntry: NavBackStackEntry) {
+fun MovieDetailsScreen(detailsItem: DetailsItemData, backStackEntry: NavBackStackEntry) {
     val viewModel: MovieDetailsViewModel = hiltViewModel()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(
         false,
@@ -77,12 +80,12 @@ fun MovieDetailsScreen(movie: Movie, backStackEntry: NavBackStackEntry) {
 
     // what we are doing here is that we are using a mutableStateOf to hold the movie that we are going to show in the screen
     // we initialize it with the movie that we receive as a parameter
-    val fullMovieState = remember { mutableStateOf<Movie?>(movie) }
+    val fullMovieState = remember { mutableStateOf<DetailsItemData?>(detailsItem) }
 
     // on startup, we call the getMovieById method of the viewModel to get the full movie details
-    LaunchedEffect(movie.id) {
-        viewModel.setInitialMovie(movie)
-        viewModel.getMovieById(movie.id)
+    LaunchedEffect(detailsItem.id) {
+        viewModel.setInitialMovie(detailsItem)
+        viewModel.getMovieById(detailsItem.id)
     }
 
     // we collect the movie from the viewModel and update the fullMovieState.
@@ -98,15 +101,15 @@ fun MovieDetailsScreen(movie: Movie, backStackEntry: NavBackStackEntry) {
 
     MovieDetailsScreenContent(
         fullMovie = fullMovieState.value,
-        initialMovie = movie,
+        initialMovie = detailsItem,
         isLoading = isLoading
     )
 }
 
 @Composable
 private fun MovieDetailsScreenContent(
-    fullMovie: Movie?,
-    initialMovie: Movie? = fullMovie,
+    fullMovie: DetailsItemData?,
+    initialMovie: DetailsItemData? = fullMovie,
     isLoading: Boolean
 ) {
     val scrollState = rememberScrollState()
@@ -125,7 +128,10 @@ private fun MovieDetailsScreenContent(
 
 
             PercentageTitleAndDurationSection(fullMovie)
+
+
             TitleAndYearSection(initialMovie)
+            SeasonsSection(fullMovie)
             OverviewSection(initialMovie)
             DirectedBySection(fullMovie)
             val displayableYoutubeVideos = fullMovie?.displayableYoutubeVideos
@@ -141,8 +147,29 @@ private fun MovieDetailsScreenContent(
 }
 
 @Composable
+private fun SeasonsSection(
+    fullMovie: DetailsItemData?,
+) {
+    val context = LocalContext.current
+    val shouldDisplaySeasons = fullMovie is DetailsTvData && fullMovie.seasons.isNotEmpty()
+    AnimatedVisibility(visible = shouldDisplaySeasons) {
+        val seasonsCount = (fullMovie as DetailsTvData).seasons.size
+        Text(
+            context.resources.getQuantityString(
+                R.plurals.seasons_count,
+                seasonsCount,
+                seasonsCount
+            ),
+            modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
 private fun CastSection(
-    displayableCast: List<CastMember>?
+    displayableCast: List<CastMemberData>?
 ) {
     if (displayableCast?.isNotEmpty() == true) {
         val paddingEnd = 16.dp
@@ -155,7 +182,7 @@ private fun CastSection(
             LazyRow(modifier = Modifier.padding(top = 16.dp, bottom = 32.dp)) {
                 items(
                     count = displayableCast.size,
-                    key = { index -> displayableCast[index].id.toString() },
+                    key = { index -> displayableCast[index].id.toString() + index },
                     contentType = { index -> displayableCast[index] },
                 ) {
                     val currentPerson = displayableCast[it]
@@ -238,7 +265,7 @@ private fun CastSection(
 
 @Composable
 private fun VideosSection(
-    displayableYoutubeVideos: List<VideoResult>?
+    displayableYoutubeVideos: List<VideoResultData>?
 ) {
     val context = LocalContext.current
     displayableYoutubeVideos?.let { videos ->
@@ -251,7 +278,7 @@ private fun VideosSection(
             LazyRow(modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)) {
                 items(
                     count = videos.size,
-                    key = { index -> videos[index].id.toString() },
+                    key = { index -> videos[index].id.toString() + index },
                     contentType = { index -> videos[index] },
                 ) { index ->
                     val currentVideo = videos[index]
@@ -328,7 +355,7 @@ private fun VideosSection(
 
 @Composable
 private fun PhotoAndProgressIndicatorSection(
-    movie: Movie?,
+    movie: DetailsItemData?,
     isLoading: Boolean
 ) {
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopStart) {
@@ -342,7 +369,7 @@ private fun PhotoAndProgressIndicatorSection(
                 .build(),
             contentScale = ContentScale.FillWidth,
             alignment = Alignment.TopStart,
-            contentDescription = movie?.title,
+            contentDescription = movie?.displayTitle,
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopStart)
@@ -361,16 +388,22 @@ private fun PhotoAndProgressIndicatorSection(
 }
 
 @Composable
-private fun TitleAndYearSection(movie: Movie?) {
+private fun TitleAndYearSection(movie: DetailsItemData?) {
     Row(
         modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(movie?.title ?: "", style = MaterialTheme.typography.titleLarge)
+        Text(
+            movie?.displayTitle ?: "",
+            style = MaterialTheme.typography.titleLarge,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
         movie?.getReleaseYear()?.let {
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 "($it)",
-                modifier = Modifier.padding(start = 8.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -379,7 +412,7 @@ private fun TitleAndYearSection(movie: Movie?) {
 }
 
 @Composable
-private fun OverviewSection(movie: Movie?) {
+private fun OverviewSection(movie: DetailsItemData?) {
     Text(
         movie?.overview ?: "",
         style = MaterialTheme.typography.bodyMedium,
@@ -388,7 +421,7 @@ private fun OverviewSection(movie: Movie?) {
 }
 
 @Composable
-private fun DirectedBySection(movie: Movie?) {
+private fun DirectedBySection(movie: DetailsItemData?) {
     val directorsString = movie?.getDirectorsString(stringResource(R.string.and))
     val shouldBeDisplayed = directorsString?.isNotEmpty() == true
     AnimatedVisibility(visible = shouldBeDisplayed) {
@@ -401,7 +434,8 @@ private fun DirectedBySection(movie: Movie?) {
 }
 
 @Composable
-private fun PercentageTitleAndDurationSection(movie: Movie?) {
+private fun PercentageTitleAndDurationSection(movie: DetailsItemData?) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .padding(top = 14.dp, start = 16.dp, end = 16.dp),
@@ -432,8 +466,7 @@ private fun PercentageTitleAndDurationSection(movie: Movie?) {
         }
 
 
-
-        AnimatedVisibility(visible = (movie?.runtime ?: 0) > 0) {
+        AnimatedVisibility(visible = movie?.hasRuntime() == true) {
             Row {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_duration),
@@ -442,7 +475,7 @@ private fun PercentageTitleAndDurationSection(movie: Movie?) {
                         .size(16.dp)
                 )
                 Text(
-                    movie?.getDurationString() ?: "",
+                    movie?.durationString(context) ?: "",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(start = 10.dp)
                 )
@@ -509,22 +542,22 @@ private fun PercentageText(percentage: Int) {
 @Composable
 @Preview
 fun MovieDetailsScreenPreview() {
-    val movie = Movie(
-        id = 1184918,
-        title = "The Wild Robot",
+    val movie = DetailsMovieData(
+        baseId = 1184918,
+        title = "The Wild Robot and a super long title bla bla bla",
         releaseDate = "2024-09-12",
-        posterPath = "/wTnV3PCVW5O92JMrFvvrRcV39RU.jpg",
-        voteAverage = 8.6,
-        overview = "After a shipwreck, an intelligent robot called Roz is stranded on an uninhabited island. To survive the harsh environment, Roz bonds with the island's animals and cares for an orphaned baby goose.",
-        genres = listOf(
-            Genre(id = 1, name = "Action and Intense"),
-            Genre(id = 2, name = "Adventure super long"),
-            Genre(id = 3, name = "Comedy I want this text to overflow, we're almost there"),
+        basePosterPath = "/wTnV3PCVW5O92JMrFvvrRcV39RU.jpg",
+        baseVoteAverage = 8.6,
+        baseOverview = "After a shipwreck, an intelligent robot called Roz is stranded on an uninhabited island. To survive the harsh environment, Roz bonds with the island's animals and cares for an orphaned baby goose.",
+        baseGenres = listOf(
+            GenreData(id = 1, name = "Action and Intense"),
+            GenreData(id = 2, name = "Adventure super long"),
+            GenreData(id = 3, name = "Comedy I want this text to overflow, we're almost there"),
         ),
-        credits = Credits(
+        baseCredits = CreditsData(
             crew = listOf(
-                CrewMember(id = 1, name = "Mike White", department = "Directing"),
-                CrewMember(id = 2, name = "Brenda Chapman", department = "Directing"),
+                CrewMemberData(id = 1, name = "Mike White", department = "Directing"),
+                CrewMemberData(id = 2, name = "Brenda Chapman", department = "Directing"),
             )
         ),
         runtime = 149
