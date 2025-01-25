@@ -160,7 +160,7 @@ class MediaRepository @Inject constructor(
             emit(ApiResult.Error(ApiError.Unknown))
         }
 
-    private suspend fun getMediaVisitStatus(media: DiscoverItemData): InterestStatus? {
+    suspend fun getMediaVisitStatus(media: DiscoverItemData): InterestStatus? {
         val type = when (media) {
             is DiscoverMovieData -> MediaEntityType.MOVIE
             is DiscoverTvData -> MediaEntityType.TV

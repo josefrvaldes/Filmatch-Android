@@ -95,7 +95,9 @@ class SlideMovieViewModelTest {
                 )
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
 
-            coEvery { mediaRepository.isMovieVisited(any()) } returns false
+            coEvery { mediaRepository.getVisitsByIds(any()) } returns flowOf(
+                ApiResult.Success(emptyList())
+            )
 
 
             var emittedErrorMessage: ApiResult.Error? = null
@@ -202,7 +204,9 @@ class SlideMovieViewModelTest {
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
 
             every { deviceLocaleProvider.getDeviceLocale() } returns "en-US"
-            coEvery { mediaRepository.isMovieVisited(any()) } returns false
+            coEvery { mediaRepository.getVisitsByIds(any()) } returns flowOf(
+                ApiResult.Success(emptyList())
+            )
 
             viewModel.loadCurrentPage()
             advanceUntilIdle()
@@ -271,7 +275,9 @@ class SlideMovieViewModelTest {
                     any()
                 )
             } returns flowOf(ApiResult.Success(discoverMoviesResponse))
-            coEvery { mediaRepository.isMovieVisited(any()) } returns false
+            coEvery { mediaRepository.getVisitsByIds(any()) } returns flowOf(
+                ApiResult.Success(emptyList())
+            )
             coEvery { mediaRepository.markMovieAsVisited(any(), any()) } just Runs
 
             viewModel.loadCurrentPage()
@@ -300,9 +306,11 @@ class SlideMovieViewModelTest {
         )
 
         // Mock repository to return false for all IDs
-        movies.forEach { movie ->
-            coEvery { mediaRepository.isMovieVisited(movie) } returns false
-        }
+
+        coEvery { mediaRepository.getVisitsByIds(movies) } returns flowOf(
+            ApiResult.Success(emptyList())
+        )
+
 
         // Execute the method
         val result = viewModel.cleanVisitedItems(movies)
@@ -321,9 +329,9 @@ class SlideMovieViewModelTest {
         )
 
         // Mock repository to simulate some movies as visited
-        coEvery { mediaRepository.isMovieVisited(movies[0]) } returns true
-        coEvery { mediaRepository.isMovieVisited(movies[1]) } returns false
-        coEvery { mediaRepository.isMovieVisited(movies[2]) } returns true
+        coEvery { mediaRepository.getVisitsByIds(movies) } returns flowOf(
+            ApiResult.Success(listOf(1, 3))
+        )
 
         // Execute the method
         val result = viewModel.cleanVisitedItems(movies)
@@ -345,9 +353,10 @@ class SlideMovieViewModelTest {
         )
 
         // Mock repository to return true for all IDs
-        movies.forEach { movie ->
-            coEvery { mediaRepository.isMovieVisited(movie) } returns true
-        }
+        coEvery { mediaRepository.getVisitsByIds(movies) } returns flowOf(
+            ApiResult.Success(movies.map { it.id }.toList())
+        )
+
 
         // Execute the method
         val result = viewModel.cleanVisitedItems(movies)

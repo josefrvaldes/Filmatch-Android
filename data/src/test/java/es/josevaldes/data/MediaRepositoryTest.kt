@@ -4,12 +4,18 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingSource.LoadResult
 import androidx.paging.testing.TestPager
 import es.josevaldes.data.extensions.mappers.toAppModel
+import es.josevaldes.data.extensions.mappers.toLocalModel
+import es.josevaldes.data.model.DiscoverMovieData
+import es.josevaldes.data.model.DiscoverTvData
+import es.josevaldes.data.model.InterestStatus
 import es.josevaldes.data.paging.MediaPagingSource
 import es.josevaldes.data.repositories.MediaRepository
 import es.josevaldes.data.responses.DetailsMovieResponse
 import es.josevaldes.data.responses.DiscoverItem
 import es.josevaldes.data.responses.DiscoverMovie
 import es.josevaldes.data.responses.DiscoverResponse
+import es.josevaldes.data.responses.GetVisitStatusResponse
+import es.josevaldes.data.responses.GetVisitsByIdsResponse
 import es.josevaldes.data.responses.MediaType
 import es.josevaldes.data.results.ApiError
 import es.josevaldes.data.results.ApiErrorException
@@ -17,10 +23,15 @@ import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.FilmatchRemoteDataSource
 import es.josevaldes.data.services.MediaRemoteDataSource
 import es.josevaldes.local.datasources.MediaLocalDataSource
+import es.josevaldes.local.entities.MediaEntityType
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -114,6 +125,28 @@ class MediaRepositoryTest {
 
 
     @Test
+    fun `getVisitsByIds should return success with visited ids`() = runTest {
+        // Datos de prueba
+        val medias = listOf(
+            DiscoverMovieData(id = 101, title = "Movie 1"),
+            DiscoverMovieData(id = 102, title = "Movie 2"),
+            DiscoverMovieData(id = 103, title = "Movie 3")
+        )
+        val expectedVisitedIds = listOf(101, 103)
+
+
+        coEvery { filmatchRemoteDataSource.getMovieVisitsByIds(any()) } returns ApiResult.Success(
+            GetVisitsByIdsResponse(visited = expectedVisitedIds)
+        )
+
+        val result = mediaRepository.getVisitsByIds(medias).first()
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals(expectedVisitedIds, (result as ApiResult.Success).data)
+    }
+
+
+    @Test
     fun `getDiscoverMovies should handle Unknown errors correctly`() = runTest {
         coEvery {
             mediaRemoteDataSource.getDiscoverItems(
@@ -160,6 +193,127 @@ class MediaRepositoryTest {
             assertEquals(ApiResult.Success(movie.toAppModel()), it)
         }
     }
+
+
+    @Test
+    fun `getMediaVisitStatus should return status from local data source`() = runTest {
+        val media = DiscoverMovieData(id = 101, title = "Movie 1")
+        val expectedStatus = InterestStatus.INTERESTED
+
+        coEvery {
+            mediaLocalDataSource.getMediaStatus(
+                101,
+                MediaEntityType.MOVIE
+            )
+        } returns expectedStatus.toLocalModel()
+
+
+        val result = mediaRepository.getMediaVisitStatus(media)
+
+
+        assertEquals(expectedStatus, result)
+        coVerify(exactly = 0) { filmatchRemoteDataSource.getMovieVisitStatus(any()) }
+    }
+
+
+    @Test
+    fun `getMediaVisitStatus should fetch from remote when not in local`() = runTest {
+        val media = DiscoverTvData(id = 202, name = "TV Show 1")
+        val expectedStatus = InterestStatus.NOT_INTERESTED
+
+        coEvery { mediaLocalDataSource.getMediaStatus(202, MediaEntityType.TV) } returns null
+
+
+        coEvery { filmatchRemoteDataSource.getTvVisitStatus(202) } returns ApiResult.Success(
+            GetVisitStatusResponse(status = expectedStatus.ordinal)
+        )
+
+        val result = mediaRepository.getMediaVisitStatus(media)
+
+        assertEquals(expectedStatus, result)
+        coVerify { filmatchRemoteDataSource.getTvVisitStatus(202) }
+    }
+
+    @Test
+    fun `getMediaVisitStatus should return null if not found in local or remote`() = runTest {
+        val media = DiscoverMovieData(id = 303, title = "Movie 3")
+
+        coEvery { mediaLocalDataSource.getMediaStatus(303, MediaEntityType.MOVIE) } returns null
+
+        coEvery { filmatchRemoteDataSource.getMovieVisitStatus(303) } returns ApiResult.Error(
+            ApiError.ResourceNotFound
+        )
+
+        val result = mediaRepository.getMediaVisitStatus(media)
+
+        assertNull(result)
+    }
+
+
+    @Test
+    fun `isMovieVisited should return true if media has a valid status`() = runTest {
+        val media = DiscoverMovieData(id = 101, title = "Movie 1")
+
+        coEvery {
+            mediaLocalDataSource.getMediaStatus(
+                101,
+                MediaEntityType.MOVIE
+            )
+        } returns InterestStatus.WATCHED.toLocalModel()
+
+        val result = mediaRepository.isMovieVisited(media)
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun `isMovieVisited should return true if media has remote status`() = runTest {
+        val media = DiscoverMovieData(id = 101, title = "Movie 1")
+
+        coEvery { mediaLocalDataSource.getMediaStatus(101, MediaEntityType.MOVIE) } returns null
+
+        coEvery { filmatchRemoteDataSource.getMovieVisitStatus(101) } returns ApiResult.Success(
+            GetVisitStatusResponse(status = InterestStatus.INTERESTED.ordinal)
+        )
+
+        val result = mediaRepository.isMovieVisited(media)
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun `isMovieVisited should return false if no status exists locally or remotely`() = runTest {
+        val media = DiscoverMovieData(id = 101, title = "Movie 1")
+
+
+        coEvery { mediaLocalDataSource.getMediaStatus(101, MediaEntityType.MOVIE) } returns null
+
+
+        coEvery { filmatchRemoteDataSource.getMovieVisitStatus(101) } returns ApiResult.Error(
+            ApiError.ResourceNotFound
+        )
+
+        val result = mediaRepository.isMovieVisited(media)
+
+        assertFalse(result)
+    }
+
+
+    @Test
+    fun `isMovieVisited should return false if remote status fails`() = runTest {
+        val media = DiscoverMovieData(id = 101, title = "Movie 1")
+
+        coEvery { mediaLocalDataSource.getMediaStatus(101, MediaEntityType.MOVIE) } returns null
+
+        coEvery { filmatchRemoteDataSource.getMovieVisitStatus(101) } returns ApiResult.Error(
+            ApiError.Unknown
+        )
+
+        val result = mediaRepository.isMovieVisited(media)
+
+        assertFalse(result)
+    }
+
 
     @Test
     fun `findById should return error on invalid result`() = runTest {
