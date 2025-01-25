@@ -2,6 +2,7 @@ package es.josevaldes.data.repositories
 
 import androidx.paging.Pager
 import es.josevaldes.data.extensions.mappers.toAppModel
+import es.josevaldes.data.extensions.mappers.toDataModel
 import es.josevaldes.data.extensions.mappers.toVisitedMediaWithItem
 import es.josevaldes.data.model.ContentType
 import es.josevaldes.data.model.DetailsItemData
@@ -21,6 +22,7 @@ import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.FilmatchRemoteDataSource
 import es.josevaldes.data.services.MediaRemoteDataSource
 import es.josevaldes.local.datasources.MediaLocalDataSource
+import es.josevaldes.local.entities.MediaEntityType
 import es.josevaldes.local.entities.VisitedFiltersEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -158,33 +160,33 @@ class MediaRepository @Inject constructor(
             emit(ApiResult.Error(ApiError.Unknown))
         }
 
-//    private suspend fun getMediaVisitStatus(media: DiscoverItemData): InterestStatus? {
-//        val type = when (media) {
-//            is DiscoverMovieData -> MediaEntityType.MOVIE
-//            is DiscoverTvData -> MediaEntityType.TV
-//            else -> throw IllegalArgumentException("Unknown type")
-//        }
-//
-//        val result = _mediaLocalDataSource.getMediaStatus(media.id, type)
-//        if (result == null) {
-//            val apiResult = when (type) {
-//                MediaEntityType.MOVIE -> _filmatchRemoteDataSource.getMovieVisitStatus(
-//                    media.id
-//                )
-//
-//                MediaEntityType.TV -> _filmatchRemoteDataSource.getTvVisitStatus(media.id)
-//            }
-//            if (apiResult is ApiResult.Success) {
-//                return apiResult.data.interestStatus()
-//            }
-//        }
-//        return result?.toDataModel()
-//    }
-//
-//    suspend fun isMovieVisited(movie: DiscoverItemData): Boolean {
-//        val status = getMediaVisitStatus(movie)
-//        return status != null
-//    }
+    private suspend fun getMediaVisitStatus(media: DiscoverItemData): InterestStatus? {
+        val type = when (media) {
+            is DiscoverMovieData -> MediaEntityType.MOVIE
+            is DiscoverTvData -> MediaEntityType.TV
+            else -> throw IllegalArgumentException("Unknown type")
+        }
+
+        val result = _mediaLocalDataSource.getMediaStatus(media.id, type)
+        if (result == null) {
+            val apiResult = when (type) {
+                MediaEntityType.MOVIE -> _filmatchRemoteDataSource.getMovieVisitStatus(
+                    media.id
+                )
+
+                MediaEntityType.TV -> _filmatchRemoteDataSource.getTvVisitStatus(media.id)
+            }
+            if (apiResult is ApiResult.Success) {
+                return apiResult.data.interestStatus()
+            }
+        }
+        return result?.toDataModel()
+    }
+
+    suspend fun isMovieVisited(movie: DiscoverItemData): Boolean {
+        val status = getMediaVisitStatus(movie)
+        return status != null
+    }
 
     suspend fun getMaxPage(filters: MediaFilters): Int? {
         val hash = filters.filtersHash

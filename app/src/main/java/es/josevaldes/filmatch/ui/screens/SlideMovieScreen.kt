@@ -323,6 +323,11 @@ private suspend fun performAnimationAccordingToLikeButtonAction(
             awaitAll(rotationJob, translationJob)
         }
 
+        val interestStatus = when (likeButtonAction) {
+            SlideMovieViewModel.LikeButtonAction.LIKE -> InterestStatus.INTERESTED
+            SlideMovieViewModel.LikeButtonAction.DISLIKE -> InterestStatus.NOT_INTERESTED
+        }
+        movie.swipedStatus = interestStatus
         onSwipeCompleted(movie)
     }
 }
