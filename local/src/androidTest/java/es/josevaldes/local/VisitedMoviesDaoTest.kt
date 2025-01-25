@@ -6,7 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import es.josevaldes.local.dao.LocalDatabase
 import es.josevaldes.local.dao.VisitedMoviesDao
 import es.josevaldes.local.entities.VisitedFiltersEntity
-import es.josevaldes.local.entities.VisitedMovieEntity
+import es.josevaldes.local.entities.VisitedMediaItemEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -49,7 +49,7 @@ class VisitedMoviesDaoTest {
 
     @Test
     fun insertVisitedMovie_shouldInsertCorrectly() = runBlocking {
-        val movie = VisitedMovieEntity(id = "movie1")
+        val movie = VisitedMediaItemEntity(id = "movie1")
 
         visitedMoviesDao.insertVisitedMovie(movie)
         val visitedMovies = visitedMoviesDao.getVisitedMovies()
@@ -61,9 +61,9 @@ class VisitedMoviesDaoTest {
     @Test
     fun insertVisitedMovies_shouldInsertMultipleCorrectly() = runBlocking {
         val movies = listOf(
-            VisitedMovieEntity(id = "movie1"),
-            VisitedMovieEntity(id = "movie2"),
-            VisitedMovieEntity(id = "movie3")
+            VisitedMediaItemEntity(id = "movie1"),
+            VisitedMediaItemEntity(id = "movie2"),
+            VisitedMediaItemEntity(id = "movie3")
         )
 
         visitedMoviesDao.insertVisitedMovies(movies)
@@ -85,7 +85,7 @@ class VisitedMoviesDaoTest {
 
     @Test
     fun isMovieVisited_whenMovieExists_shouldReturnTrue() = runBlocking {
-        val movie = VisitedMovieEntity(id = "1")
+        val movie = VisitedMediaItemEntity(id = "1")
         visitedMoviesDao.insertVisitedMovie(movie)
 
         val result = visitedMoviesDao.isMovieVisited("1")
@@ -100,7 +100,7 @@ class VisitedMoviesDaoTest {
 
     @Test
     fun isMovieVisited_whenDifferentMovieExists_shouldReturnFalse() = runBlocking {
-        val movie = VisitedMovieEntity(id = "2")
+        val movie = VisitedMediaItemEntity(id = "2")
         visitedMoviesDao.insertVisitedMovie(movie)
 
         val result = visitedMoviesDao.isMovieVisited("1")
@@ -109,7 +109,7 @@ class VisitedMoviesDaoTest {
 
     @Test
     fun deleteVisitedMovie_whenMovieExists_shouldRemoveMovie() = runBlocking {
-        val movie = VisitedMovieEntity(id = "movie1")
+        val movie = VisitedMediaItemEntity(id = "movie1")
         visitedMoviesDao.insertVisitedMovie(movie)
 
         var isVisited = visitedMoviesDao.isMovieVisited("movie1")
@@ -132,9 +132,9 @@ class VisitedMoviesDaoTest {
     @Test
     fun deleteVisitedMovie_whenMultipleMoviesExist_shouldRemoveOnlySpecifiedMovie() = runBlocking {
         val movies = listOf(
-            VisitedMovieEntity(id = "movie1"),
-            VisitedMovieEntity(id = "movie2"),
-            VisitedMovieEntity(id = "movie3")
+            VisitedMediaItemEntity(id = "movie1"),
+            VisitedMediaItemEntity(id = "movie2"),
+            VisitedMediaItemEntity(id = "movie3")
         )
         visitedMoviesDao.insertVisitedMovies(movies)
 

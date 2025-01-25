@@ -49,7 +49,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import es.josevaldes.data.model.Duration
 import es.josevaldes.data.model.Filter
-import es.josevaldes.data.model.MovieFilters
+import es.josevaldes.data.model.MediaFilters
 import es.josevaldes.data.model.Score
 import es.josevaldes.filmatch.R
 import es.josevaldes.filmatch.ui.theme.FilmatchTheme
@@ -73,7 +73,7 @@ fun Modifier.filterBoxStyle(color: Color = MaterialTheme.colorScheme.outlineVari
 
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-fun FiltersScreen(selectedFilters: MovieFilters, onFiltersSelected: (MovieFilters) -> Unit = {}) {
+fun FiltersScreen(selectedFilters: MediaFilters, onFiltersSelected: (MediaFilters) -> Unit = {}) {
     val viewModel: FiltersViewModel = hiltViewModel()
     val context = LocalContext.current
     val scrollState = rememberScrollState()

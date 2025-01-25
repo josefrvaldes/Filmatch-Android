@@ -4,7 +4,7 @@ import es.josevaldes.data.model.ContentType
 import es.josevaldes.data.model.Duration
 import es.josevaldes.data.model.Filter
 import es.josevaldes.data.model.GenreData
-import es.josevaldes.data.model.MovieFilters
+import es.josevaldes.data.model.MediaFilters
 import es.josevaldes.data.model.OtherFilters
 import es.josevaldes.data.model.Provider
 import es.josevaldes.data.model.Score
@@ -148,7 +148,7 @@ class FiltersViewModelTest {
 
     @Test
     fun `getSelectedFilters should return all selected filters`() {
-        val expectedFilters = MovieFilters(
+        val expectedFilters = MediaFilters(
             contentType = ContentType.MOVIES,
             genres = listOf(actionGenre),
             providers = listOf(netflixProvider),

@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import es.josevaldes.data.di.IoDispatcher
 import es.josevaldes.data.model.DiscoverItemData
-import es.josevaldes.data.model.MovieFilters
-import es.josevaldes.data.repositories.MovieRepository
+import es.josevaldes.data.model.MediaFilters
+import es.josevaldes.data.repositories.MediaRepository
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.filmatch.model.SwipeableMovie
 import es.josevaldes.filmatch.utils.DeviceLocaleProvider
@@ -16,14 +16,14 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.random.Random
 
 @HiltViewModel
 class SlideMovieViewModel @Inject constructor(
-    private val movieRepository: MovieRepository,
+    private val mediaRepository: MediaRepository,
     private val deviceLocaleProvider: DeviceLocaleProvider,
     @IoDispatcher private val dispatcherIO: CoroutineDispatcher
 ) : ViewModel() {
@@ -31,9 +31,9 @@ class SlideMovieViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
-    private var _movieFilters = MutableStateFlow(MovieFilters())
-    val movieFilters: MovieFilters
-        get() = _movieFilters.value
+    private var _mediaFilters = MutableStateFlow(MediaFilters())
+    val mediaFilters: MediaFilters
+        get() = _mediaFilters.value
 
 
     private val _movieThatWillBeObservableNext = MutableStateFlow<SwipeableMovie?>(null)
@@ -81,11 +81,13 @@ class SlideMovieViewModel @Inject constructor(
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal suspend fun cleanVisitedItems(movies: List<DiscoverItemData>): List<DiscoverItemData> {
-        return withContext(dispatcherIO) {
-            movies.filter { movie ->
-                !movieRepository.isMovieVisited(movie.id.toString())
+        val result = mediaRepository.getVisitsByIds(movies).first()
+        if (result is ApiResult.Success) {
+            return movies.filter { movie ->
+                !result.data.contains(movie.id)
             }
         }
+        return movies
     }
 
 
@@ -93,7 +95,7 @@ class SlideMovieViewModel @Inject constructor(
         val language = deviceLocaleProvider.getDeviceLocale()
         viewModelScope.launch {
             _isLoading.value = true
-            movieRepository.getDiscoverMovies(currentPage, language, _movieFilters.value)
+            mediaRepository.getDiscoverMovies(currentPage, language, _mediaFilters.value)
                 .collect { result ->
                     if (result is ApiResult.Success) {
                         pages = result.data.totalPages
@@ -117,7 +119,7 @@ class SlideMovieViewModel @Inject constructor(
                                 loadNextPage()
                             } else {
                                 // otherwise we will just skip to the max page visited
-                                val maxPage = movieRepository.getMaxPage(_movieFilters.value)
+                                val maxPage = mediaRepository.getMaxPage(_mediaFilters.value)
                                 maxPage?.let {
                                     // this will avoid entering in an infinite loop because
                                     // the last page has been visited completely
@@ -192,7 +194,7 @@ class SlideMovieViewModel @Inject constructor(
 
     fun onSwipe(movie: SwipeableMovie) {
         viewModelScope.launch {
-            movieRepository.markedMovieAsVisited(movie.movie)
+            mediaRepository.markMovieAsVisited(movie.movie, movie.swipedStatus)
         }
 
         if (_movieListFlow.value.isNotEmpty()) {
@@ -235,11 +237,11 @@ class SlideMovieViewModel @Inject constructor(
         _likeButtonAction.value = null
     }
 
-    fun onNewFiltersSelected(movieFilters: MovieFilters) {
-        if (movieFilters == _movieFilters.value) {
+    fun onNewFiltersSelected(mediaFilters: MediaFilters) {
+        if (mediaFilters == _mediaFilters.value) {
             return
         }
-        _movieFilters.value = movieFilters
+        _mediaFilters.value = mediaFilters
         currentPage = 1
         _movieListFlow.value = mutableListOf()
         _observableMovies.value = mutableListOf()

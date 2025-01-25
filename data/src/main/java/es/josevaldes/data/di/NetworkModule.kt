@@ -16,9 +16,10 @@ import es.josevaldes.data.deserializers.DetailsItemResponseDeserializer
 import es.josevaldes.data.interceptors.AuthInterceptor
 import es.josevaldes.data.responses.DetailsItemResponse
 import es.josevaldes.data.services.AuthRemoteDataSource
+import es.josevaldes.data.services.FilmatchRemoteDataSource
 import es.josevaldes.data.services.FirebaseTokenProvider
 import es.josevaldes.data.services.GenreRemoteDataSource
-import es.josevaldes.data.services.MoviesRemoteDataSource
+import es.josevaldes.data.services.MediaRemoteDataSource
 import es.josevaldes.data.services.ProviderRemoteDataSource
 import es.josevaldes.data.services.TmdbTokenProvider
 import es.josevaldes.data.services.TokenProvider
@@ -139,8 +140,8 @@ class NetworkModule {
 
     @Provides
     @Singleton
-    fun provideMoviesRemoteDataSource(@TmdbRetrofit retrofit: Retrofit): MoviesRemoteDataSource {
-        return retrofit.create(MoviesRemoteDataSource::class.java)
+    fun provideMoviesRemoteDataSource(@TmdbRetrofit retrofit: Retrofit): MediaRemoteDataSource {
+        return retrofit.create(MediaRemoteDataSource::class.java)
     }
 
     @Provides
@@ -159,5 +160,11 @@ class NetworkModule {
     @Singleton
     fun provideAuthRemoteDataSource(@FilmatchRetrofit retrofit: Retrofit): AuthRemoteDataSource {
         return retrofit.create(AuthRemoteDataSource::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFilmatchRemoteDataSource(@FilmatchRetrofit retrofit: Retrofit): FilmatchRemoteDataSource {
+        return retrofit.create(FilmatchRemoteDataSource::class.java)
     }
 }

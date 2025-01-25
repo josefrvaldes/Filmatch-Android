@@ -1,32 +1,28 @@
 package es.josevaldes.local.datasources
 
-import es.josevaldes.local.dao.VisitedMoviesDao
+import es.josevaldes.local.dao.VisitedMediaDao
+import es.josevaldes.local.entities.InterestStatus
+import es.josevaldes.local.entities.MediaEntityType
 import es.josevaldes.local.entities.VisitedFiltersEntity
-import es.josevaldes.local.entities.VisitedMovieEntity
+import es.josevaldes.local.entities.VisitedMediaWithItem
 import javax.inject.Inject
 
-class MoviesLocalDataSource @Inject constructor(
-    private val moviesDao: VisitedMoviesDao
+class MediaLocalDataSource @Inject constructor(
+    private val moviesDao: VisitedMediaDao
 ) {
-    suspend fun getVisitedMovies(): List<VisitedMovieEntity> {
-        return moviesDao.getVisitedMovies()
+
+    suspend fun saveVisitedMedia(visitedMediaItemEntity: VisitedMediaWithItem) {
+        moviesDao.insertVisitedMediaWithItem(visitedMediaItemEntity)
     }
 
-    suspend fun insertVisitedMovie(visitedMovieEntity: VisitedMovieEntity) {
-        moviesDao.insertVisitedMovie(visitedMovieEntity)
+    suspend fun isMovieVisited(movieId: Int, type: MediaEntityType): Boolean {
+        return moviesDao.isVisitedMedia(movieId, type)
     }
 
-    suspend fun deleteVisitedMovie(movieId: String) {
-        moviesDao.deleteVisitedMovie(movieId)
+    suspend fun getMediaStatus(mediaId: Int, type: MediaEntityType): InterestStatus? {
+        return moviesDao.getMediaStatus(mediaId, type)
     }
 
-    suspend fun isMovieVisited(movieId: String): Boolean {
-        return moviesDao.isMovieVisited(movieId)
-    }
-
-    suspend fun insertVisitedMovies(visitedMovies: List<VisitedMovieEntity>) {
-        moviesDao.insertVisitedMovies(visitedMovies)
-    }
 
     suspend fun insertVisitedFiltersIfMaxPageIsHigher(visitedFilters: VisitedFiltersEntity) {
         val maxPage = moviesDao.getMaxPage(visitedFilters.filtersHash)
