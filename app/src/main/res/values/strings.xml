@@ -118,6 +118,11 @@
     <string name="filter_score_string"><![CDATA[Score > %1$s]]></string>
     <string name="duration_string_movie">%1$dh %2$dm</string>
     <string name="duration_string_tv_show">%1$dm approx.</string>
+    <string name="bottom_bar_menu_discover_title">Discover</string>
+    <string name="bottom_bar_menu_search_title">Search</string>
+    <string name="bottom_bar_menu_matches_title">Matches</string>
+    <string name="bottom_bar_menu_rooms_title">Rooms</string>
+    <string name="bottom_bar_menu_profile_title">Profile</string>
     <plurals name="seasons_count">
         <item quantity="one">%d season</item>
         <item quantity="other">%d seasons</item>

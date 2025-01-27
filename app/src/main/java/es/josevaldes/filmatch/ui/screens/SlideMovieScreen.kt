@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -105,8 +104,6 @@ fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (DiscoverItemData) -> Unit)
 
 
     Scaffold(
-        modifier = Modifier
-            .statusBarsPadding(),
         topBar = {
             TopBar { filters ->
                 viewModel.onNewFiltersSelected(filters)
@@ -596,8 +593,7 @@ private fun LikeDislikeBottomSection(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 30.dp, end = 30.dp, bottom = 30.dp)
-            .navigationBarsPadding(),
+            .padding(start = 30.dp, end = 30.dp, bottom = 30.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Icon(
