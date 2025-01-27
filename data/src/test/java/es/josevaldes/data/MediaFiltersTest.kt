@@ -99,7 +99,7 @@ class MediaFiltersTest {
             sortBy = "popularity.desc"
         )
 
-        val expectedHashString = "movie---null-null-null-null-popularity.desc"
+        val expectedHashString = "movie-null-null-null-null-null-null-popularity.desc"
         assertEquals(expectedHashString.md5(), filters.filtersHash)
     }
 
@@ -117,7 +117,7 @@ class MediaFiltersTest {
             sortBy = "release_date.asc"
         )
 
-        val expectedHashString = "tv-1|2|3--null-7.5-2015-null-release_date.asc"
+        val expectedHashString = "tv-1|2|3-null-null-7.5-2015-null-release_date.asc"
         assertEquals(expectedHashString.md5(), filters.filtersHash)
     }
 
@@ -134,7 +134,7 @@ class MediaFiltersTest {
             sortBy = "popularity.desc"
         )
 
-        val expectedHashString = "movie--2|3|4-120-null-null-2022-popularity.desc"
+        val expectedHashString = "movie-null-2|3|4-120-null-null-2022-popularity.desc"
         assertEquals(expectedHashString.md5(), filters.filtersHash)
     }
 
@@ -148,10 +148,72 @@ class MediaFiltersTest {
             score = null,
             yearFrom = 2000,
             yearTo = 2020,
-            sortBy = "rating.desc"
+            sortBy = "popularity.desc"
         )
 
-        val expectedHashString = "tv---null-null-2000-2020-rating.desc"
+        val expectedHashString = "tv-null-null-null-null-2000-2020-popularity.desc"
+        val receivedMd5Hash = filters.filtersHash
         assertEquals(expectedHashString.md5(), filters.filtersHash)
+        println("hash string=$expectedHashString, md5=$receivedMd5Hash")
+    }
+
+    @Test
+    fun `filtersHash should handle a mix of null and non-null fields - combination 4`() {
+        val filters = MediaFilters(
+            contentType = ContentType.MOVIES,
+            genres = null,
+            providers = null,
+            duration = Duration(120),
+            score = null,
+            yearFrom = 2005,
+            yearTo = 2025,
+            sortBy = "popularity.desc"
+        )
+
+        val expectedHashString = "movie-null-null-120-null-2005-2025-popularity.desc"
+        val receivedHashString = filters.getFiltersHashString()
+        val receivedMd5Hash = receivedHashString.md5()
+        assertEquals(expectedHashString.md5(), filters.filtersHash)
+        println("hash string=$expectedHashString, md5=$receivedMd5Hash")
+    }
+
+    @Test
+    fun `filtersHash should handle a mix of null and non-null fields - combination 5`() {
+        val filters = MediaFilters(
+            contentType = ContentType.MOVIES,
+            genres = listOf(GenreData(3, "3"), GenreData(1, "1")),
+            providers = null,
+            duration = null,
+            score = null,
+            yearFrom = 2005,
+            yearTo = 2025,
+            sortBy = "popularity.desc"
+        )
+
+        val expectedHashString = "movie-1|3-null-null-null-2005-2025-popularity.desc"
+        val receivedHashString = filters.getFiltersHashString()
+        val reveicedMd5Hash = receivedHashString.md5()
+        assertEquals(expectedHashString.md5(), filters.filtersHash)
+        println("hash string=$expectedHashString, md5=$reveicedMd5Hash")
+    }
+
+    @Test
+    fun `filtersHash should handle a mix of null and non-null fields - combination 6`() {
+        val filters = MediaFilters(
+            contentType = ContentType.MOVIES,
+            genres = listOf(GenreData(3, "3"), GenreData(1, "1")),
+            providers = listOf(testProvider3, testProvider1),
+            duration = Duration(120),
+            score = Score(5.0f),
+            yearFrom = 2005,
+            yearTo = 2025,
+            sortBy = "popularity.desc"
+        )
+
+        val expectedHashString = "movie-1|3-1|3-120-5.0-2005-2025-popularity.desc"
+        val receivedHashString = filters.getFiltersHashString()
+        val receivedMd5Hash = receivedHashString.md5()
+        assertEquals(expectedHashString.md5(), filters.filtersHash)
+        println("hash string=$expectedHashString, md5=$receivedMd5Hash")
     }
 }

@@ -24,11 +24,11 @@ data class MediaFilters(
             ContentType.TV_SHOWS -> "tv"
         }
         return "$contentTypeString-${
-            genres?.sortedBy { it.id }?.joinToString("|") { it.id.toString() } ?: ""
+            genres?.sortedBy { it.id }?.joinToString("|") { it.id.toString() }
         }-${
             providers?.sortedBy { it.id }?.joinToString(
                 "|"
-            ) { it.id.toString() } ?: ""
+            ) { it.id.toString() }
         }-${duration?.duration}-${score?.score}-${yearFrom}-${yearTo}-${sortBy}"
     }
 }
