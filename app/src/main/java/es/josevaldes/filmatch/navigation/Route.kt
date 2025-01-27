@@ -16,6 +16,10 @@ import kotlinx.serialization.modules.polymorphic
 
 @Serializable
 sealed class Route {
+
+    val toRouteString: String
+        get() = this::class.qualifiedName ?: ""
+
     @Serializable
     data object OnBoardingRoute : Route()
 
@@ -24,6 +28,22 @@ sealed class Route {
 
     @Serializable
     data object SlideMovieRoute : Route()
+
+    @Serializable
+    data object SearchRoute : Route()
+
+
+    @Serializable
+    data object MatchesRoute : Route()
+
+    @Serializable
+    data object RoomsRoute : Route()
+
+    @Serializable
+    data object ProfileRoute : Route()
+
+    @Serializable
+    data object HomeScreenRoute : Route()
 
     @Serializable
     data class MovieDetailsRoute(val movie: DetailsItemData) : Route()
