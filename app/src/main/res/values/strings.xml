@@ -123,6 +123,8 @@
     <string name="bottom_bar_menu_matches_title">Matches</string>
     <string name="bottom_bar_menu_rooms_title">Rooms</string>
     <string name="bottom_bar_menu_profile_title">Profile</string>
+    <string name="content_description_user_avatar">User avatar</string>
+    <string name="see_more_title">See more</string>
     <plurals name="seasons_count">
         <item quantity="one">%d season</item>
         <item quantity="other">%d seasons</item>

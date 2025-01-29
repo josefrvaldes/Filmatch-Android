@@ -213,4 +213,8 @@ class FirebaseAuthService(
         Timber.tag("AuthService").d("auth token: $token")
         return isLoggedIn
     }
+
+    override suspend fun getUser(): User? {
+        return auth.currentUser?.toUser()
+    }
 }

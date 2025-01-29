@@ -23,6 +23,8 @@ interface AuthService {
     suspend fun callForgotPassword(email: String): AuthResult<Unit>
 
     suspend fun isLoggedIn(): Boolean
+
+    suspend fun getUser(): User?
 }
 
 interface TokenProvider {

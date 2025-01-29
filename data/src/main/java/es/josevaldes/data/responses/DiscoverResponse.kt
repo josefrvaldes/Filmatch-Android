@@ -2,6 +2,8 @@ package es.josevaldes.data.responses
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonSetter
+import com.fasterxml.jackson.annotation.Nulls
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import es.josevaldes.data.deserializers.DiscoverResponseDeserializer
 
@@ -19,6 +21,7 @@ abstract class DiscoverItem(
     @JsonProperty("id") open val id: Int = 0,
     @JsonProperty("adult") open val adult: Boolean? = null,
     @JsonProperty("backdrop_path") open val backdropPath: String? = null,
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
     @JsonProperty("genre_ids") open val genreIds: List<Int> = emptyList(),
     @JsonProperty("original_language") open val originalLanguage: String? = null,
     @JsonProperty("poster_path") open val posterPath: String? = null,
@@ -37,6 +40,7 @@ class DiscoverMovie(
     @JsonProperty("id") id: Int = 0,
     @JsonProperty("adult") adult: Boolean? = null,
     @JsonProperty("backdrop_path") backdropPath: String? = null,
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
     @JsonProperty("genre_ids") genreIds: List<Int> = emptyList(),
     @JsonProperty("original_language") originalLanguage: String? = null,
     @JsonProperty("poster_path") posterPath: String? = null,
@@ -67,6 +71,7 @@ class DiscoverTV(
     @JsonProperty("id") id: Int = 0,
     @JsonProperty("adult") adult: Boolean? = null,
     @JsonProperty("backdrop_path") backdropPath: String? = null,
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
     @JsonProperty("genre_ids") genreIds: List<Int> = emptyList(),
     @JsonProperty("original_language") originalLanguage: String? = null,
     @JsonProperty("poster_path") posterPath: String? = null,

@@ -1,6 +1,7 @@
 package es.josevaldes.data.repositories
 
 import androidx.paging.Pager
+import androidx.paging.PagingData
 import es.josevaldes.data.extensions.mappers.toAppModel
 import es.josevaldes.data.extensions.mappers.toDataModel
 import es.josevaldes.data.extensions.mappers.toVisitedMediaWithItem
@@ -12,6 +13,7 @@ import es.josevaldes.data.model.DiscoverMoviesData
 import es.josevaldes.data.model.DiscoverTvData
 import es.josevaldes.data.model.InterestStatus
 import es.josevaldes.data.model.MediaFilters
+import es.josevaldes.data.model.User
 import es.josevaldes.data.paging.MediaPagingSource
 import es.josevaldes.data.paging.MovieDBPagingConfig
 import es.josevaldes.data.requests.MarkMovieAsVisitedRequest
@@ -33,25 +35,10 @@ import javax.inject.Inject
 
 
 class MediaRepository @Inject constructor(
-    private val _mediaPagingSource: MediaPagingSource,
     private val _mediaRemoteDataSource: MediaRemoteDataSource,
     private val _mediaLocalDataSource: MediaLocalDataSource,
     private val _filmatchRemoteDataSource: FilmatchRemoteDataSource
 ) {
-    fun getDiscoverMovies(
-        language: String?,
-    ): Pager<Int, DiscoverItemData> {
-        return Pager(
-            config = MovieDBPagingConfig.pagingConfig,
-            pagingSourceFactory = {
-                _mediaPagingSource.apply {
-                    this.language = language
-                }
-            }
-        )
-    }
-
-
     fun getDiscoverMovies(
         page: Int,
         language: String,
@@ -191,5 +178,62 @@ class MediaRepository @Inject constructor(
     suspend fun getMaxPage(filters: MediaFilters): Int? {
         val hash = filters.filtersHash
         return _mediaLocalDataSource.getMaxPage(hash)
+    }
+
+    private fun getUserVisits(
+        user: User,
+        type: MediaType,
+        interestStatus: InterestStatus
+    ): Flow<PagingData<DiscoverItemData>> {
+        return Pager(
+            config = MovieDBPagingConfig.pagingConfig,
+            pagingSourceFactory = {
+                MediaPagingSource(
+                    fetchMovies = { page ->
+                        when (type) {
+                            MediaType.MOVIE -> _filmatchRemoteDataSource.getUserMovieVisits(
+                                user.uid,
+                                page,
+                                interestStatus.toInt()
+                            )
+
+                            MediaType.TV -> _filmatchRemoteDataSource.getUserTvVisits(
+                                user.uid,
+                                page,
+                                interestStatus.toInt()
+                            )
+                        }
+                    }
+                )
+            }
+        ).flow
+    }
+
+    fun getWatchList(
+        user: User,
+        type: MediaType,
+    ): Flow<PagingData<DiscoverItemData>> {
+        return getUserVisits(user, type, InterestStatus.INTERESTED)
+    }
+
+    fun getWatched(
+        user: User,
+        type: MediaType,
+    ): Flow<PagingData<DiscoverItemData>> {
+        return getUserVisits(user, type, InterestStatus.WATCHED)
+    }
+
+    fun getNotInterested(
+        user: User,
+        type: MediaType,
+    ): Flow<PagingData<DiscoverItemData>> {
+        return getUserVisits(user, type, InterestStatus.NOT_INTERESTED)
+    }
+
+    fun getSuperInterested(
+        user: User,
+        type: MediaType,
+    ): Flow<PagingData<DiscoverItemData>> {
+        return getUserVisits(user, type, InterestStatus.SUPER_INTERESTED)
     }
 }

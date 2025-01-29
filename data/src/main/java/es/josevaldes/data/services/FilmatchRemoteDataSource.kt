@@ -1,6 +1,7 @@
 package es.josevaldes.data.services
 
 import es.josevaldes.data.requests.MarkMediaAsVisitedRequest
+import es.josevaldes.data.responses.DiscoverResponse
 import es.josevaldes.data.responses.GetVisitStatusResponse
 import es.josevaldes.data.responses.GetVisitsByIdsResponse
 import es.josevaldes.data.responses.MarkMediaAsVisitedResponse
@@ -38,4 +39,18 @@ interface FilmatchRemoteDataSource {
         @Query("ids") ids: String
     ): ApiResult<GetVisitsByIdsResponse>
 
+
+    @GET("/user/{uid}/movie")
+    suspend fun getUserMovieVisits(
+        @Path("uid") id: String,
+        @Query("page") page: Int,
+        @Query("status") status: Int,
+    ): ApiResult<DiscoverResponse>
+
+    @GET("/user/{uid}/tv")
+    suspend fun getUserTvVisits(
+        @Path("uid") id: String,
+        @Query("page") page: Int,
+        @Query("status") status: Int,
+    ): ApiResult<DiscoverResponse>
 }

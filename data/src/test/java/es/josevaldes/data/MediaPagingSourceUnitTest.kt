@@ -98,7 +98,9 @@ class MediaPagingSourceUnitTest {
         )
 
         // let's init the paging source
-        val pagingSource = MediaPagingSource(mediaRemoteDataSource, "en")
+        val pagingSource = MediaPagingSource(fetchMovies = { page ->
+            mediaRemoteDataSource.getDiscoverItems("movie", page, "en")
+        })
         val pageSize = MovieDBPagingConfig.pagingConfig.pageSize
         val enablePlaceholders = MovieDBPagingConfig.pagingConfig.enablePlaceholders
 
@@ -172,7 +174,9 @@ class MediaPagingSourceUnitTest {
             )
         } returns ApiResult.Error(ApiError.Unknown)
 
-        val pagingSource = MediaPagingSource(mediaRemoteDataSource, "en")
+        val pagingSource = MediaPagingSource(fetchMovies = { page ->
+            mediaRemoteDataSource.getDiscoverItems("movie", page, "en")
+        })
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(
@@ -199,7 +203,9 @@ class MediaPagingSourceUnitTest {
             )
         } returns ApiResult.Error(ApiError.ResourceNotFound)
 
-        val pagingSource = MediaPagingSource(mediaRemoteDataSource, "en")
+        val pagingSource = MediaPagingSource(fetchMovies = { page ->
+            mediaRemoteDataSource.getDiscoverItems("movie", page, "en")
+        })
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(
@@ -237,7 +243,9 @@ class MediaPagingSourceUnitTest {
             emptyResponse
         )
 
-        val pagingSource = MediaPagingSource(mediaRemoteDataSource, "en")
+        val pagingSource = MediaPagingSource(fetchMovies = { page ->
+            mediaRemoteDataSource.getDiscoverItems("movie", page, "en")
+        })
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(
@@ -278,7 +286,9 @@ class MediaPagingSourceUnitTest {
             firstResponse
         )
 
-        val pagingSource = MediaPagingSource(mediaRemoteDataSource, "en")
+        val pagingSource = MediaPagingSource(fetchMovies = { page ->
+            mediaRemoteDataSource.getDiscoverItems("movie", page, "en")
+        })
 
         val result = pagingSource.load(
             PagingSource.LoadParams.Refresh(

@@ -44,7 +44,6 @@ import org.robolectric.annotation.Config
 class MediaRepositoryTest {
 
     private lateinit var mediaRepository: MediaRepository
-    private lateinit var mediaPagingSource: MediaPagingSource
     private lateinit var mediaRemoteDataSource: MediaRemoteDataSource
     private lateinit var mediaLocalDataSource: MediaLocalDataSource
     private lateinit var filmatchRemoteDataSource: FilmatchRemoteDataSource
@@ -56,10 +55,8 @@ class MediaRepositoryTest {
         mediaRemoteDataSource = mockk()
         mediaLocalDataSource = mockk()
         filmatchRemoteDataSource = mockk()
-        mediaPagingSource = MediaPagingSource(mediaRemoteDataSource, "en")
         mediaRepository =
             MediaRepository(
-                mediaPagingSource,
                 mediaRemoteDataSource,
                 mediaLocalDataSource,
                 filmatchRemoteDataSource
@@ -88,6 +85,9 @@ class MediaRepositoryTest {
                 totalPages = listOfMovies.size / config.pageSize
             )
         )
+        val mediaPagingSource = MediaPagingSource(fetchMovies = { page ->
+            mediaRemoteDataSource.getDiscoverItems("movie", page, "en")
+        })
         val testPager = TestPager(config, mediaPagingSource)
         val refreshResult = testPager.refresh()
         assertTrue(refreshResult is LoadResult.Page)
@@ -114,6 +114,9 @@ class MediaRepositoryTest {
                 )
             )
         }
+        val mediaPagingSource = MediaPagingSource(fetchMovies = { page ->
+            mediaRemoteDataSource.getDiscoverItems("movie", page, "en")
+        })
         val pager = TestPager(config, mediaPagingSource)
         val result = with(pager) {
             this.refresh()
@@ -157,6 +160,9 @@ class MediaRepositoryTest {
         } returns ApiResult.Error(
             ApiError.Unknown
         )
+        val mediaPagingSource = MediaPagingSource(fetchMovies = { page ->
+            mediaRemoteDataSource.getDiscoverItems("movie", page, "en")
+        })
         val testPager = TestPager(config, mediaPagingSource)
         val result = testPager.refresh() as LoadResult.Error<Int, DiscoverMovie>
         assertEquals(ApiErrorException(ApiError.Unknown).toString(), result.throwable.toString())
@@ -174,6 +180,9 @@ class MediaRepositoryTest {
         } returns ApiResult.Error(
             ApiError.ResourceNotFound
         )
+        val mediaPagingSource = MediaPagingSource(fetchMovies = { page ->
+            mediaRemoteDataSource.getDiscoverItems("movie", page, "en")
+        })
         val testPager = TestPager(config, mediaPagingSource)
         val result = testPager.refresh() as LoadResult.Error<Int, DiscoverMovie>
         assertEquals(
