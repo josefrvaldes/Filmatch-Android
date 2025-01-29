@@ -131,6 +131,10 @@ class MediaRepository @Inject constructor(
 
     fun getVisitsByIds(medias: List<DiscoverItemData>): Flow<ApiResult<List<Int>>> =
         flow {
+            if (medias.isEmpty()) {
+                emit(ApiResult.Success(emptyList()))
+                return@flow
+            }
             val ids = medias.map { it.id }.joinToString(",")
             val result = when (medias.first()) {
                 is DiscoverMovieData -> _filmatchRemoteDataSource.getMovieVisitsByIds(ids)

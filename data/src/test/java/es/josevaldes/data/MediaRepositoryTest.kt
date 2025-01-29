@@ -5,15 +5,18 @@ import androidx.paging.PagingSource.LoadResult
 import androidx.paging.testing.TestPager
 import es.josevaldes.data.extensions.mappers.toAppModel
 import es.josevaldes.data.extensions.mappers.toLocalModel
+import es.josevaldes.data.model.DiscoverItemData
 import es.josevaldes.data.model.DiscoverMovieData
 import es.josevaldes.data.model.DiscoverTvData
 import es.josevaldes.data.model.InterestStatus
+import es.josevaldes.data.model.User
 import es.josevaldes.data.paging.MediaPagingSource
 import es.josevaldes.data.repositories.MediaRepository
 import es.josevaldes.data.responses.DetailsMovieResponse
 import es.josevaldes.data.responses.DiscoverItem
 import es.josevaldes.data.responses.DiscoverMovie
 import es.josevaldes.data.responses.DiscoverResponse
+import es.josevaldes.data.responses.DiscoverTV
 import es.josevaldes.data.responses.GetVisitStatusResponse
 import es.josevaldes.data.responses.GetVisitsByIdsResponse
 import es.josevaldes.data.responses.MediaType
@@ -129,7 +132,6 @@ class MediaRepositoryTest {
 
     @Test
     fun `getVisitsByIds should return success with visited ids`() = runTest {
-        // Datos de prueba
         val medias = listOf(
             DiscoverMovieData(id = 101, title = "Movie 1"),
             DiscoverMovieData(id = 102, title = "Movie 2"),
@@ -146,6 +148,72 @@ class MediaRepositoryTest {
 
         assertTrue(result is ApiResult.Success)
         assertEquals(expectedVisitedIds, (result as ApiResult.Success).data)
+    }
+
+    @Test
+    fun `getVisitsByIds should return success with visited ids for TV shows`() = runTest {
+        val medias = listOf(
+            DiscoverTvData(id = 201, name = "TV Show 1"),
+            DiscoverTvData(id = 202, name = "TV Show 2")
+        )
+        val expectedVisitedIds = listOf(201)
+
+        coEvery { filmatchRemoteDataSource.getTvVisitsByIds(any()) } returns ApiResult.Success(
+            GetVisitsByIdsResponse(visited = expectedVisitedIds)
+        )
+
+        val result = mediaRepository.getVisitsByIds(medias).first()
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals(expectedVisitedIds, (result as ApiResult.Success).data)
+    }
+
+    @Test
+    fun `getVisitsByIds should return error when API call fails`() = runTest {
+        val medias = listOf(DiscoverMovieData(id = 301, title = "Movie 3"))
+
+        coEvery { filmatchRemoteDataSource.getMovieVisitsByIds(any()) } returns ApiResult.Error(
+            ApiError.ResourceNotFound
+        )
+
+        val result = mediaRepository.getVisitsByIds(medias).first()
+
+        assertTrue(result is ApiResult.Error)
+        assertEquals(ApiError.ResourceNotFound, (result as ApiResult.Error).apiError)
+    }
+
+    @Test
+    fun `getVisitsByIds should return error when API throws an exception`() = runTest {
+        val medias = listOf(DiscoverMovieData(id = 401, title = "Movie 4"))
+
+        coEvery { filmatchRemoteDataSource.getMovieVisitsByIds(any()) } throws RuntimeException("API failure")
+
+        val result = mediaRepository.getVisitsByIds(medias).first()
+
+        assertTrue(result is ApiResult.Error)
+        assertEquals(ApiError.Unknown, (result as ApiResult.Error).apiError)
+    }
+
+    @Test
+    fun `getVisitsByIds should return success with empty list when input list is empty`() =
+        runTest {
+            val medias = emptyList<DiscoverItemData>()
+
+            val result = mediaRepository.getVisitsByIds(medias).first()
+
+            assertTrue(result is ApiResult.Success)
+            assertTrue((result as ApiResult.Success).data.isEmpty())
+        }
+
+    @Test
+    fun `getVisitsByIds should throw IllegalArgumentException for unknown type`() = runTest {
+        val medias = listOf(DiscoverItemData(id = 1))
+
+
+        val result = mediaRepository.getVisitsByIds(medias).first()
+
+
+        assertEquals(ApiError.Unknown, (result as ApiResult.Error).apiError)
     }
 
 
@@ -353,4 +421,300 @@ class MediaRepositoryTest {
             assertEquals(ApiResult.Error(ApiError.ResourceNotFound), it)
         }
     }
+
+
+    private val user = User(uid = "test_user", id = "13", email = "", username = "")
+    private val testMovies = List(15) { index ->
+        DiscoverMovie(id = index + 1, title = "Movie ${index + 1}")
+    }
+
+    private val testTvShows = List(15) { index ->
+        DiscoverTV(id = index + 1, name = "TV Show ${index + 1}")
+    }
+
+    private fun mockGetUserVisits(
+        type: MediaType,
+        interestStatus: InterestStatus,
+        expectedResult: List<DiscoverItem>
+    ) {
+        coEvery {
+            when (type) {
+                MediaType.MOVIE -> filmatchRemoteDataSource.getUserMovieVisits(
+                    user.uid, any(), interestStatus.toInt()
+                )
+
+                MediaType.TV -> filmatchRemoteDataSource.getUserTvVisits(
+                    user.uid, any(), interestStatus.toInt()
+                )
+            }
+        } returns ApiResult.Success(
+            DiscoverResponse(
+                results = expectedResult,
+                page = 1,
+                totalResults = expectedResult.size,
+                totalPages = expectedResult.size / config.pageSize
+            )
+        )
+    }
+
+    @Test
+    fun `getWatchList should return success on valid result`() = runTest {
+        val expectedMovies = testMovies.subList(0, config.pageSize)
+        mockGetUserVisits(MediaType.MOVIE, InterestStatus.INTERESTED, expectedMovies)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserMovieVisits(
+                user.uid,
+                page,
+                InterestStatus.INTERESTED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Page)
+        val result = refreshResult as LoadResult.Page<Int, DiscoverItemData>
+        assertEquals(expectedMovies.map { it.toAppModel() }, result.data)
+    }
+
+    @Test
+    fun `getWatched should return success on valid result`() = runTest {
+        val expectedMovies = testMovies.subList(0, config.pageSize)
+        mockGetUserVisits(MediaType.MOVIE, InterestStatus.WATCHED, expectedMovies)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserMovieVisits(
+                user.uid,
+                page,
+                InterestStatus.WATCHED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Page)
+        val result = refreshResult as LoadResult.Page<Int, DiscoverItemData>
+        assertEquals(expectedMovies.map { it.toAppModel() }, result.data)
+    }
+
+    @Test
+    fun `getNotInterested should return success on valid result`() = runTest {
+        val expectedMovies = testMovies.subList(0, config.pageSize)
+        mockGetUserVisits(MediaType.MOVIE, InterestStatus.NOT_INTERESTED, expectedMovies)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserMovieVisits(
+                user.uid,
+                page,
+                InterestStatus.NOT_INTERESTED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Page)
+        val result = refreshResult as LoadResult.Page<Int, DiscoverItemData>
+        assertEquals(expectedMovies.map { it.toAppModel() }, result.data)
+    }
+
+    @Test
+    fun `getSuperInterested should return success on valid result`() = runTest {
+        val expectedMovies = testMovies.subList(0, config.pageSize)
+        mockGetUserVisits(MediaType.MOVIE, InterestStatus.SUPER_INTERESTED, expectedMovies)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserMovieVisits(
+                user.uid,
+                page,
+                InterestStatus.SUPER_INTERESTED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Page)
+        val result = refreshResult as LoadResult.Page<Int, DiscoverItemData>
+        assertEquals(expectedMovies.map { it.toAppModel() }, result.data)
+    }
+
+    @Test
+    fun `getWatchList should return error on network failure`() = runTest {
+        coEvery {
+            filmatchRemoteDataSource.getUserMovieVisits(
+                user.uid,
+                any(),
+                InterestStatus.INTERESTED.toInt()
+            )
+        } returns ApiResult.Error(ApiError.ResourceNotFound)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserMovieVisits(
+                user.uid,
+                page,
+                InterestStatus.INTERESTED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Error)
+        val error = (refreshResult as LoadResult.Error).throwable
+        assertTrue(error is ApiErrorException)
+    }
+
+    @Test
+    fun `getWatchList should return error on unknown failure`() = runTest {
+        coEvery {
+            filmatchRemoteDataSource.getUserMovieVisits(
+                user.uid,
+                any(),
+                InterestStatus.INTERESTED.toInt()
+            )
+        } returns ApiResult.Error(ApiError.Unknown)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserMovieVisits(
+                user.uid,
+                page,
+                InterestStatus.INTERESTED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Error)
+        val error = (refreshResult as LoadResult.Error).throwable
+        assertTrue(error is ApiErrorException)
+    }
+
+    @Test
+    fun `getWatchList for TV should return success on valid result`() = runTest {
+        val expectedTvShows = testTvShows.subList(0, config.pageSize)
+        mockGetUserVisits(MediaType.TV, InterestStatus.INTERESTED, expectedTvShows)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserTvVisits(
+                user.uid,
+                page,
+                InterestStatus.INTERESTED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Page)
+        val result = refreshResult as LoadResult.Page<Int, DiscoverItemData>
+        assertEquals(expectedTvShows.map { it.toAppModel() }, result.data)
+    }
+
+    @Test
+    fun `getWatched for TV should return success on valid result`() = runTest {
+        val expectedTvShows = testTvShows.subList(0, config.pageSize)
+        mockGetUserVisits(MediaType.TV, InterestStatus.WATCHED, expectedTvShows)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserTvVisits(
+                user.uid,
+                page,
+                InterestStatus.WATCHED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Page)
+        val result = refreshResult as LoadResult.Page<Int, DiscoverItemData>
+        assertEquals(expectedTvShows.map { it.toAppModel() }, result.data)
+    }
+
+    @Test
+    fun `getNotInterested for TV should return success on valid result`() = runTest {
+        val expectedTvShows = testTvShows.subList(0, config.pageSize)
+        mockGetUserVisits(MediaType.TV, InterestStatus.NOT_INTERESTED, expectedTvShows)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserTvVisits(
+                user.uid,
+                page,
+                InterestStatus.NOT_INTERESTED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Page)
+        val result = refreshResult as LoadResult.Page<Int, DiscoverItemData>
+        assertEquals(expectedTvShows.map { it.toAppModel() }, result.data)
+    }
+
+    @Test
+    fun `getSuperInterested for TV should return success on valid result`() = runTest {
+        val expectedTvShows = testTvShows.subList(0, config.pageSize)
+        mockGetUserVisits(MediaType.TV, InterestStatus.SUPER_INTERESTED, expectedTvShows)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserTvVisits(
+                user.uid,
+                page,
+                InterestStatus.SUPER_INTERESTED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Page)
+        val result = refreshResult as LoadResult.Page<Int, DiscoverItemData>
+        assertEquals(expectedTvShows.map { it.toAppModel() }, result.data)
+    }
+
+    @Test
+    fun `getWatchList for TV should return error on network failure`() = runTest {
+        coEvery {
+            filmatchRemoteDataSource.getUserTvVisits(
+                user.uid,
+                any(),
+                InterestStatus.INTERESTED.toInt()
+            )
+        } returns ApiResult.Error(ApiError.ResourceNotFound)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserTvVisits(
+                user.uid,
+                page,
+                InterestStatus.INTERESTED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Error)
+        val error = (refreshResult as LoadResult.Error).throwable
+        assertTrue(error is ApiErrorException)
+    }
+
+    @Test
+    fun `getWatchList for TV should return error on unknown failure`() = runTest {
+        coEvery {
+            filmatchRemoteDataSource.getUserTvVisits(
+                user.uid,
+                any(),
+                InterestStatus.INTERESTED.toInt()
+            )
+        } returns ApiResult.Error(ApiError.Unknown)
+
+        val mediaPagingSource = MediaPagingSource { page ->
+            filmatchRemoteDataSource.getUserTvVisits(
+                user.uid,
+                page,
+                InterestStatus.INTERESTED.toInt()
+            )
+        }
+        val testPager = TestPager(config, mediaPagingSource)
+        val refreshResult = testPager.refresh()
+
+        assertTrue(refreshResult is LoadResult.Error)
+        val error = (refreshResult as LoadResult.Error).throwable
+        assertTrue(error is ApiErrorException)
+    }
+
 }

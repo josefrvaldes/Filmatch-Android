@@ -215,6 +215,10 @@ class FirebaseAuthService(
     }
 
     override suspend fun getUser(): User? {
-        return auth.currentUser?.toUser()
+        return try {
+            auth.currentUser?.toUser()
+        } catch (e: Exception) {
+            null
+        }
     }
 }
