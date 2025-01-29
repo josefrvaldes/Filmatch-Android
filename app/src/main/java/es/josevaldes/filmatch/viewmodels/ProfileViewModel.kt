@@ -3,7 +3,10 @@ package es.josevaldes.filmatch.viewmodels
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
 import dagger.hilt.android.lifecycle.HiltViewModel
+import es.josevaldes.data.model.DiscoverItemData
+import es.josevaldes.data.model.InterestStatus
 import es.josevaldes.data.model.Provider
 import es.josevaldes.data.model.User
 import es.josevaldes.data.repositories.MediaRepository
@@ -12,10 +15,12 @@ import es.josevaldes.data.responses.MediaType
 import es.josevaldes.data.results.ApiResult
 import es.josevaldes.data.services.AuthService
 import es.josevaldes.filmatch.utils.DeviceLocaleProvider
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -34,6 +39,8 @@ class ProfileViewModel @Inject constructor(
     private val _loggedUser = MutableStateFlow<User?>(null)
     val loggedUser = _loggedUser.asStateFlow()
 
+    var selectedMediaType: MediaType = MediaType.MOVIE
+
 
     init {
         getProviders()
@@ -41,41 +48,34 @@ class ProfileViewModel @Inject constructor(
     }
 
 
-    val myWatchList = flow {
+    val myWatchList = getUserMediaList(InterestStatus.INTERESTED)
+    val myWatchedList = getUserMediaList(InterestStatus.WATCHED)
+    val myNotInterestedList = getUserMediaList(InterestStatus.NOT_INTERESTED)
+    val mySuperLikeList = getUserMediaList(InterestStatus.SUPER_INTERESTED)
+
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun getUserMediaList(
+        interestStatus: InterestStatus
+    ): Flow<PagingData<DiscoverItemData>> = flow {
         val user = authService.getUser()
         user?.let {
             emitAll(
-                mediaRepository.getWatchList(it, MediaType.MOVIE)
-            )
-        }
-    }
+                when (interestStatus) {
+                    InterestStatus.INTERESTED -> mediaRepository.getWatchList(it, selectedMediaType)
+                    InterestStatus.WATCHED -> mediaRepository.getWatched(it, selectedMediaType)
+                    InterestStatus.NOT_INTERESTED -> mediaRepository.getNotInterested(
+                        it,
+                        selectedMediaType
+                    )
 
+                    InterestStatus.SUPER_INTERESTED -> mediaRepository.getWatchList(
+                        it,
+                        selectedMediaType
+                    )
 
-    val myWatchedList = flow {
-        val user = authService.getUser()
-        user?.let {
-            emitAll(
-                mediaRepository.getWatched(it, MediaType.MOVIE)
-            )
-        }
-    }
-
-
-    val myNotInterestedList = flow {
-        val user = authService.getUser()
-        user?.let {
-            emitAll(
-                mediaRepository.getNotInterested(it, MediaType.MOVIE)
-            )
-        }
-    }
-
-    
-    val mySuperLikeList = flow {
-        val user = authService.getUser()
-        user?.let {
-            emitAll(
-                mediaRepository.getWatchList(it, MediaType.MOVIE)
+                    InterestStatus.NONE -> flowOf(PagingData.from(emptyList()))
+                }
             )
         }
     }

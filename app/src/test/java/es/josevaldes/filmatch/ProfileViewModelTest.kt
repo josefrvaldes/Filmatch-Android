@@ -4,6 +4,7 @@ import androidx.paging.PagingData
 import androidx.paging.testing.asSnapshot
 import es.josevaldes.data.model.DiscoverItemData
 import es.josevaldes.data.model.DiscoverMovieData
+import es.josevaldes.data.model.InterestStatus
 import es.josevaldes.data.model.Provider
 import es.josevaldes.data.model.User
 import es.josevaldes.data.repositories.MediaRepository
@@ -187,45 +188,173 @@ class ProfileViewModelTest {
 
 
     @Test
-    fun `myWatchList should paginate correctly across multiple pages`() = runTest {
-        // let's create a list of 50 movies
-        val allMovies = (1..50).map { DiscoverMovieData(id = it, title = "Movie $it") }
+    fun `getUserMediaList should paginate correctly across multiple pages for all interest statuses`() =
+        runTest {
+            val allMovies = (1..50).map { DiscoverMovieData(id = it, title = "Movie $it") }
+            val pages = listOf(
+                allMovies.subList(0, 20), // Page 1
+                allMovies.subList(20, 40), // Page 2
+                allMovies.subList(40, 50)  // Page 3
+            )
 
-        // let's split the list into 3 pages
-        val page1 = allMovies.subList(0, 20)
-        val page2 = allMovies.subList(20, 40)
-        val page3 = allMovies.subList(40, 50)
+            val statuses = listOf(
+                InterestStatus.INTERESTED,
+                InterestStatus.WATCHED,
+                InterestStatus.NOT_INTERESTED,
+                InterestStatus.SUPER_INTERESTED
+            )
 
-        coEvery {
-            mediaRepository.getWatchList(any(), any())
-        } returns flowOf(PagingData.from(page1))
+            statuses.forEach { interestStatus ->
+                println("Testing paginación para $interestStatus")
 
-        // let's simulate the user scrolling through the list
-        val result = profileViewModel.myWatchList.asSnapshot {
-            scrollTo(index = 1)
+                // first page
+                coEvery {
+                    when (interestStatus) {
+                        InterestStatus.INTERESTED -> mediaRepository.getWatchList(any(), any())
+                        InterestStatus.WATCHED -> mediaRepository.getWatched(any(), any())
+                        InterestStatus.NOT_INTERESTED -> mediaRepository.getNotInterested(
+                            any(),
+                            any()
+                        )
+
+                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getWatchList(
+                            any(),
+                            any()
+                        )
+
+                        InterestStatus.NONE -> flowOf(PagingData.from(emptyList()))
+                    }
+                } returns flowOf(PagingData.from(pages[0]))
+
+                val result1 = profileViewModel.getUserMediaList(interestStatus).asSnapshot {
+                    scrollTo(index = 1)
+                }
+                assertEquals(pages[0], result1)
+
+                // Second page
+                coEvery {
+                    when (interestStatus) {
+                        InterestStatus.INTERESTED -> mediaRepository.getWatchList(any(), any())
+                        InterestStatus.WATCHED -> mediaRepository.getWatched(any(), any())
+                        InterestStatus.NOT_INTERESTED -> mediaRepository.getNotInterested(
+                            any(),
+                            any()
+                        )
+
+                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getWatchList(
+                            any(),
+                            any()
+                        )
+
+                        InterestStatus.NONE -> flowOf(PagingData.from(emptyList()))
+                    }
+                } returns flowOf(PagingData.from(pages[1]))
+
+                val result2 = profileViewModel.getUserMediaList(interestStatus).asSnapshot {
+                    scrollTo(index = 20)
+                }
+                assertEquals(pages[1], result2)
+
+                // Third page
+                coEvery {
+                    when (interestStatus) {
+                        InterestStatus.INTERESTED -> mediaRepository.getWatchList(any(), any())
+                        InterestStatus.WATCHED -> mediaRepository.getWatched(any(), any())
+                        InterestStatus.NOT_INTERESTED -> mediaRepository.getNotInterested(
+                            any(),
+                            any()
+                        )
+
+                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getWatchList(
+                            any(),
+                            any()
+                        )
+
+                        InterestStatus.NONE -> flowOf(PagingData.from(emptyList()))
+                    }
+                } returns flowOf(PagingData.from(pages[2]))
+
+                val result3 = profileViewModel.getUserMediaList(interestStatus).asSnapshot {
+                    scrollTo(index = 40)
+                }
+                assertEquals(pages[2], result3)
+
+                // let's verify that all pages are correctly concatenated
+                assertEquals(
+                    allMovies,
+                    result1 + result2 + result3
+                )
+            }
         }
 
-        assertEquals(page1, result)
+    @Test
+    fun `getUserMediaList should emit data when user is logged in and repository returns success`() =
+        runTest {
+            val expectedMovies = listOf(
+                DiscoverMovieData(id = 1, title = "Movie 1"),
+                DiscoverMovieData(id = 2, title = "Movie 2")
+            )
 
-        coEvery {
-            mediaRepository.getWatchList(any(), any())
-        } returns flowOf(PagingData.from(page2))
+            val statuses = listOf(
+                InterestStatus.INTERESTED,
+                InterestStatus.WATCHED,
+                InterestStatus.NOT_INTERESTED,
+                InterestStatus.SUPER_INTERESTED
+            )
 
-        // let's simulate the user scrolling through the list
-        val result2 = profileViewModel.myWatchList.asSnapshot {
-            scrollTo(index = 20)
+            statuses.forEach { interestStatus ->
+                coEvery {
+                    when (interestStatus) {
+                        InterestStatus.INTERESTED -> mediaRepository.getWatchList(any(), any())
+                        InterestStatus.WATCHED -> mediaRepository.getWatched(any(), any())
+                        InterestStatus.NOT_INTERESTED -> mediaRepository.getNotInterested(
+                            any(),
+                            any()
+                        )
+
+                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getWatchList(
+                            any(),
+                            any()
+                        )
+
+                        InterestStatus.NONE -> flowOf(PagingData.from(emptyList()))
+                    }
+                } returns flowOf(PagingData.from(expectedMovies))
+
+                val result = profileViewModel.getUserMediaList(interestStatus).asSnapshot()
+
+                assertEquals(expectedMovies, result)
+            }
         }
-        assertEquals(page2, result2)
 
-        // and finally, let's simulate the user scrolling through the list
-        coEvery {
-            mediaRepository.getWatchList(any(), any())
-        } returns flowOf(PagingData.from(page3))
-        val result3 = profileViewModel.myWatchList.asSnapshot {
-            scrollTo(index = 40)
+    @Test
+    fun `getUserMediaList should emit empty list when user is not logged in`() = runTest {
+        coEvery { authService.getUser() } returns null
+
+        val statuses = listOf(
+            InterestStatus.INTERESTED,
+            InterestStatus.WATCHED,
+            InterestStatus.NOT_INTERESTED,
+            InterestStatus.SUPER_INTERESTED
+        )
+
+        statuses.forEach { interestStatus ->
+            coEvery {
+                when (interestStatus) {
+                    InterestStatus.INTERESTED -> mediaRepository.getWatchList(any(), any())
+                    InterestStatus.WATCHED -> mediaRepository.getWatched(any(), any())
+                    InterestStatus.NOT_INTERESTED -> mediaRepository.getNotInterested(any(), any())
+                    InterestStatus.SUPER_INTERESTED -> mediaRepository.getWatchList(any(), any())
+                    InterestStatus.NONE -> mediaRepository.getWatchList(any(), any())
+                }
+            } returns flowOf(PagingData.empty())
+
+            val result = profileViewModel.getUserMediaList(interestStatus).asSnapshot()
+
+            assertEquals(
+                emptyList<DiscoverItemData>(),
+                result
+            )
         }
-
-        // let's assert that the list of movies is correct
-        assertEquals(allMovies, result + result2 + result3)
     }
 }
