@@ -96,7 +96,7 @@ import kotlin.math.roundToInt
 
 
 @Composable
-fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (DiscoverItemData) -> Unit) {
+fun SlideMovieScreen(onNavigateToDetailsScreen: (DiscoverItemData) -> Unit) {
     val viewModel: SlideMovieViewModel = hiltViewModel()
     val context = LocalContext.current
     val vibrationManager = remember { VibrationUtils(context) }
@@ -129,7 +129,7 @@ fun SlideMovieScreen(onNavigateToMovieDetailsScreen: (DiscoverItemData) -> Unit)
                 .padding(padding),
             contentAlignment = Alignment.Center
         ) {
-            SwipeableMoviesComponent(onNavigateToMovieDetailsScreen)
+            SwipeableMoviesComponent(onNavigateToDetailsScreen)
         }
     }
 }

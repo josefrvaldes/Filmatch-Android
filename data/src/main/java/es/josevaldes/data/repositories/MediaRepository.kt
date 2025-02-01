@@ -196,13 +196,15 @@ class MediaRepository @Inject constructor(
                     fetchMovies = { page ->
                         when (type) {
                             MediaType.MOVIE -> _filmatchRemoteDataSource.getUserMovieVisits(
-                                user.uid,
+//                                user.uid,
+                                "13",
                                 page,
                                 interestStatus.toInt()
                             )
 
                             MediaType.TV -> _filmatchRemoteDataSource.getUserTvVisits(
-                                user.uid,
+//                                user.uid,
+                                "13",
                                 page,
                                 interestStatus.toInt()
                             )

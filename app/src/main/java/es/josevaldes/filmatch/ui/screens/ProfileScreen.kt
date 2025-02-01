@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
@@ -46,24 +48,27 @@ import es.josevaldes.filmatch.ui.theme.FilmatchTheme
 import es.josevaldes.filmatch.viewmodels.ProfileViewModel
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(onNavigateToDetailsScreen: (DiscoverItemData) -> Unit) {
     val profileViewModel = hiltViewModel<ProfileViewModel>()
     val user = profileViewModel.loggedUser.collectAsState(null).value
     val providers = profileViewModel.providers.collectAsState(emptyList()).value
 
-    ProfileScreenContent(user, providers)
+    ProfileScreenContent(user, providers, onNavigateToDetailsScreen)
 }
 
 @Composable
 private fun ProfileScreenContent(
     user: User?,
-    providers: List<Provider>
+    providers: List<Provider>,
+    onNavigateToDetailsScreen: (DiscoverItemData) -> Unit
 ) {
+    val scrollState = rememberScrollState()
     Scaffold { padding ->
         Column(
             modifier = Modifier
+                .verticalScroll(scrollState)
                 .padding(padding)
-                .padding(top = 16.dp)
+                .padding(top = 16.dp, bottom = 16.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -71,24 +76,28 @@ private fun ProfileScreenContent(
             user?.let {
                 UserHeader(it)
                 MyProvidersBox(providers)
-                MyWatchListBox()
-                MyWatchedListBox()
-                MyNotInterestedListBox()
-                MySuperlikesListBox()
+                MyWatchListBox(onNavigateToDetailsScreen)
+                MyWatchedListBox(onNavigateToDetailsScreen)
+                MyNotInterestedListBox(onNavigateToDetailsScreen)
+                MySuperlikesListBox(onNavigateToDetailsScreen)
             }
         }
     }
 }
 
 @Composable
-fun MediaRow(title: String, lazyItems: LazyPagingItems<DiscoverItemData>) {
+fun MediaRow(
+    title: String,
+    lazyItems: LazyPagingItems<DiscoverItemData>,
+    onNavigateToDetailsScreen: (DiscoverItemData) -> Unit
+) {
     val context = LocalContext.current
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)),
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -113,6 +122,11 @@ fun MediaRow(title: String, lazyItems: LazyPagingItems<DiscoverItemData>) {
             )
         }
 
+        if(lazyItems.itemCount == 0) {
+            Text(stringResource(R.string.profile_screen_no_items_title))
+            return
+        }
+
         LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
@@ -122,21 +136,26 @@ fun MediaRow(title: String, lazyItems: LazyPagingItems<DiscoverItemData>) {
         ) {
             items(lazyItems.itemCount) { index ->
                 val item = lazyItems[index]
-                Box(
-                    modifier = Modifier
-                        .width(110.dp)
-                        .height(165.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(item?.posterUrl)
-                            .memoryCachePolicy(CachePolicy.DISABLED)
-                            .build(),
-                        contentDescription = stringResource(R.string.content_description_user_avatar),
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+                item?.let {
+                    Box(
+                        modifier = Modifier
+                            .width(110.dp)
+                            .height(165.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .clickable {
+                                onNavigateToDetailsScreen(item)
+                            },
+                    ) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(item.posterUrl)
+                                .memoryCachePolicy(CachePolicy.DISABLED)
+                                .build(),
+                            contentDescription = stringResource(R.string.content_description_user_avatar),
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
             }
         }
@@ -144,31 +163,31 @@ fun MediaRow(title: String, lazyItems: LazyPagingItems<DiscoverItemData>) {
 }
 
 @Composable
-fun MyWatchListBox() {
+fun MyWatchListBox(onNavigateToDetailsScreen: (DiscoverItemData) -> Unit) {
     val profileViewModel = hiltViewModel<ProfileViewModel>()
     val watchList = profileViewModel.myWatchList.collectAsLazyPagingItems()
-    MediaRow("Watchlist", watchList)
+    MediaRow("Watchlist", watchList, onNavigateToDetailsScreen)
 }
 
 @Composable
-fun MyWatchedListBox() {
+fun MyWatchedListBox(onNavigateToDetailsScreen: (DiscoverItemData) -> Unit) {
     val profileViewModel = hiltViewModel<ProfileViewModel>()
     val watchList = profileViewModel.myWatchedList.collectAsLazyPagingItems()
-    MediaRow("Watched", watchList)
+    MediaRow("Watched", watchList, onNavigateToDetailsScreen)
 }
 
 @Composable
-fun MyNotInterestedListBox() {
+fun MyNotInterestedListBox(onNavigateToDetailsScreen: (DiscoverItemData) -> Unit) {
     val profileViewModel = hiltViewModel<ProfileViewModel>()
     val watchList = profileViewModel.myNotInterestedList.collectAsLazyPagingItems()
-    MediaRow("Not Interested", watchList)
+    MediaRow("Not Interested", watchList, onNavigateToDetailsScreen)
 }
 
 @Composable
-fun MySuperlikesListBox() {
+fun MySuperlikesListBox(onNavigateToDetailsScreen: (DiscoverItemData) -> Unit) {
     val profileViewModel = hiltViewModel<ProfileViewModel>()
     val watchList = profileViewModel.mySuperLikeList.collectAsLazyPagingItems()
-    MediaRow("Superlikes", watchList)
+    MediaRow("Superlikes", watchList, onNavigateToDetailsScreen)
 }
 
 @Composable
@@ -177,7 +196,7 @@ fun MyProvidersBox(providers: List<Provider>) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)),
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -299,7 +318,7 @@ fun ProfileScreenPreview() {
                     1,
                     mapOf("Netflix" to 1),
                 ),
-            ),
-        )
+            )
+        ) {}
     }
 }

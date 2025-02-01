@@ -69,7 +69,7 @@ class ProfileViewModel @Inject constructor(
                         selectedMediaType
                     )
 
-                    InterestStatus.SUPER_INTERESTED -> mediaRepository.getWatchList(
+                    InterestStatus.SUPER_INTERESTED -> mediaRepository.getSuperInterested(
                         it,
                         selectedMediaType
                     )

@@ -125,6 +125,7 @@
     <string name="bottom_bar_menu_profile_title">Profile</string>
     <string name="content_description_user_avatar">User avatar</string>
     <string name="see_more_title">See more</string>
+    <string name="profile_screen_no_items_title">No items here</string>
     <plurals name="seasons_count">
         <item quantity="one">%d season</item>
         <item quantity="other">%d seasons</item>

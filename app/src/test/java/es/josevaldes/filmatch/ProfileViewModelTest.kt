@@ -205,7 +205,7 @@ class ProfileViewModelTest {
             )
 
             statuses.forEach { interestStatus ->
-                println("Testing paginación para $interestStatus")
+                println("Testing pagination para $interestStatus")
 
                 // first page
                 coEvery {
@@ -217,7 +217,7 @@ class ProfileViewModelTest {
                             any()
                         )
 
-                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getWatchList(
+                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getSuperInterested(
                             any(),
                             any()
                         )
@@ -241,7 +241,7 @@ class ProfileViewModelTest {
                             any()
                         )
 
-                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getWatchList(
+                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getSuperInterested(
                             any(),
                             any()
                         )
@@ -265,7 +265,7 @@ class ProfileViewModelTest {
                             any()
                         )
 
-                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getWatchList(
+                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getSuperInterested(
                             any(),
                             any()
                         )
@@ -312,7 +312,7 @@ class ProfileViewModelTest {
                             any()
                         )
 
-                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getWatchList(
+                        InterestStatus.SUPER_INTERESTED -> mediaRepository.getSuperInterested(
                             any(),
                             any()
                         )
