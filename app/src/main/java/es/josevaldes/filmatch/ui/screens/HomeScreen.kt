@@ -71,14 +71,18 @@ fun HomeScreen(mainNavController: NavController) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable<Route.SlideMovieRoute> {
-                SlideMovieScreen(onNavigateToMovieDetailsScreen = {
+                SlideMovieScreen(onNavigateToDetailsScreen = {
                     mainNavController.navigate(Route.MovieDetailsRoute(it.toDetailsItemData()))
                 })
             }
             composable<Route.SearchRoute> { SearchScreen() }
             composable<Route.MatchesRoute> { MatchesScreen() }
             composable<Route.RoomsRoute> { RoomsScreen() }
-            composable<Route.ProfileRoute> { ProfileScreen() }
+            composable<Route.ProfileRoute> {
+                ProfileScreen(onNavigateToDetailsScreen = {
+                    mainNavController.navigate(Route.MovieDetailsRoute(it.toDetailsItemData()))
+                })
+            }
         }
     }
 }
